@@ -40,7 +40,8 @@ rides a motorcycle between home and the University of Iloilo.
    confirmations, and distance (if the Driver allows location). Stations
    with no price yet show at the bottom as "No price yet". Signed-in
    Drivers see "Report price" and "Still correct" on each station.
-   Everyone else sees a prompt to sign in.
+   Everyone else sees a prompt to sign in. A short note under the list
+   says: "Prices are reported by Drivers. Check the signboard."
 2. **Navbar** (every screen): the GasBayan name, plus "Sign in" when
    signed out or "Sign out" when signed in.
 3. **Sign in / Sign up**: email and password, with a switch between
@@ -48,7 +49,9 @@ rides a motorcycle between home and the University of Iloilo.
    Dashboard afterwards.
 4. **Report a price**: station (pre-chosen when coming from its row),
    fuel type, and price in pesos. Prices below ₱40 or above ₱100 are
-   refused with a clear message. Returns to the Dashboard after saving.
+   refused with a clear message. A second report for the same station
+   and fuel type within an hour is refused with "You already reported
+   this price recently". Returns to the Dashboard after saving.
 
 ## Data
 
@@ -64,6 +67,8 @@ route, added by hand by the team (10–20 rows).
   `reported_by` (the Driver's account id), `created_at`
 - Read: anyone. Insert: signed-in Drivers only, and `reported_by` must
   be themselves. Update, delete: nobody.
+- **Rate limit:** a Driver may report a station and fuel type at most
+  once per hour. The database enforces this, not just the form.
 - The **current price** for a station and fuel type is its newest
   report.
 
@@ -98,6 +103,9 @@ On the **live Vercel URL**:
 - [ ] A signed-in Driver can report a price, and the station moves to
       its new place in the list.
 - [ ] A price of ₱20 or ₱150 is refused.
+- [ ] Reporting the same station and fuel type twice within an hour is
+      refused.
+- [ ] The "Prices are reported by Drivers" note shows on the Dashboard.
 - [ ] A different signed-in Driver can tap "Still correct", only once,
       and not on their own report.
 - [ ] RLS is on for all three tables. Signed out, you cannot report or
