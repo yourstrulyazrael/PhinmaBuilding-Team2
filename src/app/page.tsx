@@ -40,7 +40,7 @@ export default function Home() {
           PHINMA AI Builder Workshop
         </span>
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Your app is live.
+          Miki Matsui was here
         </h1>
         <p className="text-base text-muted-foreground">
           This page is deployed on the internet right now. Anyone with the link
