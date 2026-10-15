@@ -2,19 +2,33 @@
 
 import { useState, useTransition } from "react";
 import { Ban } from "lucide-react";
-import { dismissCancelRequest, setStatus } from "./actions";
+import { dismissCancelRequest } from "./actions";
 import { Button } from "@/components/ui/button";
+import { CancelRepairDialog } from "@/components/cancel-repair-dialog";
 
 // Shown on Job detail when the customer has asked to cancel (ticket 18).
-// The shop decides: cancel the repair, or keep repairing.
-export function CancelRequest({ jobId, reason, requestedOn }: { jobId: string; reason: string; requestedOn: string }) {
+// The shop decides: cancel the repair, or keep repairing. Cancelling asks
+// "Are you sure?" first (ticket 51); the two choices are hidden while
+// that's open and come back if they keep repairing.
+export function CancelRequest({
+  jobId,
+  device,
+  reason,
+  requestedOn,
+}: {
+  jobId: string;
+  device: string;
+  reason: string;
+  requestedOn: string;
+}) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>();
+  const [confirming, setConfirming] = useState(false);
 
-  function run(action: () => Promise<{ error?: string }>) {
+  function keep() {
     setError(undefined);
     startTransition(async () => {
-      const result = await action();
+      const result = await dismissCancelRequest(jobId);
       if (result.error) setError(result.error);
     });
   }
@@ -32,31 +46,22 @@ export function CancelRequest({ jobId, reason, requestedOn }: { jobId: string; r
           {reason && <p className="text-sm">“{reason}”</p>}
         </div>
       </div>
-      <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant="destructive"
-          disabled={pending}
-          onClick={() => run(() => setStatus(jobId, "cancelled"))}
-        >
-          Cancel the repair
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          disabled={pending}
-          onClick={() => run(() => dismissCancelRequest(jobId))}
-        >
-          Keep repairing
-        </Button>
-      </div>
+      {!confirming && (
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" size="sm" variant="destructive" disabled={pending} onClick={() => setConfirming(true)}>
+            Cancel the repair
+          </Button>
+          <Button type="button" size="sm" variant="secondary" disabled={pending} onClick={keep}>
+            {pending ? "Saving…" : "Keep repairing"}
+          </Button>
+        </div>
+      )}
       {error && (
         <p role="alert" className="text-sm text-destructive">
           {error}
         </p>
       )}
+      <CancelRepairDialog jobId={jobId} device={device} open={confirming} onClose={() => setConfirming(false)} />
     </div>
   );
 }

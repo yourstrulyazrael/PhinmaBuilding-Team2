@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { needsPaymentRef, PAYMENT_METHODS, STATUSES } from "@/lib/jobs";
 
@@ -14,6 +15,8 @@ export async function setStatus(jobId: string, status: string): Promise<ActionRe
   }
   // Picked up always goes through recordPickup, so the payment is saved.
   if (status === "picked_up") return { error: "Record the payment to mark it picked up." };
+  // Cancelling goes through cancelRepair, after "Are you sure?" (ticket 51).
+  if (status === "cancelled") return { error: "Confirm the cancellation first." };
 
   const supabase = await createClient();
   // RLS only lets someone update jobs they may change (the owner: any job
@@ -200,4 +203,21 @@ export async function decideRevisedEstimate(
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath("/", "layout");
   return { saved: true };
+}
+
+// Cancels a repair after the technician confirmed (ticket 51), then goes
+// to the dashboard, which says it's done. A cancelled repair is final:
+// the database refuses any later change (supabase/sql/024).
+export async function cancelRepair(jobId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("jobs")
+    .update({ status: "cancelled" })
+    .eq("id", jobId)
+    .select("device");
+  if (error) return { error: error.message };
+  if (!data?.length) return { error: "You can only change repairs you are handling." };
+
+  revalidatePath("/", "layout");
+  redirect(`/?cancelled=${encodeURIComponent(data[0].device as string)}`);
 }

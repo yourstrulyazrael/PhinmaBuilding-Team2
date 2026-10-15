@@ -1,7 +1,7 @@
 "use client";
 
 import { useDeferredValue, useMemo, useState } from "react";
-import { Barcode, Package, Search, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Barcode, Package, Search, X } from "lucide-react";
 import { stockLevel, type Part, type StockLevel } from "@/lib/inventory";
 import { formatPeso } from "@/lib/jobs";
 import { Card } from "@/components/ui/card";
@@ -10,6 +10,20 @@ import { cn } from "@/lib/utils";
 import { PartRowActions } from "./part-forms";
 
 const PAGE = 50;
+
+// Sorting (ticket 51): click a column heading, or use "Sort by" on a phone.
+type SortKey = "name" | "category" | "cost" | "retail" | "stock" | "newest";
+type Sort = { key: SortKey; dir: "asc" | "desc" };
+const SORT_OPTIONS: { label: string; sort: Sort }[] = [
+  { label: "Name, A to Z", sort: { key: "name", dir: "asc" } },
+  { label: "Name, Z to A", sort: { key: "name", dir: "desc" } },
+  { label: "Category", sort: { key: "category", dir: "asc" } },
+  { label: "Stock, lowest first", sort: { key: "stock", dir: "asc" } },
+  { label: "Stock, highest first", sort: { key: "stock", dir: "desc" } },
+  { label: "Retail, lowest first", sort: { key: "retail", dir: "asc" } },
+  { label: "Retail, highest first", sort: { key: "retail", dir: "desc" } },
+  { label: "Newest added", sort: { key: "newest", dir: "desc" } },
+];
 
 /**
  * The three stat cards and the "All parts" table (ticket 32). Search,
@@ -22,6 +36,7 @@ export function PartsTable({ parts, costs, isOwner }: { parts: Part[]; costs: Re
   const [lowOnly, setLowOnly] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [shown, setShown] = useState(PAGE);
+  const [sort, setSort] = useState<Sort>({ key: "name", dir: "asc" });
   // Typing stays smooth even with thousands of parts: the filtering
   // catches up a moment later.
   const search = useDeferredValue(query.trim().toLowerCase());
@@ -40,8 +55,60 @@ export function PartsTable({ parts, costs, isOwner }: { parts: Part[]; costs: Re
         if (words.length === 0) return true;
         const text = `${p.name} ${p.sku} ${p.category}`.toLowerCase();
         return words.every((w) => text.includes(w));
+      })
+      .sort((a, b) => {
+        const byName = a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true });
+        let diff: number;
+        switch (sort.key) {
+          case "category":
+            // Parts with no category go last, whichever way.
+            diff = (a.category || "￿").localeCompare(b.category || "￿", undefined, { sensitivity: "base" });
+            break;
+          case "cost":
+            diff = (costs[a.id] ?? 0) - (costs[b.id] ?? 0);
+            break;
+          case "retail":
+            diff = Number(a.retail_price ?? 0) - Number(b.retail_price ?? 0);
+            break;
+          case "stock":
+            diff = a.quantity - b.quantity;
+            break;
+          case "newest":
+            diff = a.created_at.localeCompare(b.created_at);
+            break;
+          default:
+            diff = byName;
+        }
+        // Ties fall back to the name, A to Z.
+        return (sort.dir === "asc" ? diff : -diff) || byName;
       });
-  }, [parts, search, lowOnly, showArchived]);
+  }, [parts, search, lowOnly, showArchived, sort, costs]);
+
+  // A heading click sorts by that column; a second click reverses it.
+  function sortBy(key: SortKey) {
+    setSort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
+    setShown(PAGE);
+  }
+
+  function heading(label: string, sortKey: SortKey, className?: string) {
+    const on = sort.key === sortKey;
+    const Icon = !on ? ArrowUpDown : sort.dir === "asc" ? ArrowUp : ArrowDown;
+    return (
+      <th key={sortKey} className={cn("px-3 py-3 font-semibold", className)} aria-sort={on ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}>
+        <button
+          type="button"
+          onClick={() => sortBy(sortKey)}
+          className={cn(
+            "-mx-1.5 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 uppercase tracking-wider hover:bg-muted hover:text-foreground",
+            on && "text-primary",
+          )}
+        >
+          {label}
+          <Icon className={cn("size-3", !on && "opacity-50")} aria-hidden />
+        </button>
+      </th>
+    );
+  }
 
   const visible = rows.slice(0, shown);
 
@@ -90,6 +157,32 @@ export function PartsTable({ parts, costs, isOwner }: { parts: Part[]; costs: Re
                 Show archived ({archivedCount})
               </label>
             )}
+            <label className="relative flex w-full items-center sm:w-52">
+              <span className="sr-only">Sort by</span>
+              <ArrowUpDown className="pointer-events-none absolute left-3 size-4 text-muted-foreground" aria-hidden />
+              <select
+                value={`${sort.key}:${sort.dir}`}
+                onChange={(e) => {
+                  const [key, dir] = e.target.value.split(":") as [SortKey, Sort["dir"]];
+                  setSort({ key, dir });
+                  setShown(PAGE);
+                }}
+                className="h-10 w-full appearance-none rounded-[var(--radius)] border border-input bg-card pl-9 pr-3 text-base shadow-xs focus-visible:border-ring focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/15 md:text-sm"
+              >
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.label} value={`${o.sort.key}:${o.sort.dir}`}>
+                    {o.label}
+                  </option>
+                ))}
+                {/* A heading click can pick an order the list doesn't name. */}
+                {!SORT_OPTIONS.some((o) => o.sort.key === sort.key && o.sort.dir === sort.dir) && (
+                  <option value={`${sort.key}:${sort.dir}`}>
+                    {sort.key === "cost" ? "Cost" : sort.key.charAt(0).toUpperCase() + sort.key.slice(1)},{" "}
+                    {sort.dir === "asc" ? "ascending" : "descending"}
+                  </option>
+                )}
+              </select>
+            </label>
             <div className="relative w-full sm:w-72">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
               <Input
@@ -130,11 +223,11 @@ export function PartsTable({ parts, costs, isOwner }: { parts: Part[]; costs: Re
             <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="bg-muted/40 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <th className="px-4 py-3 font-semibold md:px-6">Part</th>
-                  <th className="px-3 py-3 font-semibold">Category</th>
-                  {isOwner && <th className="px-3 py-3 font-semibold">Cost</th>}
-                  <th className="px-3 py-3 font-semibold">Retail</th>
-                  <th className="px-3 py-3 font-semibold">Stock</th>
+                  {heading("Part", "name", "px-4 md:px-6")}
+                  {heading("Category", "category")}
+                  {isOwner && heading("Cost", "cost")}
+                  {heading("Retail", "retail")}
+                  {heading("Stock", "stock")}
                   {isOwner && <th className="px-4 py-3 text-right font-semibold md:px-6">Actions</th>}
                 </tr>
               </thead>

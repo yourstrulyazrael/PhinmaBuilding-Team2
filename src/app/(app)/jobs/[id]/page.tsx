@@ -52,7 +52,10 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
   // Staff can only change the phones they handle; for anyone else's job
   // this page is read-only (the database enforces the same rule).
   const viewer: Viewer = { id: user.id, isOwner: shop?.role === "owner", names };
-  const editable = canChange(job, viewer);
+  // A cancelled repair is closed for good (ticket 51): read-only for
+  // everyone, and the database refuses changes too.
+  const cancelled = job.status === "cancelled";
+  const editable = canChange(job, viewer) && !cancelled;
   const handler = nameOf(job.handled_by, viewer);
   const catalog = new Map((partRows ?? []).map((p) => [p.id as string, p]));
   const used = (usedRows ?? []).map((u) => ({
@@ -123,7 +126,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
       )}
 
       {editable && job.cancel_requested_at && !isFinished(job.status) && (
-        <CancelRequest jobId={job.id} reason={job.cancel_reason} requestedOn={formatDateTime(job.cancel_requested_at)} />
+        <CancelRequest jobId={job.id} device={job.device} reason={job.cancel_reason} requestedOn={formatDateTime(job.cancel_requested_at)} />
       )}
 
       {late && (
@@ -149,6 +152,9 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
         <CardHeader>
           <CardTitle className="text-base text-tertiary">Status</CardTitle>
           {editable && <CardDescription>Tap to change. The customer&apos;s page updates straight away.</CardDescription>}
+          {cancelled && (
+            <CardDescription>This repair was cancelled, so it&apos;s closed: nothing on it can be changed.</CardDescription>
+          )}
         </CardHeader>
         <CardContent>
           {editable ? (
@@ -295,7 +301,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
             </div>
           )}
 
-          {viewer.isOwner && proposal?.status === "pending" && (
+          {viewer.isOwner && proposal?.status === "pending" && !cancelled && (
             <div className="flex flex-col gap-3 rounded-[var(--radius)] border border-highlight/40 bg-highlight/5 p-4 text-sm">
               <div className="flex flex-col gap-0.5">
                 <p className="flex items-center gap-2 font-medium text-tertiary">

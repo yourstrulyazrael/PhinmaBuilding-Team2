@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AlarmClock, CalendarDays, CircleCheck, Clock, Plus, QrCode, Smartphone, Wrench } from "lucide-react";
+import { AlarmClock, Ban, CalendarDays, CircleCheck, Clock, Plus, QrCode, Smartphone, Wrench, X } from "lucide-react";
 import { formatDate, formatPeso, isFinished, parseSort, searchJobs, sortJobs, todayInManila, type Job } from "@/lib/jobs";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -51,6 +51,8 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
   const tab = TABS.find((t) => t.key === params.tab)?.key ?? "mine";
   const q = typeof params.q === "string" ? params.q.trim().slice(0, 100) : "";
   const sort = parseSort(params.sort);
+  // Set by cancelRepair after a repair is cancelled (ticket 51).
+  const justCancelled = typeof params.cancelled === "string" ? params.cancelled.slice(0, 100) : "";
 
   // The summary cards count every job; the list below shows only the
   // jobs that match the search, in the chosen order.
@@ -98,6 +100,8 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
           </Link>
         }
       />
+
+      {justCancelled && <CancelledNotice device={justCancelled} />}
 
       {(lateCount > 0 || dueTodayCount > 0) && (
         <Link
@@ -377,9 +381,34 @@ function SlipLink({ job }: { job: Job }) {
 // The status dropdown on jobs you may change; a plain badge on anyone
 // else's (staff can only change the phones they handle).
 function StatusControl({ job, viewer }: { job: Job; viewer: Viewer }) {
-  return canChange(job, viewer) ? (
+  // Cancelled repairs are closed (ticket 51): a badge, not a menu.
+  return canChange(job, viewer) && job.status !== "cancelled" ? (
     <StatusPicker jobId={job.id} status={job.status} variant="select" price={currentPrice(job)} device={job.device} />
   ) : (
     <StatusBadge status={job.status} />
+  );
+}
+
+// "Done" after cancelling a repair (ticket 51), right where the
+// technician lands. ✕ clears it from the address.
+function CancelledNotice({ device }: { device: string }) {
+  return (
+    <div
+      role="status"
+      className="flex items-center gap-3 rounded-[var(--radius)] border border-border bg-card px-4 py-3 text-sm shadow-card"
+    >
+      <Ban className="size-5 shrink-0 text-destructive" aria-hidden />
+      <p className="flex-1">
+        <span className="font-medium">{device}</span> was cancelled. It&apos;s closed now, and the customer&apos;s
+        tracking page shows it.
+      </p>
+      <Link
+        href="/"
+        aria-label="Dismiss"
+        className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius)] text-muted-foreground hover:bg-muted hover:text-foreground"
+      >
+        <X className="size-4" aria-hidden />
+      </Link>
+    </div>
   );
 }

@@ -124,6 +124,21 @@ export async function setPartActive(partId: string, active: boolean): Promise<Fo
   return {};
 }
 
+// The owner deletes a part for good (ticket 51), after "Are you sure?".
+// The database refuses if it was ever used on a repair and says how many
+// (those repairs need its name and price); `used` tells the screen to
+// offer Archive instead.
+export async function deletePart(partId: string): Promise<FormState & { used?: boolean }> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("delete_part", { part_id: partId });
+  if (error) {
+    if (error.code === "PGRST202") return { error: "Run 024 in Supabase first." };
+    return { error: error.message, used: /^Used on/.test(error.message) };
+  }
+  revalidatePath("/inventory");
+  return {};
+}
+
 export type ImportRow = {
   sku: string;
   name: string;

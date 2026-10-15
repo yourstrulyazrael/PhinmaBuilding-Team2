@@ -1,8 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useState, useTransition } from "react";
-import { Archive, ArchiveRestore, EllipsisVertical, PackagePlus, Pencil, Plus, SlidersHorizontal } from "lucide-react";
-import { addPart, editPart, recordMovement, setPartActive, type FormState } from "./actions";
+import { Archive, ArchiveRestore, EllipsisVertical, PackagePlus, Pencil, Plus, SlidersHorizontal, Trash2, TriangleAlert } from "lucide-react";
+import { addPart, deletePart, editPart, recordMovement, setPartActive, type FormState } from "./actions";
 import type { Part } from "@/lib/inventory";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -101,7 +101,7 @@ function AddPartForm({ onDone }: { onDone: () => void }) {
   );
 }
 
-type Mode = "restock" | "adjust" | "edit";
+type Mode = "restock" | "adjust" | "edit" | "delete";
 
 // The ⋮ menu (Restock, Adjust, Edit) and Archive on a table row (owner).
 export function PartRowActions({ part, cost }: { part: Part; cost: number }) {
@@ -135,8 +135,20 @@ export function PartRowActions({ part, cost }: { part: Part; cost: number }) {
         {part.active ? <Archive className="size-4" aria-hidden /> : <ArchiveRestore className="size-4" aria-hidden />}
       </button>
 
+      <button
+        type="button"
+        onClick={() => setMode("delete")}
+        aria-label={`Delete ${part.name}`}
+        title="Delete for good"
+        className={`${icon} hover:bg-red-50 hover:text-destructive dark:hover:bg-red-950/50`}
+      >
+        <Trash2 className="size-4" aria-hidden />
+      </button>
+
+      <ConfirmDelete part={part} open={mode === "delete"} onClose={close} />
+
       <Modal
-        open={mode !== null}
+        open={mode !== null && mode !== "delete"}
         onClose={close}
         title={mode === "edit" ? `Edit ${part.name}` : mode === "restock" ? `Restock ${part.name}` : `Adjust ${part.name}`}
         description={
@@ -152,6 +164,91 @@ export function PartRowActions({ part, cost }: { part: Part; cost: number }) {
         {mode === "adjust" && <MovementForm part={part} reason="adjustment" onDone={close} />}
       </Modal>
     </div>
+  );
+}
+
+// "Are you sure you want to delete this?" (ticket 51). If the part was
+// used on repairs, the database says no; the box then explains and
+// offers Archive, which hides it but keeps those repairs' history.
+function ConfirmDelete({ part, open, onClose }: { part: Part; open: boolean; onClose: () => void }) {
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string>();
+  const [used, setUsed] = useState(false);
+
+  function close() {
+    if (pending) return;
+    setError(undefined);
+    setUsed(false);
+    onClose();
+  }
+
+  function remove() {
+    setError(undefined);
+    startTransition(async () => {
+      const result = await deletePart(part.id);
+      if (result.error) {
+        setError(result.error);
+        setUsed(Boolean(result.used));
+      } else {
+        close();
+      }
+    });
+  }
+
+  function archive() {
+    startTransition(async () => {
+      const result = await setPartActive(part.id, false);
+      if (result.error) setError(result.error);
+      else {
+        setUsed(false);
+        setError(undefined);
+        onClose();
+      }
+    });
+  }
+
+  return (
+    <Modal open={open} onClose={close} title={used ? "This part can't be deleted" : `Delete ${part.name}?`} description={part.sku}>
+      {used ? (
+        <div className="flex items-start gap-3 rounded-[var(--radius)] border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950/50">
+          <TriangleAlert className="mt-0.5 size-4 shrink-0 text-amber-700 dark:text-amber-300" aria-hidden />
+          <p>{error}</p>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-start gap-3 rounded-[var(--radius)] border border-destructive/30 bg-red-50 p-3 text-sm dark:bg-red-950/40">
+            <Trash2 className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
+            <p>
+              Are you sure you want to delete this? Its stock ({part.quantity}) and stock history are deleted too.{" "}
+              <strong>This can&apos;t be undone.</strong>
+            </p>
+          </div>
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
+        </>
+      )}
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <Button type="button" variant="secondary" disabled={pending} onClick={close} autoFocus>
+          {used ? "Close" : "Keep it"}
+        </Button>
+        {used ? (
+          part.active && (
+            <Button type="button" disabled={pending} onClick={archive}>
+              <Archive className="size-4" aria-hidden />
+              {pending ? "Archiving…" : "Archive instead"}
+            </Button>
+          )
+        ) : (
+          <Button type="button" variant="destructive" disabled={pending} onClick={remove}>
+            <Trash2 className="size-4" aria-hidden />
+            {pending ? "Deleting…" : "Yes, delete"}
+          </Button>
+        )}
+      </div>
+    </Modal>
   );
 }
 

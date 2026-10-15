@@ -92,6 +92,11 @@ keeps its older names (`revised_estimate`, `promised_date`).
    message**; link to the claim slip. Apprentices can edit only their
    own jobs; other jobs are read-only to them. Only the **owner** sees a
    **Reassign to** dropdown and can edit the **revised estimate**.
+   **Cancelling asks "Are you sure?" first** (ticket 51), then returns to
+   the dashboard with a notice; a cancelled repair is closed for good
+   (read-only, and the database refuses changes). Inventory can be
+   sorted, and the owner can delete a part never used on a repair
+   (after "Are you sure?"; a used part can only be archived).
 7. **Tracking page** (public, no login, opened by scanning the QR):
    device, problem, status, initial quote, revised estimate, notes,
    parts replaced, promised date, the shop name, the owner's contact and

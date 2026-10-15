@@ -5,6 +5,7 @@ import { Check } from "lucide-react";
 import { recordPickup, setStatus } from "@/app/(app)/jobs/[id]/actions";
 import { STATUSES, type PaymentMethod, type Status } from "@/lib/jobs";
 import { PaymentDialog } from "./payment-dialog";
+import { CancelRepairDialog } from "./cancel-repair-dialog";
 import { StatusMenu } from "./status-menu";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +16,8 @@ import { cn } from "@/lib/utils";
  * - "select": a compact pill that opens a menu (Repair jobs list)
  *
  * Picking "Picked up" first asks for the payment (ticket 19); closing
- * that box leaves the status as it was.
+ * that box leaves the status as it was. Picking "Cancelled" first asks
+ * "Are you sure?" (ticket 51); while that's open the choices are off.
  *
  * useOptimistic shows the new status straight away, then the server
  * confirms. If saving fails, it snaps back and shows the error.
@@ -37,10 +39,15 @@ export function StatusPicker({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>();
   const [askPayment, setAskPayment] = useState(false);
+  const [askCancel, setAskCancel] = useState(false);
 
   function change(next: Status) {
     if (next === optimistic) return;
     setError(undefined);
+    if (next === "cancelled") {
+      setAskCancel(true);
+      return;
+    }
     if (next === "picked_up") {
       setAskPayment(true);
       return;
@@ -62,14 +69,24 @@ export function StatusPicker({
   }
 
   const dialog = (
-    <PaymentDialog
-      open={askPayment}
-      price={price}
-      device={device}
-      onConfirm={confirmPayment}
-      onClose={() => setAskPayment(false)}
-    />
+    <>
+      <PaymentDialog
+        open={askPayment}
+        price={price}
+        device={device}
+        onConfirm={confirmPayment}
+        onClose={() => setAskPayment(false)}
+      />
+      <CancelRepairDialog
+        jobId={jobId}
+        device={device ?? "This repair"}
+        open={askCancel}
+        onClose={() => setAskCancel(false)}
+      />
+    </>
   );
+  // While a question is open, the status choices can't be picked.
+  const asking = askCancel || askPayment;
 
   if (variant === "select") {
     return (
@@ -92,7 +109,7 @@ export function StatusPicker({
               key={s.value}
               type="button"
               aria-pressed={active}
-              disabled={pending}
+              disabled={pending || asking}
               onClick={() => change(s.value)}
               className={cn(
                 "flex h-11 items-center justify-center gap-1.5 rounded-[var(--radius)] border px-3 text-sm font-medium transition-colors disabled:cursor-wait",

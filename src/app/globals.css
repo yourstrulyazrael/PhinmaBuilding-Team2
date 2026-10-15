@@ -151,6 +151,42 @@ body {
   input:disabled {
     cursor: not-allowed;
   }
+
+  /* Every button, link and field eases between states instead of
+     jumping (ticket 51): colour, background, border, shadow, fade and
+     small movements. A transition-* class on an element still wins. Off
+     for people whose device asks for less motion. */
+  button,
+  a[href],
+  [role="button"],
+  [role="menuitem"],
+  [role="option"],
+  [role="tab"],
+  [role="switch"],
+  summary,
+  input,
+  select,
+  textarea {
+    transition-property: color, background-color, border-color, box-shadow, opacity, transform, text-decoration-color;
+    transition-duration: 160ms;
+    transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    button,
+    a[href],
+    [role="button"],
+    [role="menuitem"],
+    [role="option"],
+    [role="tab"],
+    [role="switch"],
+    summary,
+    input,
+    select,
+    textarea {
+      transition: none;
+    }
+  }
 }
 
 @keyframes menu-in {
