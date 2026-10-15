@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, ExternalLink, Phone, QrCode } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { formatDate, formatPeso, type Job } from "@/lib/jobs";
+import { formatDate, formatPeso, isFinished, paymentLabel, type Job } from "@/lib/jobs";
+import { currentPrice } from "@/lib/workspace";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusPicker } from "@/components/status-picker";
@@ -10,6 +11,7 @@ import { CopyMessageButton } from "@/components/copy-message-button";
 import { trackingUrl } from "@/lib/tracking-url";
 import { updateMessage } from "@/lib/update-message";
 import { JobDetailsForm } from "./job-details-form";
+import { CancelRequest } from "./cancel-request";
 
 // The technician's view of one repair job. Unlike the claim slip and
 // tracking page, this screen shows the customer's name and phone.
@@ -54,13 +56,17 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
         </div>
       </header>
 
+      {job.cancel_requested_at && !isFinished(job.status) && (
+        <CancelRequest jobId={job.id} reason={job.cancel_reason} requestedOn={formatDateTime(job.cancel_requested_at)} />
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base text-tertiary">Status</CardTitle>
           <CardDescription>Tap to change. The customer&apos;s page updates straight away.</CardDescription>
         </CardHeader>
         <CardContent>
-          <StatusPicker jobId={job.id} status={job.status} variant="buttons" />
+          <StatusPicker jobId={job.id} status={job.status} variant="buttons" price={currentPrice(job)} device={job.device} />
         </CardContent>
       </Card>
 
@@ -78,6 +84,24 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
             </dd>
             <dt className="text-muted-foreground">Initial quote</dt>
             <dd className="font-medium tabular-nums">{formatPeso(job.initial_quote)}</dd>
+            {job.revised_estimate !== null && (
+              <>
+                <dt className="text-muted-foreground">Revised estimate</dt>
+                <dd className="flex flex-wrap items-center gap-2">
+                  <span className="font-medium tabular-nums">{formatPeso(job.revised_estimate)}</span>
+                  <EstimateAnswer job={job} />
+                </dd>
+              </>
+            )}
+            {job.amount_paid !== null && (
+              <>
+                <dt className="text-muted-foreground">Paid</dt>
+                <dd className="font-medium">
+                  {formatPeso(job.amount_paid)} by {paymentLabel(job.payment_method)}
+                  {job.paid_at && <span className="font-normal text-muted-foreground"> on {formatDateTime(job.paid_at)}</span>}
+                </dd>
+              </>
+            )}
             <dt className="text-muted-foreground">Promised by</dt>
             <dd>{formatDate(job.promised_date)}</dd>
           </dl>
@@ -98,4 +122,35 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
       </Card>
     </main>
   );
+}
+
+// The customer's answer to the revised estimate (ticket 17).
+function EstimateAnswer({ job }: { job: Job }) {
+  if (job.estimate_status === null) return null;
+  const styles = {
+    pending: "bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
+    approved: "bg-muted text-primary",
+    declined: "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300",
+  };
+  const labels = {
+    pending: "Waiting for the customer",
+    approved: "Customer approved",
+    declined: "Customer declined",
+  };
+  return (
+    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[job.estimate_status]}`}>
+      {labels[job.estimate_status]}
+    </span>
+  );
+}
+
+// "Oct 15, 3:42 PM", in Manila time.
+function formatDateTime(timestamp: string) {
+  return new Date(timestamp).toLocaleString("en-US", {
+    timeZone: "Asia/Manila",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }

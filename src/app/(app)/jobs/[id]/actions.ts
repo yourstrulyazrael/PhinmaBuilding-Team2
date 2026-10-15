@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { STATUSES } from "@/lib/jobs";
+import { PAYMENT_METHODS, STATUSES } from "@/lib/jobs";
 
 export type ActionResult = { error?: string; saved?: boolean };
 
@@ -12,6 +12,8 @@ export async function setStatus(jobId: string, status: string): Promise<ActionRe
   if (!STATUSES.some((s) => s.value === status)) {
     return { error: "That is not a valid status." };
   }
+  // Picked up always goes through recordPickup, so the payment is saved.
+  if (status === "picked_up") return { error: "Record the payment to mark it picked up." };
 
   const supabase = await createClient();
   // RLS only lets someone update jobs they may change (the owner: any job
@@ -23,6 +25,48 @@ export async function setStatus(jobId: string, status: string): Promise<ActionRe
     .eq("id", jobId)
     .select("id");
   if (error) return { error: error.message };
+  if (!data?.length) return { error: "You can only change repairs you are handling." };
+
+  revalidatePath("/");
+  revalidatePath(`/jobs/${jobId}`);
+  return { saved: true };
+}
+
+// Marks the job Picked up and records the payment, in one update, so a
+// pickup is never saved without its payment (ticket 19). The database
+// stamps paid_at itself.
+export async function recordPickup(jobId: string, amount: number, method: string): Promise<ActionResult> {
+  if (!Number.isFinite(amount) || amount < 0 || amount > 99_999_999.99) {
+    return { error: "Enter the amount paid, ₱0 or more." };
+  }
+  if (!PAYMENT_METHODS.some((m) => m.value === method)) {
+    return { error: "Choose how the customer paid." };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("jobs")
+    .update({ status: "picked_up", amount_paid: amount, payment_method: method })
+    .eq("id", jobId)
+    .select("id");
+  if (error) return { error: "Couldn't save the payment. Please try again." };
+  if (!data?.length) return { error: "You can only change repairs you are handling." };
+
+  revalidatePath("/");
+  revalidatePath(`/jobs/${jobId}`);
+  return { saved: true };
+}
+
+// "Keep repairing": clears the customer's cancellation request. The
+// database only lets the shop clear a request, never make one.
+export async function dismissCancelRequest(jobId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("jobs")
+    .update({ cancel_requested_at: null })
+    .eq("id", jobId)
+    .select("id");
+  if (error) return { error: "Couldn't update the repair. Please try again." };
   if (!data?.length) return { error: "You can only change repairs you are handling." };
 
   revalidatePath("/");

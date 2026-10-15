@@ -7,7 +7,7 @@ import { formatPeso, statusLabel, type Job } from "@/lib/jobs";
  * phone number cannot end up in it by accident.
  */
 export function updateMessage(
-  job: Pick<Job, "device" | "status" | "initial_quote" | "revised_estimate">,
+  job: Pick<Job, "device" | "status" | "initial_quote" | "revised_estimate" | "estimate_status">,
   trackingUrl: string,
 ) {
   const lines = [
@@ -18,6 +18,9 @@ export function updateMessage(
   ];
   if (job.revised_estimate !== null) {
     lines.push(`Revised estimate: ${formatPeso(job.revised_estimate)}`);
+    if (job.estimate_status === "pending") {
+      lines.push("Please approve the new estimate on your tracking page so we can continue.");
+    }
   }
   lines.push("", `Track your repair anytime: ${trackingUrl}`);
   return lines.join("\n");

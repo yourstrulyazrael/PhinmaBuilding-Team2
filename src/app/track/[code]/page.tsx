@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { CalendarDays, Phone } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { createClient } from "@/lib/supabase/server";
-import { STATUSES, formatDate, formatPeso, isTrackingCode, type Status } from "@/lib/jobs";
+import { STATUSES, formatDate, formatPeso, isFinished, isTrackingCode, type Status } from "@/lib/jobs";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { cn } from "@/lib/utils";
 import { AutoRefresh } from "./auto-refresh";
+import { CancelRequestForm, EstimateQuestion } from "./customer-actions";
 
 export const metadata: Metadata = {
   title: "Repair status · Zenith Repair",
@@ -23,10 +24,12 @@ type TrackedJob = {
   status: Status;
   initial_quote: number;
   revised_estimate: number | null;
+  estimate_status: "pending" | "approved" | "declined" | null;
   notes: string;
   parts_replaced: string;
   promised_date: string;
   updated_at: string;
+  cancel_requested: boolean;
   shop_name: string;
   shop_contact: string; // the owner's number
   technician_name: string; // who is handling the phone
@@ -69,7 +72,11 @@ function NotFound() {
 }
 
 function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
-  const current = STATUSES.findIndex((s) => s.value === job.status);
+  // The six steps of a repair. Cancelled is shown separately, not as a step.
+  const steps = STATUSES.filter((s) => s.value !== "cancelled");
+  const current = steps.findIndex((s) => s.value === job.status);
+  const cancelled = job.status === "cancelled";
+  const finished = isFinished(job.status);
   const updated = new Date(job.updated_at).toLocaleString("en-US", {
     timeZone: "Asia/Manila",
     month: "short",
@@ -94,11 +101,16 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
           <AutoRefresh code={code} />
         </div>
 
-        {/* The six statuses, with only the current one marked. The
-            technician can set statuses in any order, so earlier steps
-            are not ticked: they may never have happened. */}
+        {cancelled ? (
+          <p className="border-t border-border pt-4 text-sm">
+            This repair was cancelled. Contact the shop to arrange collecting your phone.
+          </p>
+        ) : (
+        /* The six statuses, with only the current one marked. The
+           technician can set statuses in any order, so earlier steps
+           are not ticked: they may never have happened. */
         <ol className="flex flex-col gap-2 border-t border-border pt-4">
-          {STATUSES.map((s, i) => {
+          {steps.map((s, i) => {
             const now = i === current;
             return (
               <li key={s.value} className="flex items-center gap-3 text-sm" aria-current={now ? "step" : undefined}>
@@ -117,7 +129,12 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
             );
           })}
         </ol>
+        )}
       </Card>
+
+      {job.estimate_status === "pending" && job.revised_estimate !== null && !finished && (
+        <EstimateQuestion code={code} initial={job.initial_quote} revised={job.revised_estimate} />
+      )}
 
       <Card className="p-6">
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3 text-sm">
@@ -126,7 +143,17 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
           {job.revised_estimate !== null && (
             <>
               <dt className="text-muted-foreground">Revised estimate</dt>
-              <dd className="font-medium tabular-nums">{formatPeso(job.revised_estimate)}</dd>
+              <dd className="flex flex-wrap items-center gap-2">
+                <span className="font-medium tabular-nums">{formatPeso(job.revised_estimate)}</span>
+                {job.estimate_status === "approved" && (
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-primary">You approved</span>
+                )}
+                {job.estimate_status === "declined" && (
+                  <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
+                    You declined: the shop will contact you
+                  </span>
+                )}
+              </dd>
             </>
           )}
           <dt className="text-muted-foreground">Promised by</dt>
@@ -162,6 +189,14 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
           {job.shop_contact}
         </a>
       </Card>
+
+      {!finished && (job.cancel_requested ? (
+        <p className="text-center text-sm text-muted-foreground">
+          You asked to cancel this repair. The shop will contact you.
+        </p>
+      ) : (
+        <CancelRequestForm code={code} />
+      ))}
     </>
   );
 }

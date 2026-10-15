@@ -1,11 +1,13 @@
 import Link from "next/link";
-import { Bell, CalendarClock, CircleCheck, Package, TrendingUp } from "lucide-react";
+import { Ban, Bell, CalendarClock, CircleCheck, Package, ThumbsDown, TrendingUp } from "lucide-react";
 import type { Job } from "@/lib/jobs";
 import { attentionAlerts, type Alert } from "@/lib/workspace";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 const KINDS: Record<Alert["kind"], { icon: typeof Bell; tone: string }> = {
+  cancel: { icon: Ban, tone: "bg-red-50 text-destructive dark:bg-red-950" },
+  declined: { icon: ThumbsDown, tone: "bg-red-50 text-destructive dark:bg-red-950" },
   overdue: { icon: CalendarClock, tone: "bg-red-50 text-destructive dark:bg-red-950" },
   ready: { icon: CircleCheck, tone: "bg-muted text-primary" },
   parts: { icon: Package, tone: "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300" },

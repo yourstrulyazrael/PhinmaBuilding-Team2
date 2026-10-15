@@ -1,8 +1,8 @@
 /**
  * Shared facts about repair jobs, used by every screen that shows one.
  *
- * The status values must match the list allowed by the `jobs` table in
- * supabase/sql/003-create-jobs.sql.
+ * The status values must match the list allowed by the `jobs` table
+ * (supabase/sql/008-estimate-cancel-payment.sql).
  */
 
 export const STATUSES = [
@@ -12,9 +12,28 @@ export const STATUSES = [
   { value: "repairing", label: "Repairing" },
   { value: "ready_for_pickup", label: "Ready for pickup" },
   { value: "picked_up", label: "Picked up" },
+  { value: "cancelled", label: "Cancelled" },
 ] as const;
 
 export type Status = (typeof STATUSES)[number]["value"];
+
+// Picked up and Cancelled are both "finished": they leave the open list,
+// the counts and the reminders.
+export function isFinished(status: Status) {
+  return status === "picked_up" || status === "cancelled";
+}
+
+export const PAYMENT_METHODS = [
+  { value: "cash", label: "Cash" },
+  { value: "gcash", label: "GCash" },
+  { value: "other", label: "Other" },
+] as const;
+
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number]["value"];
+
+export function paymentLabel(method: PaymentMethod | null) {
+  return PAYMENT_METHODS.find((m) => m.value === method)?.label ?? "Other";
+}
 
 export type Job = {
   id: string;
@@ -27,6 +46,17 @@ export type Job = {
   problem: string;
   initial_quote: number;
   revised_estimate: number | null;
+  // The customer's answer to the revised estimate (ticket 17). null =
+  // nothing to answer.
+  estimate_status: "pending" | "approved" | "declined" | null;
+  estimate_answered_at: string | null;
+  // A customer's cancellation request (ticket 18).
+  cancel_requested_at: string | null;
+  cancel_reason: string;
+  // Recorded at pickup (ticket 19).
+  amount_paid: number | null;
+  payment_method: PaymentMethod | null;
+  paid_at: string | null;
   notes: string;
   parts_replaced: string;
   status: Status;
@@ -48,6 +78,7 @@ export const STATUS_STYLES: Record<Status, string> = {
   repairing: "bg-muted text-primary",
   ready_for_pickup: "bg-primary text-primary-foreground",
   picked_up: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
+  cancelled: "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300",
 };
 
 // A coloured dot for each status, used in the status menu. Same colour
@@ -59,6 +90,7 @@ export const STATUS_DOTS: Record<Status, string> = {
   repairing: "bg-primary/60",
   ready_for_pickup: "bg-primary",
   picked_up: "bg-slate-300 dark:bg-slate-600",
+  cancelled: "bg-red-500",
 };
 
 // ₱1,500 — no decimals unless there are centavos.

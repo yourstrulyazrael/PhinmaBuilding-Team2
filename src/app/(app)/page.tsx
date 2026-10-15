@@ -2,12 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CalendarDays, CircleCheck, Clock, Plus, QrCode, Smartphone, Wrench } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { formatDate, formatPeso, parseSort, searchJobs, sortJobs, todayInManila, type Job } from "@/lib/jobs";
+import { formatDate, formatPeso, isFinished, parseSort, searchJobs, sortJobs, todayInManila, type Job } from "@/lib/jobs";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StatusPicker } from "@/components/status-picker";
 import { cn } from "@/lib/utils";
-import { isLate } from "@/lib/workspace";
+import { currentPrice, isLate } from "@/lib/workspace";
 import { JobSearch } from "./job-search";
 
 const TABS = [
@@ -47,18 +47,19 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
 
   // The summary cards count every job; the list below shows only the
   // jobs that match the search, in the chosen order.
-  const open = jobs.filter((j) => j.status !== "picked_up");
+  const open = jobs.filter((j) => !isFinished(j.status));
   const waitingOnParts = jobs.filter((j) => j.status === "waiting_for_parts");
   const ready = jobs.filter((j) => j.status === "ready_for_pickup");
 
   const matches = sortJobs(searchJobs(jobs, q), sort);
   const listed = {
-    all: matches.filter((j) => j.status !== "picked_up"),
+    all: matches.filter((j) => !isFinished(j.status)),
     ready: matches.filter((j) => j.status === "ready_for_pickup"),
     parts: matches.filter((j) => j.status === "waiting_for_parts"),
   };
   const shown = listed[tab];
-  const done = matches.filter((j) => j.status === "picked_up");
+  // Picked up and cancelled jobs.
+  const done = matches.filter((j) => isFinished(j.status));
 
   // Keeps the search and sort when switching tabs.
   function tabHref(key: (typeof TABS)[number]["key"], keepSearch = true) {
@@ -249,7 +250,7 @@ function JobList({ jobs }: { jobs: Job[] }) {
               </td>
               <td className="px-3 py-4">{job.customer_name}</td>
               <td className="px-3 py-4">
-                <StatusPicker jobId={job.id} status={job.status} variant="select" />
+                <StatusPicker jobId={job.id} status={job.status} variant="select" price={currentPrice(job)} device={job.device} />
               </td>
               <td className="px-3 py-4">
                 <Quote job={job} />
@@ -277,7 +278,7 @@ function JobList({ jobs }: { jobs: Job[] }) {
                   </Link>
                   <p className="line-clamp-1 text-xs text-muted-foreground">{job.problem}</p>
                 </div>
-                <StatusPicker jobId={job.id} status={job.status} variant="select" />
+                <StatusPicker jobId={job.id} status={job.status} variant="select" price={currentPrice(job)} device={job.device} />
               </div>
               <p className="text-xs text-muted-foreground">{job.customer_name}</p>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">

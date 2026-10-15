@@ -3,7 +3,7 @@
  * No extra tables: customers, notifications and analytics are all
  * calculated from the `jobs` rows RLS already lets them read.
  */
-import { STATUSES, type Job, type Status } from "@/lib/jobs";
+import { isFinished, STATUSES, type Job, type Status } from "@/lib/jobs";
 
 // --- Small helpers ------------------------------------------------------
 
@@ -19,7 +19,7 @@ export function daysBetween(from: string, to: string) {
 
 // Past the promised date and the phone is not ready yet.
 export function isLate(job: Job, today: string) {
-  return job.status !== "picked_up" && job.status !== "ready_for_pickup" && job.promised_date < today;
+  return !isFinished(job.status) && job.status !== "ready_for_pickup" && job.promised_date < today;
 }
 
 // What the customer will actually pay: the revised estimate if there is one.
@@ -55,7 +55,7 @@ export function groupCustomers(jobs: Job[]): Customer[] {
         name: latest.customer_name,
         phone: latest.customer_phone,
         jobs: newestFirst,
-        openCount: list.filter((j) => j.status !== "picked_up").length,
+        openCount: list.filter((j) => !isFinished(j.status)).length,
         lastVisit: latest.created_at,
       };
     })
@@ -66,7 +66,7 @@ export function groupCustomers(jobs: Job[]): Customer[] {
 
 export type Alert = {
   job: Job;
-  kind: "overdue" | "ready" | "parts" | "estimate";
+  kind: "cancel" | "declined" | "overdue" | "ready" | "parts" | "estimate";
   message: string;
 };
 
@@ -76,7 +76,17 @@ const PARTS_WAIT_DAYS = 3;
 export function attentionAlerts(jobs: Job[], today: string): Alert[] {
   const alerts: Alert[] = [];
   for (const job of jobs) {
-    if (job.status === "picked_up") continue;
+    if (isFinished(job.status)) continue;
+    if (job.cancel_requested_at) {
+      alerts.push({
+        job,
+        kind: "cancel",
+        message: job.cancel_reason ? `Customer asked to cancel: “${job.cancel_reason}”` : "Customer asked to cancel this repair",
+      });
+    }
+    if (job.estimate_status === "declined") {
+      alerts.push({ job, kind: "declined", message: "Customer declined the revised estimate" });
+    }
     if (isLate(job, today)) {
       const days = daysBetween(job.promised_date, today);
       alerts.push({ job, kind: "overdue", message: `${days} day${days === 1 ? "" : "s"} past the promised date` });
@@ -95,11 +105,11 @@ export function attentionAlerts(jobs: Job[], today: string): Alert[] {
         alerts.push({ job, kind: "parts", message: `Waiting for parts for ${days} days` });
       }
     }
-    if (job.revised_estimate !== null && Number(job.revised_estimate) > Number(job.initial_quote)) {
-      alerts.push({ job, kind: "estimate", message: "Revised estimate is above the quote: confirm with the customer" });
+    if (job.estimate_status === "pending") {
+      alerts.push({ job, kind: "estimate", message: "Waiting for the customer to approve the revised estimate" });
     }
   }
-  const order: Alert["kind"][] = ["overdue", "ready", "parts", "estimate"];
+  const order: Alert["kind"][] = ["cancel", "declined", "overdue", "ready", "parts", "estimate"];
   return alerts.sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind));
 }
 
@@ -114,12 +124,13 @@ export function overdueAndAwaiting(jobs: Job[], today: string) {
 
 export function analytics(jobs: Job[], today: string) {
   const month = today.slice(0, 7); // "YYYY-MM"
-  const open = jobs.filter((j) => j.status !== "picked_up");
+  const open = jobs.filter((j) => !isFinished(j.status));
   const pickedUp = jobs.filter((j) => j.status === "picked_up");
 
-  // We do not store a pickup time, so the last update of a picked-up
-  // job stands in for it (marking "Picked up" is usually the last change).
-  const turnarounds = pickedUp.map((j) => daysBetween(manilaDate(j.created_at), manilaDate(j.updated_at)));
+  // When it was picked up: the payment time (ticket 19), or for older
+  // jobs the last update, which is usually marking "Picked up".
+  const pickedUpOn = (j: Job) => manilaDate(j.paid_at ?? j.updated_at);
+  const turnarounds = pickedUp.map((j) => daysBetween(manilaDate(j.created_at), pickedUpOn(j)));
   const avgTurnaround = turnarounds.length
     ? turnarounds.reduce((sum, d) => sum + d, 0) / turnarounds.length
     : null;
@@ -134,10 +145,12 @@ export function analytics(jobs: Job[], today: string) {
 
   return {
     receivedThisMonth: jobs.filter((j) => manilaDate(j.created_at).startsWith(month)).length,
-    pickedUpThisMonth: pickedUp.filter((j) => manilaDate(j.updated_at).startsWith(month)).length,
+    pickedUpThisMonth: pickedUp.filter((j) => pickedUpOn(j).startsWith(month)).length,
+    // What was actually paid; older jobs without a payment record count
+    // their final price.
     earnedThisMonth: pickedUp
-      .filter((j) => manilaDate(j.updated_at).startsWith(month))
-      .reduce((sum, j) => sum + currentPrice(j), 0),
+      .filter((j) => pickedUpOn(j).startsWith(month))
+      .reduce((sum, j) => sum + Number(j.amount_paid ?? currentPrice(j)), 0),
     openCount: open.length,
     openValue: open.reduce((sum, j) => sum + currentPrice(j), 0),
     avgTurnaround,
