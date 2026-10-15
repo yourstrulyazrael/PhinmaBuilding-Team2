@@ -5,6 +5,7 @@ import { STATUSES, formatDate, formatPeso, isTrackingCode, type Status } from "@
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { cn } from "@/lib/utils";
+import { AutoRefresh } from "./auto-refresh";
 
 export const metadata: Metadata = {
   title: "Repair status · Zenith Repair",
@@ -95,6 +96,7 @@ function JobStatus({ job }: { job: TrackedJob }) {
         <div className="flex flex-col gap-1">
           <StatusBadge status={job.status} className="px-3 py-1 text-sm" />
           <p className="text-xs text-muted-foreground">Last updated {updated}</p>
+          <AutoRefresh />
         </div>
 
         {/* Progress through the six statuses */}

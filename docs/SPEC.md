@@ -68,7 +68,8 @@ are the only user who logs in. Customers only view a **tracking page**.
    device, problem, status, initial quote, revised estimate, notes,
    parts replaced, promised date and the technician's contact. It never
    shows the customer's name or phone number. A wrong link shows "No
-   repair found".
+   repair found". While open, it re-checks the status every 15 seconds,
+   so the customer never has to refresh.
 
 ## Data
 
@@ -117,8 +118,8 @@ On the **live Vercel URL**:
       an image.
 - [ ] A judge scans the QR with their own phone and sees "Received",
       with no customer name or phone number on the page.
-- [ ] The technician taps "Ready for pickup"; the judge refreshes and
-      sees it change.
+- [ ] The technician taps "Ready for pickup"; within 15 seconds the
+      judge's page changes by itself.
 - [ ] Any status can be set directly, in any order.
 - [ ] Notes, parts replaced and a revised estimate show on the tracking
       page, with the revised estimate next to the initial quote.
@@ -139,4 +140,5 @@ On the **live Vercel URL**:
 - Automatic SMS or Messenger delivery
 - Customer accounts and ratings
 - Deleting repair jobs
-- Live updates on the tracking page without refreshing
+- Instant (Supabase Realtime) updates on the tracking page; it re-checks
+  every 15 seconds instead (see `docs/LATER.md`)

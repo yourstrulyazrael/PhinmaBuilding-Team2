@@ -9,7 +9,8 @@ the privacy rules are proven, and the app has been used for real.
 
 - [ ] The demo runs start to finish: add a job, a QR appears, someone
       scans it on their own phone and sees "Received", the technician
-      taps "Ready for pickup", the scanner refreshes and sees it change
+      taps "Ready for pickup", and within 15 seconds the scanner's page
+      changes by itself
 - [ ] Signed out, nobody can see any jobs or technician details
 - [ ] A second technician account cannot see the first account's jobs
 - [ ] Row Level Security is on for both tables, checked in the Supabase

@@ -32,3 +32,10 @@ The landing page follows the reference design, minus these pieces:
   technician has dozens of jobs, not 3–5).
 - **"Preview workspace" banner**: not needed, jobs are saved in Supabase.
 - **"Need a hand?"** help box in the sidebar.
+
+## Parked from ticket 05
+
+- **Instant tracking-page updates (Supabase Realtime)**: today the
+  tracking page re-checks every 15 seconds. Instant updates need a
+  broadcast trigger and Realtime security policies, because customers
+  have no account and RLS blocks them from the jobs table.
