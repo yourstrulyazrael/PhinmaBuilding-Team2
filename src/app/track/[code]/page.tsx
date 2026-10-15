@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { CalendarDays, Phone, Wrench } from "lucide-react";
+import { CalendarDays, Phone } from "lucide-react";
+import { Logo } from "@/components/logo";
 import { createClient } from "@/lib/supabase/server";
 import { STATUSES, formatDate, formatPeso, isTrackingCode, type Status } from "@/lib/jobs";
 import { Card } from "@/components/ui/card";
@@ -48,14 +49,7 @@ export default async function TrackingPage({ params }: PageProps<"/track/[code]"
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
-      <div className="flex items-center gap-2.5">
-        <span className="flex size-9 items-center justify-center rounded-[var(--radius)] bg-primary text-primary-foreground">
-          <Wrench className="size-4" aria-hidden />
-        </span>
-        <span className="text-lg font-semibold tracking-tight text-tertiary">
-          {job?.shop_name ?? "Zenith Repair"}
-        </span>
-      </div>
+      <Logo name={job?.shop_name ?? "Zenith Repair"} />
 
       {job ? <JobStatus job={job} code={code} /> : <NotFound />}
     </main>

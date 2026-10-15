@@ -26,6 +26,44 @@
   --input: #d5ddd8;
   --ring: #1f5f3f;
   --radius: 0.625rem;
+  /* Lets the browser draw date pickers, dropdowns and scrollbars to match. */
+  color-scheme: light;
+}
+
+/* Dark mode: the same tokens, re-coloured. The "dark" class is put on
+   <html> by the script in layout.tsx (from the Light / Dark / System
+   switch). Only on screen: printed claim slips always use light colours.
+   Green and navy are lightened so they stay readable on a dark page. */
+@media screen {
+  .dark {
+    --background: #0e1412;
+    --foreground: #e3e9e6;
+    --card: #151d1a;
+    --card-foreground: #e3e9e6;
+    --primary: #5cbf8a;
+    --primary-foreground: #06140d;
+    --secondary: #151d1a;
+    --secondary-foreground: #e3e9e6;
+    --tertiary: #c5d1ee;
+    --tertiary-foreground: #0f1729;
+    --muted: #1e2925;
+    --muted-foreground: #9ba7b3;
+    --destructive: #f87171;
+    --destructive-foreground: #1a0606;
+    --border: #2a3632;
+    --input: #36443f;
+    --ring: #5cbf8a;
+    color-scheme: dark;
+  }
+}
+
+/* Tailwind's dark: prefix follows our switch, not only the device setting. */
+@custom-variant dark {
+  @media screen {
+    &:where(.dark, .dark *) {
+      @slot;
+    }
+  }
 }
 
 @theme inline {

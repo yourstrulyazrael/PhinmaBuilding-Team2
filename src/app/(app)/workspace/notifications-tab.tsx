@@ -6,10 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { cn } from "@/lib/utils";
 
 const KINDS: Record<Alert["kind"], { icon: typeof Bell; tone: string }> = {
-  overdue: { icon: CalendarClock, tone: "bg-red-50 text-destructive" },
+  overdue: { icon: CalendarClock, tone: "bg-red-50 text-destructive dark:bg-red-950" },
   ready: { icon: CircleCheck, tone: "bg-muted text-primary" },
-  parts: { icon: Package, tone: "bg-amber-50 text-amber-700" },
-  estimate: { icon: TrendingUp, tone: "bg-indigo-50 text-tertiary" },
+  parts: { icon: Package, tone: "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300" },
+  estimate: { icon: TrendingUp, tone: "bg-indigo-50 text-tertiary dark:bg-indigo-950" },
 };
 
 // Reminders for the technician, worked out from the jobs each time the

@@ -15,7 +15,6 @@ export type SlipImageData = {
 
 // Same colours as the app (see globals.css).
 const NAVY = "#14213d";
-const GREEN = "#1f5f3f";
 const GREY = "#5b6478";
 const BORDER = "#dfe6e1";
 
@@ -65,6 +64,7 @@ async function drawSlip(slip: SlipImageData): Promise<Blob> {
       color: { dark: NAVY, light: "#ffffff" },
     }),
   );
+  const logo = await loadImage("/logo-light.png");
 
   // Measure first on a scratch canvas, so we know how tall the slip is.
   const scratch = document.createElement("canvas").getContext("2d")!;
@@ -94,13 +94,9 @@ async function drawSlip(slip: SlipImageData): Promise<Blob> {
 
   // Header: shop name and contact, "CLAIM SLIP" on the right.
   let y = PAD;
-  ctx.fillStyle = GREEN;
-  ctx.fillRect(PAD, y, 36, 36);
-  ctx.fillStyle = "#ffffff";
-  ctx.font = `bold 18px ${FONT}`;
-  ctx.textAlign = "center";
-  ctx.fillText(slip.shopName.charAt(0).toUpperCase(), PAD + 18, y + 9);
-  ctx.textAlign = "left";
+  // Always the green logo: a slip looks the same whatever theme the
+  // phone is in.
+  ctx.drawImage(logo, PAD, y, 36, 36);
   ctx.fillStyle = NAVY;
   ctx.font = `600 16px ${FONT}`;
   ctx.fillText(slip.shopName, PAD + 48, y, WIDTH - PAD * 2 - 150);

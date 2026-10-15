@@ -42,12 +42,12 @@ export function statusLabel(status: Status) {
 
 // Colours for each status badge.
 export const STATUS_STYLES: Record<Status, string> = {
-  received: "bg-slate-100 text-slate-700",
-  diagnosing: "bg-indigo-50 text-tertiary",
-  waiting_for_parts: "bg-amber-50 text-amber-800",
+  received: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
+  diagnosing: "bg-indigo-50 text-tertiary dark:bg-indigo-950",
+  waiting_for_parts: "bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
   repairing: "bg-muted text-primary",
   ready_for_pickup: "bg-primary text-primary-foreground",
-  picked_up: "bg-slate-100 text-slate-500",
+  picked_up: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
 };
 
 // ₱1,500 — no decimals unless there are centavos.

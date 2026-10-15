@@ -162,8 +162,8 @@ function greeting() {
 }
 
 const TONES = {
-  navy: "bg-indigo-50 text-tertiary",
-  amber: "bg-amber-50 text-amber-700",
+  navy: "bg-indigo-50 text-tertiary dark:bg-indigo-950",
+  amber: "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
   green: "bg-muted text-primary",
 };
 

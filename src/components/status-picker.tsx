@@ -45,7 +45,7 @@ export function StatusPicker({
             we hide it (appearance-none) and draw our own dot and arrow. */}
         <span
           className={cn(
-            "relative inline-flex w-44 items-center rounded-full ring-1 ring-inset ring-black/5 transition-colors focus-within:ring-2 focus-within:ring-ring",
+            "relative inline-flex w-44 items-center rounded-full ring-1 ring-inset ring-black/5 dark:ring-white/10 transition-colors focus-within:ring-2 focus-within:ring-ring",
             STATUS_STYLES[optimistic],
             pending && "opacity-70",
           )}

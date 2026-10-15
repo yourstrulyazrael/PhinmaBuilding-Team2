@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Wrench } from "lucide-react";
+import { Logo } from "@/components/logo";
 import { authenticate, type AuthState } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,12 +19,7 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 px-4 py-12">
-      <div className="flex items-center justify-center gap-2.5">
-        <span className="flex size-10 items-center justify-center rounded-[var(--radius)] bg-primary text-primary-foreground">
-          <Wrench className="size-5" aria-hidden />
-        </span>
-        <span className="text-xl font-semibold tracking-tight text-tertiary">Zenith Repair</span>
-      </div>
+      <Logo size={40} className="justify-center" />
       <Card>
         <CardHeader>
           <CardTitle>{isSignup ? "Create an account" : "Sign in"}</CardTitle>

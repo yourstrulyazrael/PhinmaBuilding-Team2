@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
-import { LogOut, Wrench } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getMyShop } from "@/lib/shop";
+import { Logo } from "@/components/logo";
+import { ThemeSwitch } from "@/components/theme-switch";
 import { signOut } from "../login/actions";
 import { NavLinks } from "./nav-links";
 
@@ -42,7 +44,11 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         <div className="px-3">
           <NavLinks layout="sidebar" />
         </div>
-        <div className="mt-auto border-t border-border p-4">
+        <div className="mt-auto flex items-center justify-between gap-2 px-5 pb-3">
+          <span className="text-xs text-muted-foreground">Theme</span>
+          <ThemeSwitch />
+        </div>
+        <div className="border-t border-border p-4">
           <div className="flex items-center gap-3">
             <Avatar name={name} />
             <div className="min-w-0 flex-1">
@@ -60,8 +66,10 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       <header className="sticky top-0 z-10 border-b border-border bg-card md:hidden print:hidden">
         <div className="flex items-center gap-3 px-4 py-3">
           <Logo />
-          <div className="ml-auto flex items-center gap-2">
-            <Avatar name={name} />
+          {/* No avatar here: a phone has little room, and the theme switch
+              matters more. */}
+          <div className="ml-auto flex items-center gap-1">
+            <ThemeSwitch />
             <SignOutButton />
           </div>
         </div>
@@ -72,19 +80,6 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
 
       <div className="flex min-w-0 flex-1 flex-col">{children}</div>
     </div>
-  );
-}
-
-function Logo() {
-  return (
-    <span className="flex items-center gap-2.5">
-      <span className="flex size-9 items-center justify-center rounded-[var(--radius)] bg-primary text-primary-foreground">
-        <Wrench className="size-4" aria-hidden />
-      </span>
-      <span className="text-lg font-semibold tracking-tight text-tertiary">
-        Zenith Repair
-      </span>
-    </span>
   );
 }
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, Wrench } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { LogoMark } from "@/components/logo";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatPeso, type Job } from "@/lib/jobs";
 import { qrSvg, trackingUrl } from "@/lib/tracking-url";
@@ -71,9 +72,7 @@ export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/sl
       <Card className="flex flex-col gap-5 p-6 print:mx-auto print:max-w-sm print:shadow-none">
         <header className="flex items-start justify-between gap-3 border-b border-dashed border-border pb-4">
           <div className="flex items-center gap-2.5">
-            <span className="flex size-9 items-center justify-center rounded-[var(--radius)] bg-primary text-primary-foreground">
-              <Wrench className="size-4" aria-hidden />
-            </span>
+            <LogoMark alwaysLight />
             <div>
               <p className="font-semibold leading-tight text-tertiary">
                 {shop?.name ?? "Zenith Repair"}
