@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { AlarmClock, ArrowLeft, ExternalLink, Phone, QrCode } from "lucide-react";
+import { AlarmClock, ArrowLeft, ExternalLink, Lock, Phone, QrCode } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatPeso, isFinished, paymentLabel, todayInManila, type Job } from "@/lib/jobs";
 import { currentPrice, isLate } from "@/lib/workspace";
@@ -12,6 +12,9 @@ import { trackingUrl } from "@/lib/tracking-url";
 import { delayMessage, updateMessage } from "@/lib/update-message";
 import { JobDetailsForm } from "./job-details-form";
 import { getMyShop } from "@/lib/shop";
+import { canChange, loadNames, nameOf, type Viewer } from "@/lib/people";
+import { HandledBy } from "@/components/handled-by";
+import { StatusBadge } from "@/components/status-badge";
 import { CancelRequest } from "./cancel-request";
 
 // The technician's view of one repair job. Unlike the claim slip and
@@ -25,11 +28,18 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
   if (!user) redirect("/login");
 
   // RLS: a job from another shop returns nothing -> "not found".
-  const [{ data: job }, shop] = await Promise.all([
+  const [{ data: job }, shop, names] = await Promise.all([
     supabase.from("jobs").select("*").eq("id", id).maybeSingle<Job>(),
     getMyShop(supabase, user.id),
+    loadNames(supabase),
   ]);
   if (!job) notFound();
+
+  // Staff can only change the phones they handle; for anyone else's job
+  // this page is read-only (the database enforces the same rule).
+  const viewer: Viewer = { id: user.id, isOwner: shop?.role === "owner", names };
+  const editable = canChange(job, viewer);
+  const handler = nameOf(job.handled_by, viewer);
 
   const url = await trackingUrl(job.tracking_code);
   const late = isLate(job, todayInManila());
@@ -63,7 +73,19 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
         </div>
       </header>
 
-      {job.cancel_requested_at && !isFinished(job.status) && (
+      {!editable && (
+        <p
+          role="status"
+          className="flex items-center gap-2 rounded-[var(--radius)] border border-border bg-muted px-4 py-3 text-sm"
+        >
+          <Lock className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+          <span>
+            Handled by <span className="font-medium">{handler}</span>. Only {handler} or the shop owner can change it.
+          </span>
+        </p>
+      )}
+
+      {editable && job.cancel_requested_at && !isFinished(job.status) && (
         <CancelRequest jobId={job.id} reason={job.cancel_reason} requestedOn={formatDateTime(job.cancel_requested_at)} />
       )}
 
@@ -89,16 +111,26 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
       <Card>
         <CardHeader>
           <CardTitle className="text-base text-tertiary">Status</CardTitle>
-          <CardDescription>Tap to change. The customer&apos;s page updates straight away.</CardDescription>
+          {editable && <CardDescription>Tap to change. The customer&apos;s page updates straight away.</CardDescription>}
         </CardHeader>
         <CardContent>
-          <StatusPicker jobId={job.id} status={job.status} variant="buttons" price={currentPrice(job)} device={job.device} />
+          {editable ? (
+            <StatusPicker jobId={job.id} status={job.status} variant="buttons" price={currentPrice(job)} device={job.device} />
+          ) : (
+            <StatusBadge status={job.status} className="px-3 py-1 text-sm" />
+          )}
         </CardContent>
       </Card>
 
       <Card>
         <CardContent className="pt-6">
           <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm">
+            <dt className="text-muted-foreground">Handled by</dt>
+            <dd>
+              <HandledBy id={job.handled_by} viewer={viewer} />
+            </dd>
+            <dt className="text-muted-foreground">Quoted by</dt>
+            <dd>{job.quoted_by === user.id ? "You" : nameOf(job.quoted_by, viewer)}</dd>
             <dt className="text-muted-foreground">Customer</dt>
             <dd className="font-medium">{job.customer_name}</dd>
             <dt className="text-muted-foreground">Phone</dt>
@@ -144,7 +176,16 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
           <CardDescription>Shown on the customer&apos;s tracking page.</CardDescription>
         </CardHeader>
         <CardContent>
-          <JobDetailsForm job={job} canReviseEstimate={shop?.canReviseEstimate ?? false} />
+          {editable ? (
+            <JobDetailsForm job={job} canReviseEstimate={shop?.canReviseEstimate ?? false} />
+          ) : (
+            <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm">
+              <dt className="text-muted-foreground">Notes</dt>
+              <dd className="whitespace-pre-line">{job.notes || "–"}</dd>
+              <dt className="text-muted-foreground">Parts replaced</dt>
+              <dd>{job.parts_replaced || "–"}</dd>
+            </dl>
+          )}
         </CardContent>
       </Card>
     </main>

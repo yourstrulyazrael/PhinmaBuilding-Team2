@@ -200,6 +200,9 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
         <div className="min-w-0">
           <p className="text-xs text-muted-foreground">Your repair shop</p>
           <p className="truncate text-sm font-medium text-tertiary">{job.shop_name}</p>
+          {job.technician_name && (
+            <p className="truncate text-xs text-muted-foreground">Your technician: {job.technician_name}</p>
+          )}
         </div>
         <a
           href={`tel:${job.shop_contact.replace(/[^\d+]/g, "")}`}

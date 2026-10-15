@@ -9,8 +9,15 @@ import { StatusPicker } from "@/components/status-picker";
 import { cn } from "@/lib/utils";
 import { currentPrice, isLate } from "@/lib/workspace";
 import { JobSearch } from "./job-search";
+import { getMyShop } from "@/lib/shop";
+import { canChange, loadNames, type Viewer } from "@/lib/people";
+import { HandledBy } from "@/components/handled-by";
+import { StatusBadge } from "@/components/status-badge";
 
+// "My jobs" (the phones you handle) comes first and is the default
+// (ticket 13); "All jobs" is the whole shop.
 const TABS = [
+  { key: "mine", label: "My jobs" },
   { key: "all", label: "All jobs" },
   { key: "ready", label: "Ready" },
   { key: "parts", label: "Waiting on parts" },
@@ -35,13 +42,19 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
   // safety net in case that ever changes.
   if (!technician) redirect("/setup");
 
-  // RLS means this only ever returns jobs from the signed-in person's shop.
-  const { data, error } = await supabase.from("jobs").select("*");
+  // RLS means this only ever returns jobs from the signed-in person's shop,
+  // and only their shopmates' names.
+  const [{ data, error }, shop, names] = await Promise.all([
+    supabase.from("jobs").select("*"),
+    getMyShop(supabase, user.id),
+    loadNames(supabase),
+  ]);
+  const viewer: Viewer = { id: user.id, isOwner: shop?.role === "owner", names };
   if (error) throw error;
   const jobs = (data ?? []) as Job[];
 
   const params = await searchParams;
-  const tab = TABS.find((t) => t.key === params.tab)?.key ?? "all";
+  const tab = TABS.find((t) => t.key === params.tab)?.key ?? "mine";
   const q = typeof params.q === "string" ? params.q.trim().slice(0, 100) : "";
   const sort = parseSort(params.sort);
 
@@ -58,18 +71,19 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
 
   const matches = sortJobs(searchJobs(jobs, q), sort);
   const listed = {
+    mine: matches.filter((j) => !isFinished(j.status) && j.handled_by === user.id),
     all: matches.filter((j) => !isFinished(j.status)),
     ready: matches.filter((j) => j.status === "ready_for_pickup"),
     parts: matches.filter((j) => j.status === "waiting_for_parts"),
   };
   const shown = listed[tab];
-  // Picked up and cancelled jobs.
-  const done = matches.filter((j) => isFinished(j.status));
+  // Picked up and cancelled jobs (only yours, on My jobs).
+  const done = matches.filter((j) => isFinished(j.status) && (tab !== "mine" || j.handled_by === user.id));
 
   // Keeps the search and sort when switching tabs.
   function tabHref(key: (typeof TABS)[number]["key"], keepSearch = true) {
     const query = new URLSearchParams();
-    if (key !== "all") query.set("tab", key);
+    if (key !== "mine") query.set("tab", key);
     if (q && keepSearch) query.set("q", q);
     if (sort !== "promised") query.set("sort", sort);
     const s = query.toString();
@@ -159,16 +173,16 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
         {shown.length === 0 ? (
           <EmptyState tab={tab} q={q} clearHref={tabHref(tab, false)} />
         ) : (
-          <JobList jobs={shown} />
+          <JobList jobs={shown} viewer={viewer} />
         )}
 
-        {tab === "all" && done.length > 0 && (
+        {(tab === "all" || tab === "mine") && done.length > 0 && (
           <details className="group border-t border-border">
             <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground md:px-6">
               <span className="mr-1.5 inline-block transition-transform group-open:rotate-90">›</span>
               Done ({done.length})
             </summary>
-            <JobList jobs={done} />
+            <JobList jobs={done} viewer={viewer} />
           </details>
         )}
       </Card>
@@ -233,7 +247,9 @@ function EmptyState({ tab, q, clearHref }: { tab: string; q: string; clearHref: 
     );
   }
   const message =
-    tab === "ready"
+    tab === "mine"
+      ? "You aren't handling any open repairs. Phones you add, or are given, appear here."
+      : tab === "ready"
       ? "No phones are ready for pickup."
       : tab === "parts"
         ? "No repairs are waiting on parts."
@@ -242,7 +258,7 @@ function EmptyState({ tab, q, clearHref }: { tab: string; q: string; clearHref: 
 }
 
 // A table on tablet and laptop, a stack of cards on a phone.
-function JobList({ jobs }: { jobs: Job[] }) {
+function JobList({ jobs, viewer }: { jobs: Job[]; viewer: Viewer }) {
   const today = todayInManila();
 
   return (
@@ -252,6 +268,7 @@ function JobList({ jobs }: { jobs: Job[] }) {
           <tr className="border-b border-border text-left text-[11px] uppercase tracking-wider text-muted-foreground">
             <th className="px-6 py-3 font-medium">Device &amp; issue</th>
             <th className="px-3 py-3 font-medium">Customer</th>
+            <th className="px-3 py-3 font-medium">Handled by</th>
             <th className="px-3 py-3 font-medium">Status</th>
             <th className="px-3 py-3 font-medium">Quote / estimate</th>
             <th className="px-3 py-3 font-medium">Promised by</th>
@@ -273,8 +290,11 @@ function JobList({ jobs }: { jobs: Job[] }) {
                 </div>
               </td>
               <td className="px-3 py-4">{job.customer_name}</td>
+              <td className="max-w-36 px-3 py-4">
+                <HandledBy id={job.handled_by} viewer={viewer} />
+              </td>
               <td className="px-3 py-4">
-                <StatusPicker jobId={job.id} status={job.status} variant="select" price={currentPrice(job)} device={job.device} />
+                <StatusControl job={job} viewer={viewer} />
               </td>
               <td className="px-3 py-4">
                 <Quote job={job} />
@@ -302,9 +322,13 @@ function JobList({ jobs }: { jobs: Job[] }) {
                   </Link>
                   <p className="line-clamp-1 text-xs text-muted-foreground">{job.problem}</p>
                 </div>
-                <StatusPicker jobId={job.id} status={job.status} variant="select" price={currentPrice(job)} device={job.device} />
+                <StatusControl job={job} viewer={viewer} />
               </div>
-              <p className="text-xs text-muted-foreground">{job.customer_name}</p>
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                {job.customer_name}
+                <span aria-hidden>·</span>
+                <HandledBy id={job.handled_by} viewer={viewer} />
+              </p>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
                 <Quote job={job} />
                 <PromisedDate job={job} today={today} />
@@ -359,5 +383,15 @@ function SlipLink({ job }: { job: Job }) {
       <QrCode className="size-3.5" aria-hidden />
       Claim slip
     </Link>
+  );
+}
+
+// The status dropdown on jobs you may change; a plain badge on anyone
+// else's (staff can only change the phones they handle).
+function StatusControl({ job, viewer }: { job: Job; viewer: Viewer }) {
+  return canChange(job, viewer) ? (
+    <StatusPicker jobId={job.id} status={job.status} variant="select" price={currentPrice(job)} device={job.device} />
+  ) : (
+    <StatusBadge status={job.status} />
   );
 }

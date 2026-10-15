@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatPeso, type Job } from "@/lib/jobs";
 import { qrSvg, trackingUrl } from "@/lib/tracking-url";
 import { getMyShop } from "@/lib/shop";
+import { loadNames } from "@/lib/people";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PrintButton } from "./print-button";
@@ -27,11 +28,14 @@ export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/sl
   // RLS: only jobs from this person's shop load, so any other
   // job id simply returns nothing. The slip shows the shop's name and
   // the owner's contact, not whoever happens to be signed in.
-  const [{ data: job }, shop] = await Promise.all([
+  const [{ data: job }, shop, names] = await Promise.all([
     supabase.from("jobs").select("*").eq("id", id).maybeSingle<Job>(),
     getMyShop(supabase, user.id),
+    loadNames(supabase),
   ]);
   if (!job) notFound();
+  // "Your technician": just a name, never their number (ticket 13).
+  const technician = names[job.handled_by] ?? "";
 
   const url = await trackingUrl(job.tracking_code);
   const qr = await qrSvg(url);
@@ -60,6 +64,7 @@ export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/sl
                   : []),
                 ["Received", formatDate(receivedOn)],
                 ["Promised by", formatDate(job.promised_date)],
+                ...(technician ? [["Your technician", technician] as [string, string]] : []),
               ],
               url,
               fileName: `claim-slip-${job.device.replace(/[^\w-]+/g, "-").toLowerCase()}.png`,
@@ -102,6 +107,12 @@ export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/sl
           <dd>{formatDate(receivedOn)}</dd>
           <dt className="text-muted-foreground">Promised by</dt>
           <dd className="font-medium">{formatDate(job.promised_date)}</dd>
+          {technician && (
+            <>
+              <dt className="text-muted-foreground">Your technician</dt>
+              <dd>{technician}</dd>
+            </>
+          )}
         </dl>
 
         <div className="flex flex-col items-center gap-2 border-t border-dashed border-border pt-5">

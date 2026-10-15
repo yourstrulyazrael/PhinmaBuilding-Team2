@@ -94,7 +94,14 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
       </Card>
 
       {tab === "customers" && <CustomersTab jobs={jobs} />}
-      {tab === "notifications" && <NotificationsTab jobs={jobs} today={today} />}
+      {tab === "notifications" && (
+        <NotificationsTab
+          jobs={jobs}
+          today={today}
+          me={user.id}
+          names={Object.fromEntries((people ?? []).map((p) => [p.id, p.display_name]))}
+        />
+      )}
       {tab === "settings" && shop && (
         <ShopSettings
           shop={shop}

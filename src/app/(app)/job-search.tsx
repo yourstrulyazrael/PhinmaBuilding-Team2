@@ -24,7 +24,7 @@ export function JobSearch({
 }) {
   return (
     <Form action="/" className="flex flex-col gap-2 px-4 pt-4 sm:flex-row md:px-6" role="search">
-      {tab !== "all" && <input type="hidden" name="tab" value={tab} />}
+      {tab !== "mine" && <input type="hidden" name="tab" value={tab} />}
 
       <div className="relative flex-1">
         <Search

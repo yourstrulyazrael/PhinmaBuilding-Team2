@@ -18,7 +18,19 @@ const KINDS: Record<Alert["kind"], { icon: typeof Bell; tone: string }> = {
 
 // Reminders for the technician, worked out from the jobs each time the
 // page opens. Nothing here is sent to customers.
-export function NotificationsTab({ jobs, today }: { jobs: Job[]; today: string }) {
+// Each reminder names who is handling the phone, so it's clear who
+// should act (ticket 13).
+export function NotificationsTab({
+  jobs,
+  today,
+  me,
+  names,
+}: {
+  jobs: Job[];
+  today: string;
+  me: string;
+  names: Record<string, string>;
+}) {
   const alerts = attentionAlerts(jobs, today);
 
   return (
@@ -47,7 +59,7 @@ export function NotificationsTab({ jobs, today }: { jobs: Job[]; today: string }
                     </span>
                     <span className="flex min-w-0 flex-col">
                       <span className="text-sm font-medium text-tertiary">
-                        {job.device} <span className="font-normal text-muted-foreground">· {job.customer_name}</span>
+                        {job.device} <span className="font-normal text-muted-foreground">· {job.customer_name} · {job.handled_by === me ? "You" : (names[job.handled_by] ?? "Someone")}</span>
                       </span>
                       <span className="text-xs text-muted-foreground">{message}</span>
                     </span>
