@@ -50,6 +50,17 @@ export const STATUS_STYLES: Record<Status, string> = {
   picked_up: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
 };
 
+// A coloured dot for each status, used in the status menu. Same colour
+// family as the badge, a bit stronger so it shows on a white or dark card.
+export const STATUS_DOTS: Record<Status, string> = {
+  received: "bg-slate-400",
+  diagnosing: "bg-indigo-500 dark:bg-indigo-400",
+  waiting_for_parts: "bg-amber-500",
+  repairing: "bg-primary/60",
+  ready_for_pickup: "bg-primary",
+  picked_up: "bg-slate-300 dark:bg-slate-600",
+};
+
 // ₱1,500 — no decimals unless there are centavos.
 export function formatPeso(amount: number) {
   return new Intl.NumberFormat("en-PH", {
