@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft, Bell, Clock, UserCog, UsersRound } from "lucide-react";
-import { formatDate, todayInManila, type Job } from "@/lib/jobs";
+import { formatDate, isFinished, todayInManila, type Job } from "@/lib/jobs";
 import { attentionAlerts, isLate, overdueAndAwaiting } from "@/lib/workspace";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,6 +51,15 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
   if (tabParam === "settings") redirect("/account");
   const tabs = TABS.filter((t) => !t.ownerOnly || shop?.role === "owner");
   const tab = tabs.find((t) => t.key === tabParam)?.key ?? "customers";
+  // The owner's Staff tab also shows each person's email and sign-ins
+  // (ticket 36). Only fetched there; the database refuses anyone else.
+  const { data: accounts } =
+    tab === "staff" ? await supabase.rpc("shop_staff_accounts") : { data: null };
+  const accountOf = new Map(
+    ((accounts ?? []) as { id: string; email: string; created_at: string; last_sign_in_at: string | null }[]).map(
+      (a) => [a.id, a],
+    ),
+  );
   const alertCount = attentionAlerts(jobs, today).length;
   const panel = overdueAndAwaiting(jobs, today);
 
@@ -107,12 +116,19 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
         <StaffTab
           staff={(members ?? []).map((m) => {
             const person = people?.find((p) => p.id === m.technician_id);
+            const account = accountOf.get(m.technician_id);
+            const theirs = jobs.filter((j) => j.handled_by === m.technician_id);
             return {
               id: m.technician_id,
               name: person?.display_name ?? "Unknown",
               contact: person?.contact_number ?? "",
               role: m.role,
               canReviseEstimate: m.can_revise_estimate === true,
+              email: account?.email ?? null,
+              joinedAt: m.joined_at,
+              lastSignIn: account?.last_sign_in_at ?? null,
+              openJobs: theirs.filter((j) => !isFinished(j.status)).length,
+              totalJobs: theirs.length,
             };
           })}
         />

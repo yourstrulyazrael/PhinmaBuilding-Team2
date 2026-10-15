@@ -1,13 +1,29 @@
-import { UserPlus, UsersRound } from "lucide-react";
+import { Mail, Phone, UserPlus, UsersRound } from "lucide-react";
 import type { Role } from "@/lib/shop";
+import { formatDate } from "@/lib/jobs";
+import { manilaDate } from "@/lib/workspace";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddStaffForm } from "./staff-forms";
 import { EstimatePermission } from "./estimate-permission";
 
-export type StaffMember = { id: string; name: string; contact: string; role: Role; canReviseEstimate: boolean };
+export type StaffMember = {
+  id: string;
+  name: string;
+  contact: string;
+  role: Role;
+  canReviseEstimate: boolean;
+  // From shop_staff_accounts (ticket 36); null before 018 is run.
+  email: string | null;
+  joinedAt: string;
+  lastSignIn: string | null;
+  openJobs: number;
+  totalJobs: number;
+};
 
-// The owner's Staff tab: everyone in the shop, each staff member's
-// "Can revise estimates" switch, and Add staff (tickets 22–23).
+// The owner's Staff tab: a card per person with their sign-in email,
+// number, when they joined and last signed in, and the repairs they
+// handle (ticket 36); each staff member's "Can revise estimates" switch;
+// and Add staff (tickets 22–23).
 export function StaffTab({ staff }: { staff: StaffMember[] }) {
   return (
     <div className="flex flex-col gap-4">
@@ -20,24 +36,62 @@ export function StaffTab({ staff }: { staff: StaffMember[] }) {
               {staff.length}
             </span>
           </CardTitle>
-          <CardDescription>Everyone who can sign in to your shop.</CardDescription>
+          <CardDescription>
+            Everyone who can sign in to your shop. Passwords can&apos;t be shown to anyone: they are stored scrambled.
+            Staff change theirs on their Account page.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <ul className="divide-y divide-border border-t border-border">
+          <ul className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
             {staff.map((m) => (
-              <li key={m.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3 text-sm">
-                <span className="flex flex-col">
-                  <span className="font-medium">{m.name}</span>
-                  <span className="text-xs text-muted-foreground">{m.contact}</span>
-                </span>
-                <span className="flex flex-wrap items-center justify-end gap-3">
-                  {m.role === "apprentice" && (
-                    <EstimatePermission staffId={m.id} name={m.name} allowed={m.canReviseEstimate} />
-                  )}
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+              <li key={m.id} className="flex flex-col gap-3 rounded-[var(--radius)] border border-border p-4 text-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="font-medium text-tertiary">{m.name}</span>
+                  <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                     {m.role === "owner" ? "Owner" : "Staff"}
                   </span>
-                </span>
+                </div>
+
+                <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
+                  <dt className="text-muted-foreground">Email</dt>
+                  <dd className="min-w-0">
+                    {m.email ? (
+                      <a href={`mailto:${m.email}`} className="inline-flex max-w-full items-center gap-1.5 hover:underline">
+                        <Mail className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                        <span className="truncate">{m.email}</span>
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground">Run 018 in Supabase to see it</span>
+                    )}
+                  </dd>
+                  <dt className="text-muted-foreground">Contact</dt>
+                  <dd>
+                    {m.contact ? (
+                      <a href={`tel:${m.contact.replace(/[^\d+]/g, "")}`} className="inline-flex items-center gap-1.5 hover:underline">
+                        <Phone className="size-3.5 text-muted-foreground" aria-hidden />
+                        {m.contact}
+                      </a>
+                    ) : (
+                      "–"
+                    )}
+                  </dd>
+                  <dt className="text-muted-foreground">Password</dt>
+                  <dd className="text-muted-foreground">Hidden (can&apos;t be viewed)</dd>
+                  <dt className="text-muted-foreground">Joined</dt>
+                  <dd>{formatDate(manilaDate(m.joinedAt))}</dd>
+                  <dt className="text-muted-foreground">Last sign-in</dt>
+                  <dd>{m.lastSignIn ? formatDate(manilaDate(m.lastSignIn)) : m.email ? "Never" : "–"}</dd>
+                  <dt className="text-muted-foreground">Repairs</dt>
+                  <dd>
+                    {m.openJobs} open · {m.totalJobs} in total
+                  </dd>
+                </dl>
+
+                {m.role === "apprentice" && (
+                  <div className="border-t border-border pt-3">
+                    <EstimatePermission staffId={m.id} name={m.name} allowed={m.canReviseEstimate} />
+                  </div>
+                )}
               </li>
             ))}
           </ul>

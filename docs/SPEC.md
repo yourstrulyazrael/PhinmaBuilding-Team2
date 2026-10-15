@@ -96,7 +96,9 @@ least one real apprentice. Customers never log in; they only view a
    the original date (ticket 21). It updates within a second or two
    of any change, and still re-checks every 15 seconds as a backup.
 8. **Workspace**: the **owner** sees every tab: **Customers**,
-   **Notifications** and **Staff** (the staff list, each one's "Can revise
+   **Notifications** and **Staff** (a card per person with their sign-in
+   email, number, joined date, last sign-in and repairs, ticket 36; never
+   their password, which nobody can read; each one's "Can revise
    estimates" switch, **Add staff** and **Remove**). Settings live on
    **Account** (ticket 34; was My details), opened from the avatar in the
    top bar: everyone edits their name, contact number, sign-in email and
