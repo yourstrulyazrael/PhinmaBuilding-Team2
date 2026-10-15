@@ -9,7 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 // Everything here is shown to the customer on their tracking page.
-export function JobDetailsForm({ job }: { job: Job }) {
+// The revised estimate box only appears for the owner and staff the
+// owner allows (ticket 23); the database enforces the same rule.
+export function JobDetailsForm({ job, canReviseEstimate }: { job: Job; canReviseEstimate: boolean }) {
   const [state, formAction, pending] = useActionState<ActionResult, FormData>(
     updateJobDetails.bind(null, job.id),
     {},
@@ -39,6 +41,7 @@ export function JobDetailsForm({ job }: { job: Job }) {
         />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
+        {canReviseEstimate && (
         <div className="flex flex-col gap-2">
           <Label htmlFor="revised_estimate">Revised estimate (₱)</Label>
           <Input
@@ -52,6 +55,7 @@ export function JobDetailsForm({ job }: { job: Job }) {
             placeholder="Leave empty if unchanged"
           />
         </div>
+        )}
         <div className="flex flex-col gap-2">
           <Label htmlFor="promised_date">Promised date</Label>
           <Input

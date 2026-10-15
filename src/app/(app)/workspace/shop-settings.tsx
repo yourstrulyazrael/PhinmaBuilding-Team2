@@ -4,8 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DetailsForm } from "../details/details-form";
 import { ShopNameForm } from "./shop-name-form";
 import { AddStaffForm, ChangePasswordForm } from "./staff-forms";
+import { EstimatePermission } from "./estimate-permission";
 
-export type StaffMember = { id: string; name: string; contact: string; role: Role };
+export type StaffMember = { id: string; name: string; contact: string; role: Role; canReviseEstimate: boolean };
 
 // Everyone can edit their own name, number and password. Only the owner
 // gets the shop name, Add staff and the Staff list.
@@ -73,6 +74,11 @@ export function ShopSettings({
                         {m.role === "owner" ? "Owner" : "Staff"}
                       </span>
                     </span>
+                    {m.role === "apprentice" && (
+                      <span className="flex w-full justify-end">
+                        <EstimatePermission staffId={m.id} name={m.name} allowed={m.canReviseEstimate} />
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>

@@ -98,3 +98,13 @@ export async function changePassword(_prev: PasswordState, formData: FormData): 
   if (error) return { error: "Couldn't change your password. Please try again." };
   return { saved: true };
 }
+
+// The owner allows (or stops) a staff member setting revised estimates
+// (ticket 23). The database function refuses anyone but the owner.
+export async function setEstimatePermission(staffId: string, allowed: boolean): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_estimate_permission", { staff_id: staffId, allowed });
+  if (error) return { error: error.message };
+  revalidatePath("/workspace");
+  return {};
+}

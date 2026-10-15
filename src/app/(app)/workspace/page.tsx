@@ -39,7 +39,7 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
     supabase.from("jobs").select("*"),
     supabase.from("technicians").select("display_name, contact_number").eq("id", user.id).maybeSingle(),
     getMyShop(supabase, user.id),
-    supabase.from("shop_members").select("technician_id, role, joined_at").order("joined_at"),
+    supabase.from("shop_members").select("*").order("joined_at"),
     supabase.from("technicians").select("id, display_name, contact_number"),
   ]);
   if (error) throw error;
@@ -105,6 +105,7 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
               name: person?.display_name ?? "Unknown",
               contact: person?.contact_number ?? "",
               role: m.role,
+              canReviseEstimate: m.can_revise_estimate === true,
             };
           })}
         />

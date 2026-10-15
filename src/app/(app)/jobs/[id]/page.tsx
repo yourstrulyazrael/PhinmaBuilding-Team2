@@ -11,6 +11,7 @@ import { CopyMessageButton } from "@/components/copy-message-button";
 import { trackingUrl } from "@/lib/tracking-url";
 import { delayMessage, updateMessage } from "@/lib/update-message";
 import { JobDetailsForm } from "./job-details-form";
+import { getMyShop } from "@/lib/shop";
 import { CancelRequest } from "./cancel-request";
 
 // The technician's view of one repair job. Unlike the claim slip and
@@ -23,8 +24,11 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // RLS: another technician's job id returns nothing -> "not found".
-  const { data: job } = await supabase.from("jobs").select("*").eq("id", id).maybeSingle<Job>();
+  // RLS: a job from another shop returns nothing -> "not found".
+  const [{ data: job }, shop] = await Promise.all([
+    supabase.from("jobs").select("*").eq("id", id).maybeSingle<Job>(),
+    getMyShop(supabase, user.id),
+  ]);
   if (!job) notFound();
 
   const url = await trackingUrl(job.tracking_code);
@@ -140,7 +144,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
           <CardDescription>Shown on the customer&apos;s tracking page.</CardDescription>
         </CardHeader>
         <CardContent>
-          <JobDetailsForm job={job} />
+          <JobDetailsForm job={job} canReviseEstimate={shop?.canReviseEstimate ?? false} />
         </CardContent>
       </Card>
     </main>

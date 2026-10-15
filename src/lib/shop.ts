@@ -6,6 +6,9 @@ export type MyShop = {
   id: string;
   name: string;
   role: Role;
+  // May set the revised estimate: always for the owner; for staff, if
+  // the owner allowed it (ticket 23).
+  canReviseEstimate: boolean;
   ownerName: string;
   ownerContact: string;
 };
@@ -20,9 +23,15 @@ export type MyShop = {
 export async function getMyShop(supabase: SupabaseClient, userId: string): Promise<MyShop | null> {
   const { data: membership } = await supabase
     .from("shop_members")
-    .select("role, shops (id, name, owner_id)")
+    // "*" rather than naming columns, so a column added later can never
+    // break this query (which every signed-in page depends on).
+    .select("*, shops (id, name, owner_id)")
     .eq("technician_id", userId)
-    .maybeSingle<{ role: Role; shops: { id: string; name: string; owner_id: string } | null }>();
+    .maybeSingle<{
+      role: Role;
+      can_revise_estimate?: boolean;
+      shops: { id: string; name: string; owner_id: string } | null;
+    }>();
   if (!membership?.shops) return null;
 
   const { data: owner } = await supabase
@@ -35,6 +44,7 @@ export async function getMyShop(supabase: SupabaseClient, userId: string): Promi
     id: membership.shops.id,
     name: membership.shops.name,
     role: membership.role,
+    canReviseEstimate: membership.role === "owner" || membership.can_revise_estimate === true,
     ownerName: owner?.display_name ?? "",
     ownerContact: owner?.contact_number ?? "",
   };
