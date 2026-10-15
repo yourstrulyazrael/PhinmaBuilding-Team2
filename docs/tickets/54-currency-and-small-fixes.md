@@ -20,8 +20,10 @@ Currency
 - [x] Imports accept any currency sign or code in money columns
 
 Small fixes
-- [x] After saving a staff member's details (or resetting a password) and
-      pressing Close, a green ✓ shows by the buttons for a few seconds
+- [x] Right after Save on a staff member's details (or a password reset), a
+      green ✓ "Details saved" ("Password reset.") shows, then Close
+- [x] Reports & analytics logo follows light/dark (prints stay green);
+      the customer name has a placeholder
 - [x] Workspace emails and numbers are plain text (no "which app?"
       prompt); they can be selected and copied
 - [x] Overview reminder: "Let the customer know." for one person,

@@ -17,7 +17,7 @@ export function NewJobForm({ today }: { today: string }) {
     <form action={formAction} className="flex flex-col gap-5">
       <fieldset className="grid gap-4 sm:grid-cols-2">
         <legend className="mb-3 text-sm font-semibold text-tertiary">Customer</legend>
-        <Field label="Customer name" name="customer_name" maxLength={100} autoComplete="off" />
+        <Field label="Customer name" name="customer_name" maxLength={100} autoComplete="off" placeholder="e.g. Juan Dela Cruz" />
         <Field
           label="Customer Contact No."
           name="customer_phone"

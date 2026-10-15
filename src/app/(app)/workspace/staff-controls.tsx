@@ -56,17 +56,10 @@ export function EstimateAccess({ staffId, allowed }: { staffId: string; allowed:
 // Edit and Remove, side by side. Each opens in place.
 export function StaffActions({ staffId, name, contact, openJobs }: { staffId: string; name: string; contact: string; openJobs: number }) {
   const [mode, setMode] = useState<"idle" | "edit" | "password" | "remove">("idle");
-  // After Close on a saved change: a ✓ by the buttons for a few seconds.
-  const [done, setDone] = useState<string | null>(null);
-  function finish(message?: string) {
-    setMode("idle");
-    if (!message) return;
-    setDone(message);
-    window.setTimeout(() => setDone((m) => (m === message ? null : m)), 4000);
-  }
+  const close = () => setMode("idle");
 
-  if (mode === "edit") return <EditStaffForm staffId={staffId} name={name} contact={contact} onDone={finish} />;
-  if (mode === "password") return <ResetPasswordForm staffId={staffId} name={name} onDone={finish} />;
+  if (mode === "edit") return <EditStaffForm staffId={staffId} name={name} contact={contact} onDone={close} />;
+  if (mode === "password") return <ResetPasswordForm staffId={staffId} name={name} onDone={close} />;
   if (mode === "remove") return <ConfirmRemove staffId={staffId} name={name} openJobs={openJobs} onCancel={() => setMode("idle")} />;
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -82,23 +75,21 @@ export function StaffActions({ staffId, name, contact, openJobs }: { staffId: st
         <UserMinus className="size-3.5" aria-hidden />
         Remove
       </Button>
-      {done && (
-        <span role="status" className="inline-flex animate-menu-in items-center gap-1 text-sm font-medium text-emerald-700 dark:text-emerald-300">
-          <CircleCheck className="size-4" aria-hidden />
-          {done}
-        </span>
-      )}
     </div>
   );
 }
 
-function EditStaffForm({ staffId, name, contact, onDone }: { staffId: string; name: string; contact: string; onDone: (message?: string) => void }) {
+function EditStaffForm({ staffId, name, contact, onDone }: { staffId: string; name: string; contact: string; onDone: () => void }) {
   const [state, formAction, pending] = useActionState<EditStaffState, FormData>(updateStaff.bind(null, staffId), {});
+  // Right after Save: a green ✓ "Details saved", then Close.
   if (state.saved && !pending) {
     return (
       <div className="flex items-center justify-between gap-2">
-        <p role="status" className="text-sm text-muted-foreground">Saved.</p>
-        <Button type="button" variant="ghost" size="sm" onClick={() => onDone("Details saved")}>Close</Button>
+        <p role="status" className="inline-flex animate-menu-in items-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-300">
+          <CircleCheck className="size-4" aria-hidden />
+          Details saved
+        </p>
+        <Button type="button" variant="ghost" size="sm" onClick={onDone}>Close</Button>
       </div>
     );
   }
@@ -127,7 +118,7 @@ function EditStaffForm({ staffId, name, contact, onDone }: { staffId: string; na
 // A new temporary password for someone who forgot theirs (ticket 46).
 // Shown as plain text so the owner can read it back to them; the old
 // one is never shown, because nobody can read it.
-function ResetPasswordForm({ staffId, name, onDone }: { staffId: string; name: string; onDone: (message?: string) => void }) {
+function ResetPasswordForm({ staffId, name, onDone }: { staffId: string; name: string; onDone: () => void }) {
   const [state, formAction, pending] = useActionState<ResetPasswordState, FormData>(
     resetStaffPassword.bind(null, staffId),
     {},
@@ -135,11 +126,15 @@ function ResetPasswordForm({ staffId, name, onDone }: { staffId: string; name: s
   if (state.done && !pending) {
     return (
       <div className="flex flex-col gap-2 rounded-[var(--radius)] bg-muted p-3 text-sm">
-        <p role="status">
-          Done. {name} has been signed out everywhere and can now sign in with the new password. Tell them to change
-          it on their Account page.
+        <p role="status" className="flex items-start gap-1.5">
+          <CircleCheck className="mt-0.5 size-4 shrink-0 text-emerald-700 dark:text-emerald-300" aria-hidden />
+          <span>
+            <span className="font-medium text-emerald-700 dark:text-emerald-300">Password reset.</span> {name} has
+            been signed out everywhere and can now sign in with the new password. Tell them to change it on their
+            Account page.
+          </span>
         </p>
-        <Button type="button" variant="ghost" size="sm" className="w-fit" onClick={() => onDone("Password reset")}>
+        <Button type="button" variant="ghost" size="sm" className="w-fit" onClick={onDone}>
           Close
         </Button>
       </div>

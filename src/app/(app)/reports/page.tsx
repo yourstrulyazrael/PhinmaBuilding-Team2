@@ -67,7 +67,9 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
       </div>
 
       <header className="flex items-center gap-3">
-        <LogoMark size={40} alwaysLight />
+        {/* Green in light mode, navy in dark; prints are always green
+            (dark mode only applies on screen). */}
+        <LogoMark size={40} />
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-tertiary">{shop.name}</h1>
           <p className="text-sm text-muted-foreground">
