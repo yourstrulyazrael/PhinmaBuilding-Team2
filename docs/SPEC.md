@@ -91,7 +91,9 @@ least one real apprentice. Customers never log in; they only view a
    wrong link shows "No repair found". When the revised estimate is
    waiting, the customer can **Approve** or **Decline** it. While the
    repair is not finished, they can **Request cancellation** (with an
-   optional reason). A cancelled repair says so. It updates within a second or two
+   optional reason). A cancelled repair says so. If the repair is past its
+   promised date and not ready, it shows a "running late" apology with
+   the original date (ticket 21). It updates within a second or two
    of any change, and still re-checks every 15 seconds as a backup.
 8. **Workspace**: the **owner** sees every tab: **Customers**,
    **Notifications**, **Analytics** and **Shop settings** (their own
@@ -162,9 +164,11 @@ apprentices cannot see or pass it on.
   `cancel_reason` (up to 300 characters). Only the customer can make a
   request, through `request_cancellation`; the shop can only clear it.
   Setting Cancelled or Picked up clears it.
-- **Payment** (ticket 19): `amount_paid` (pesos), `payment_method`
-  (cash, GCash or other) and `paid_at` (set by the database). A record
-  only: no money moves through the app.
+- **Payment** (tickets 19–20): `amount_paid` (pesos), `payment_method`
+  (cash, e-wallet or card; older records may say "other"),
+  `payment_ref` (the last 4 digits of the reference number, required
+  for e-wallet and card, never for cash; shop-only) and `paid_at` (set
+  by the database). A record only: no money moves through the app.
 
 **`answer_estimate`** and **`request_cancellation`** (database
 functions): anyone with a tracking code may call them. Each does only
