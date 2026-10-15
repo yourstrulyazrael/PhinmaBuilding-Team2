@@ -10,6 +10,7 @@ export type Part = {
   id: string;
   sku: string;
   name: string;
+  category: string; // e.g. "Screens"; "" if none (ticket 32)
   quantity: number;
   low_stock_at: number;
   retail_price: number; // what the customer is charged (ticket 30)

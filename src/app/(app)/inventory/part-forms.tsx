@@ -1,11 +1,13 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
-import { Archive, ArchiveRestore, PackagePlus, Pencil, SlidersHorizontal } from "lucide-react";
+import { useActionState, useEffect, useState, useTransition } from "react";
+import { Archive, ArchiveRestore, EllipsisVertical, PackagePlus, Pencil, Plus, SlidersHorizontal } from "lucide-react";
 import { addPart, editPart, recordMovement, setPartActive, type FormState } from "./actions";
 import type { Part } from "@/lib/inventory";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Menu } from "@/components/menu";
+import { Modal } from "@/components/modal";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -22,104 +24,133 @@ function Message({ state, pending }: { state: FormState; pending: boolean }) {
   return null;
 }
 
-// SKU, name, cost, retail price and low-stock level: shared by Add and Edit.
+// The categories already in use, offered as suggestions in the Category
+// box (ticket 32). Rendered once on the page.
+export function CategoryList({ categories }: { categories: string[] }) {
+  return (
+    <datalist id="part-categories">
+      {categories.map((c) => (
+        <option key={c} value={c} />
+      ))}
+    </datalist>
+  );
+}
+
+// SKU, name, category, prices and low-stock level: shared by Add and Edit.
 function PartFields({ part, cost }: { part?: Part; cost?: number }) {
   return (
-    <>
+    <div className="grid gap-4 sm:grid-cols-2">
+      <Field label="Name">
+        <Input name="name" defaultValue={part?.name} maxLength={100} placeholder="e.g. iPhone 12 LCD screen" required autoFocus />
+      </Field>
       <Field label="SKU">
         <Input name="sku" defaultValue={part?.sku} maxLength={40} placeholder="e.g. LCD-IP12" required />
       </Field>
-      <Field label="Name">
-        <Input name="name" defaultValue={part?.name} maxLength={100} placeholder="e.g. iPhone 12 LCD screen" required />
-      </Field>
-      <Field label="Cost (₱)">
-        <Input name="cost" type="number" inputMode="decimal" min={0} step="0.01" defaultValue={cost ?? ""} placeholder="What the shop pays" required />
-      </Field>
-      <Field label="Retail price (₱)">
-        <Input name="retail_price" type="number" inputMode="decimal" min={0} step="0.01" defaultValue={part?.retail_price ?? ""} placeholder="What the customer pays" required />
+      <Field label="Category">
+        <Input name="category" list="part-categories" defaultValue={part?.category ?? ""} maxLength={50} placeholder="e.g. Screens" />
       </Field>
       <Field label="Low-stock level">
         <Input name="low_stock_at" type="number" inputMode="numeric" min={0} step={1} defaultValue={part?.low_stock_at ?? 2} required />
       </Field>
+      <Field label="Cost (₱): what the shop pays">
+        <Input name="cost" type="number" inputMode="decimal" min={0} step="0.01" defaultValue={cost ?? ""} required />
+      </Field>
+      <Field label="Retail price (₱): what the customer pays">
+        <Input name="retail_price" type="number" inputMode="decimal" min={0} step="0.01" defaultValue={part?.retail_price ?? ""} required />
+      </Field>
+    </div>
+  );
+}
+
+// "Add part" in the page header (owner), opening a pop-up form.
+export function AddPartButton() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button type="button" onClick={() => setOpen(true)}>
+        <Plus className="mr-1.5 size-4" aria-hidden />
+        Add part
+      </Button>
+      <Modal open={open} onClose={() => setOpen(false)} title="Add a part" description="The cost is only ever shown to you.">
+        <AddPartForm onDone={() => setOpen(false)} />
+      </Modal>
     </>
   );
 }
 
-// The owner adds a part to the catalog (ticket 27).
-export function AddPartForm() {
+function AddPartForm({ onDone }: { onDone: () => void }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(addPart, {});
+  useEffect(() => {
+    if (state.done) onDone();
+  }, [state, onDone]);
   return (
-    <form key={state.done ?? "new"} action={formAction} className="flex flex-col gap-4">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <PartFields />
-        <Field label="Starting stock">
-          <Input name="starting" type="number" inputMode="numeric" min={0} step={1} defaultValue={0} required />
-        </Field>
-      </div>
+    <form action={formAction} className="flex flex-col gap-4">
+      <PartFields />
+      <Field label="Starting stock">
+        <Input name="starting" type="number" inputMode="numeric" min={0} step={1} defaultValue={0} required className="w-32" />
+      </Field>
       <Message state={state} pending={pending} />
-      <Button type="submit" disabled={pending} className="w-fit">
-        <PackagePlus className="mr-1.5 size-4" aria-hidden />
-        {pending ? "Adding…" : "Add part"}
-      </Button>
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="ghost" onClick={onDone}>Cancel</Button>
+        <Button type="submit" disabled={pending}>
+          <PackagePlus className="mr-1.5 size-4" aria-hidden />
+          {pending ? "Adding…" : "Add part"}
+        </Button>
+      </div>
     </form>
   );
 }
 
 type Mode = "restock" | "adjust" | "edit";
 
-// Restock / Adjust / Edit / Archive for one part (owner only).
-export function PartActions({ part, cost }: { part: Part; cost: number }) {
+// The ⋮ menu (Restock, Adjust, Edit) and Archive on a table row (owner).
+export function PartRowActions({ part, cost }: { part: Part; cost: number }) {
   const [mode, setMode] = useState<Mode | null>(null);
   const [pending, startTransition] = useTransition();
-  const dialog = useRef<HTMLDialogElement>(null);
+  const close = () => setMode(null);
+  const icon = "flex size-8 items-center justify-center rounded-[var(--radius)] text-muted-foreground hover:bg-muted hover:text-foreground";
 
-  useEffect(() => {
-    const d = dialog.current;
-    if (!d) return;
-    if (mode && !d.open) d.showModal();
-    if (!mode && d.open) d.close();
-  }, [mode]);
-
-  const small = "h-8 px-2 text-xs";
   return (
-    <div className="flex flex-wrap justify-end gap-1">
+    <div className="flex items-center justify-end gap-1">
       {part.active && (
-        <>
-          <Button type="button" size="sm" variant="secondary" className={small} onClick={() => setMode("restock")}>
-            <PackagePlus className="mr-1 size-3.5" aria-hidden />
-            Restock
-          </Button>
-          <Button type="button" size="sm" variant="ghost" className={small} onClick={() => setMode("adjust")} aria-label={`Adjust ${part.name}`}>
-            <SlidersHorizontal className="size-3.5" aria-hidden />
-          </Button>
-          <Button type="button" size="sm" variant="ghost" className={small} onClick={() => setMode("edit")} aria-label={`Edit ${part.name}`}>
-            <Pencil className="size-3.5" aria-hidden />
-          </Button>
-        </>
+        <Menu
+          label={`Actions for ${part.name}`}
+          triggerClassName={icon}
+          trigger={<EllipsisVertical className="size-4" aria-hidden />}
+          items={[
+            { label: "Restock", icon: PackagePlus, onSelect: () => setMode("restock") },
+            { label: "Adjust stock", icon: SlidersHorizontal, onSelect: () => setMode("adjust") },
+            { label: "Edit details", icon: Pencil, onSelect: () => setMode("edit") },
+          ]}
+        />
       )}
-      <Button
+      <button
         type="button"
-        size="sm"
-        variant="ghost"
-        className={small}
         disabled={pending}
         onClick={() => startTransition(async () => void (await setPartActive(part.id, !part.active)))}
         aria-label={part.active ? `Archive ${part.name}` : `Bring back ${part.name}`}
-        title={part.active ? "Archive: hide from pickers, keep history" : "Bring back"}
+        title={part.active ? "Archive: hide from pickers, keep its history" : "Bring back"}
+        className={`${icon} hover:text-destructive disabled:opacity-50`}
       >
-        {part.active ? <Archive className="size-3.5" aria-hidden /> : <ArchiveRestore className="size-3.5" aria-hidden />}
-      </Button>
+        {part.active ? <Archive className="size-4" aria-hidden /> : <ArchiveRestore className="size-4" aria-hidden />}
+      </button>
 
-      <dialog
-        ref={dialog}
-        onClose={() => setMode(null)}
-        aria-label={mode ? `${mode === "edit" ? "Edit" : mode === "restock" ? "Restock" : "Adjust"} ${part.name}` : undefined}
-        className="m-auto w-[min(26rem,calc(100vw-2rem))] rounded-[var(--radius)] border border-border bg-card p-0 text-left text-card-foreground shadow-xl backdrop:bg-black/40"
+      <Modal
+        open={mode !== null}
+        onClose={close}
+        title={mode === "edit" ? `Edit ${part.name}` : mode === "restock" ? `Restock ${part.name}` : `Adjust ${part.name}`}
+        description={
+          mode === "edit"
+            ? undefined
+            : mode === "restock"
+              ? `In stock now: ${part.quantity}. How many arrived?`
+              : `In stock now: ${part.quantity}. Use a minus for losses or breakage (e.g. -1), a plus to correct a miscount.`
+        }
       >
-        {mode === "edit" && <EditForm part={part} cost={cost} onDone={() => setMode(null)} />}
-        {mode === "restock" && <MovementForm part={part} reason="restock" onDone={() => setMode(null)} />}
-        {mode === "adjust" && <MovementForm part={part} reason="adjustment" onDone={() => setMode(null)} />}
-      </dialog>
+        {mode === "edit" && <EditForm part={part} cost={cost} onDone={close} />}
+        {mode === "restock" && <MovementForm part={part} reason="restock" onDone={close} />}
+        {mode === "adjust" && <MovementForm part={part} reason="adjustment" onDone={close} />}
+      </Modal>
     </div>
   );
 }
@@ -130,8 +161,7 @@ function EditForm({ part, cost, onDone }: { part: Part; cost: number; onDone: ()
     if (state.done) onDone();
   }, [state, onDone]);
   return (
-    <form action={formAction} className="flex flex-col gap-4 p-6">
-      <h2 className="text-base font-semibold text-tertiary">Edit {part.name}</h2>
+    <form action={formAction} className="flex flex-col gap-4">
       <PartFields part={part} cost={cost} />
       <Message state={state} pending={pending} />
       <div className="flex justify-end gap-2">
@@ -149,16 +179,9 @@ function MovementForm({ part, reason, onDone }: { part: Part; reason: "restock" 
   }, [state, onDone]);
   const restock = reason === "restock";
   return (
-    <form action={formAction} className="flex flex-col gap-4 p-6">
-      <div>
-        <h2 className="text-base font-semibold text-tertiary">{restock ? "Restock" : "Adjust"} {part.name}</h2>
-        <p className="text-sm text-muted-foreground">
-          In stock now: {part.quantity}.{" "}
-          {restock ? "How many arrived?" : "Use a minus for losses or breakage, e.g. -1; plus to correct a miscount."}
-        </p>
-      </div>
+    <form action={formAction} className="flex flex-col gap-4">
       <Field label={restock ? "Quantity added" : "Change (+ or −)"}>
-        <Input name="amount" type="number" inputMode="numeric" step={1} min={restock ? 1 : undefined} required autoFocus />
+        <Input name="amount" type="number" inputMode="numeric" step={1} min={restock ? 1 : undefined} required autoFocus className="w-40" />
       </Field>
       <Field label="Note (optional)">
         <Input name="note" maxLength={200} placeholder={restock ? "e.g. From supplier, receipt #123" : "e.g. Cracked during install"} />

@@ -16,17 +16,19 @@ function readNumber(value: string) {
 function readPart(formData: FormData) {
   const sku = text(formData, "sku");
   const name = text(formData, "name");
+  const category = text(formData, "category");
   const cost = readNumber(text(formData, "cost"));
   const retail = readNumber(text(formData, "retail_price"));
   const lowStockAt = readNumber(text(formData, "low_stock_at"));
   if (!sku || sku.length > 40) return { error: "Enter a SKU (up to 40 characters)." };
   if (!name || name.length > 100) return { error: "Enter the part name (up to 100 characters)." };
+  if (category.length > 50) return { error: "Keep the category under 50 characters." };
   if (!Number.isFinite(cost) || cost < 0 || cost > 99_999_999.99) return { error: "Enter a cost of ₱0 or more." };
   if (!Number.isFinite(retail) || retail < 0 || retail > 99_999_999.99) return { error: "Enter a retail price of ₱0 or more." };
   if (!Number.isInteger(lowStockAt) || lowStockAt < 0 || lowStockAt > 9999) {
     return { error: "Enter a low-stock level: a whole number, 0 or more." };
   }
-  return { sku, name, cost, retail, lowStockAt };
+  return { sku, name, category, cost, retail, lowStockAt };
 }
 
 function friendly(message: string) {
@@ -48,7 +50,7 @@ export async function addPart(_prev: FormState, formData: FormData): Promise<For
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("parts")
-    .insert({ sku: part.sku, name: part.name, retail_price: part.retail, low_stock_at: part.lowStockAt })
+    .insert({ sku: part.sku, name: part.name, category: part.category, retail_price: part.retail, low_stock_at: part.lowStockAt })
     .select("id")
     .single();
   if (error) return { error: friendly(error.message) };
@@ -75,7 +77,7 @@ export async function editPart(partId: string, _prev: FormState, formData: FormD
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("parts")
-    .update({ sku: part.sku, name: part.name, retail_price: part.retail, low_stock_at: part.lowStockAt })
+    .update({ sku: part.sku, name: part.name, category: part.category, retail_price: part.retail, low_stock_at: part.lowStockAt })
     .eq("id", partId)
     .select("id");
   if (error) return { error: friendly(error.message) };
@@ -125,6 +127,7 @@ export async function setPartActive(partId: string, active: boolean): Promise<Fo
 export type ImportRow = {
   sku: string;
   name: string;
+  category: string;
   cost: number;
   retail_price: number;
   quantity: number;
@@ -151,6 +154,7 @@ export async function importParts(rows: ImportRow[]): Promise<ImportResult> {
     const ok =
       sku.length >= 1 && sku.length <= 40 &&
       String(r.name ?? "").trim().length >= 1 && String(r.name).trim().length <= 100 &&
+      String(r.category ?? "").length <= 50 &&
       [r.cost, r.retail_price].every((n) => Number.isFinite(n) && n >= 0 && n <= 99_999_999.99) &&
       [r.quantity, r.low_stock_at].every((n) => Number.isInteger(n) && n >= 0 && n <= 9999);
     if (!ok) return { error: `Row ${i + 1} isn't valid. Check the file and try again.` };
@@ -182,6 +186,7 @@ export async function importParts(rows: ImportRow[]): Promise<ImportResult> {
         // file updates "lcd-1" rather than creating a near-duplicate.
         sku: before.get(r.sku.trim().toLowerCase())?.sku ?? r.sku.trim(),
         name: r.name.trim(),
+        category: String(r.category ?? "").trim(),
         retail_price: r.retail_price,
         low_stock_at: r.low_stock_at,
         active: true,

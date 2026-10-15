@@ -1,189 +1,107 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AlertTriangle, ArrowDownUp, History, PackagePlus, TrendingUp } from "lucide-react";
+import { History, Store, TrendingUp } from "lucide-react";
 import { formatPeso, todayInManila } from "@/lib/jobs";
 import { periodFrom } from "@/lib/periods";
-import {
-  lowStock,
-  mostUsed,
-  REASON_LABELS,
-  stockLevel,
-  type JobPart,
-  type Movement,
-  type Part,
-  type StockLevel,
-} from "@/lib/inventory";
+import { mostUsed, REASON_LABELS, stockLevel, type JobPart, type Movement, type Part } from "@/lib/inventory";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PeriodPicker } from "@/components/period-picker";
 import { cn } from "@/lib/utils";
-import { AddPartForm, PartActions } from "./part-forms";
-import { ImportExport } from "./import-export";
-import { getShop, getSupabase, getUser, getNames } from "@/lib/session";
+import { AddPartButton, CategoryList } from "./part-forms";
+import { ExportMenu, ImportButton } from "./import-export";
+import { PartsTable } from "./parts-table";
+import { getNames, getShop, getSupabase, getUser } from "@/lib/session";
 
 /**
- * Inventory (tickets 27–29), in the top bar for owner and staff.
- * Everyone sees stock, the history and the most used parts; only the
- * owner sees costs and can add parts or change stock. The database
- * enforces both (supabase/sql/013-inventory.sql).
+ * Inventory (tickets 27–32), in the top bar for owner and staff, laid
+ * out like the team's reference: header actions, three stat cards, the
+ * parts table, then most used parts and the stock history.
+ *
+ * Everyone sees stock and retail prices; only the owner sees costs and
+ * can add, import, export or change stock. The database enforces both
+ * (supabase/sql/013-inventory.sql).
  */
 export default async function InventoryPage({ searchParams }: PageProps<"/inventory">) {
   // Shared with the layout: fetched once per page load (lib/session.ts).
   const supabase = await getSupabase();
   const user = await getUser();
   if (!user) redirect("/login");
-  const shop = await getShop();
-  const isOwner = shop?.role === "owner";
   const period = periodFrom((await searchParams).period, todayInManila(), "30d");
+  // Midnight in Manila at the start of the period, so the database only
+  // sends the parts used in it.
+  const since = new Date(`${period.from}T00:00:00+08:00`).toISOString();
 
-  // RLS: only this shop's parts and history. part_costs returns nothing
-  // for staff, so costs never reach their browser.
-  const [{ data: partRows }, { data: costRows }, { data: movementRows }, { data: usedRows }, names] = await Promise.all([
+  // All at once. RLS: only this shop's parts and history; part_costs
+  // returns nothing for staff, so costs never reach their browser.
+  const [shop, names, { data: partRows }, { data: costRows }, { data: movementRows }, { data: usedRows }] = await Promise.all([
+    getShop(),
+    getNames(),
     supabase.from("parts").select("*").order("name"),
     supabase.from("part_costs").select("part_id, cost"),
     supabase.from("stock_movements").select("*").order("created_at", { ascending: false }).limit(30),
-    supabase.from("job_parts").select("*"),
-    getNames(),
+    supabase.from("job_parts").select("*").gte("created_at", since),
   ]);
-  const parts = (partRows ?? []) as Part[];
-  const costs = new Map((costRows ?? []).map((c) => [c.part_id as string, Number(c.cost)]));
+  const isOwner = shop?.role === "owner";
+  const parts = ((partRows ?? []) as Part[]).map((p) => ({ ...p, category: p.category ?? "" }));
+  const costs: Record<string, number> = Object.fromEntries((costRows ?? []).map((c) => [c.part_id, Number(c.cost)]));
   const movements = (movementRows ?? []) as Movement[];
   const partById = new Map(parts.map((p) => [p.id, p]));
-  const low = lowStock(parts);
   const used = mostUsed((usedRows ?? []) as JobPart[], parts, period);
   const active = parts.filter((p) => p.active);
-  const archived = parts.filter((p) => !p.active);
-  const stockValue = active.reduce((sum, p) => sum + Math.max(0, p.quantity) * (costs.get(p.id) ?? 0), 0);
-  const retailValue = active.reduce((sum, p) => sum + Math.max(0, p.quantity) * Number(p.retail_price), 0);
+  const categories = [...new Set(parts.map((p) => p.category).filter(Boolean))].sort();
+  const retailValue = active.reduce((sum, p) => sum + Math.max(0, p.quantity) * Number(p.retail_price ?? 0), 0);
+  const costValue = active.reduce((sum, p) => sum + Math.max(0, p.quantity) * (costs[p.id] ?? 0), 0);
   // The current inventory in the import template's columns (owner only:
   // it includes costs).
-  const exportRows = parts
-    .filter((p) => p.active)
-    .map((p) => ({
-      sku: p.sku,
-      name: p.name,
-      cost: costs.get(p.id) ?? 0,
-      retail_price: Number(p.retail_price),
-      quantity: p.quantity,
-      low_stock_at: p.low_stock_at,
-    }));
+  const exportRows = active.map((p) => ({
+    sku: p.sku,
+    name: p.name,
+    category: p.category,
+    cost: costs[p.id] ?? 0,
+    retail_price: Number(p.retail_price ?? 0),
+    quantity: p.quantity,
+    low_stock_at: p.low_stock_at,
+  }));
 
   return (
-    <main className="mx-auto flex w-full max-w-[120rem] flex-col gap-4 px-4 py-6 md:px-8 md:py-10 2xl:px-12">
-      <header className="flex flex-wrap items-end justify-between gap-2">
+    <main className="mx-auto flex w-full max-w-[120rem] flex-col gap-5 px-4 py-6 md:px-8 md:py-10 2xl:px-12">
+      <CategoryList categories={categories} />
+
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
+          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm">
+            <Store className="size-4 text-muted-foreground" aria-hidden />
+            <Link href="/" className="font-medium text-foreground hover:underline">
+              {shop?.name ?? "Your shop"}
+            </Link>
+            <span className="text-muted-foreground">/</span>
+            <span aria-current="page" className="font-medium text-primary">
+              Inventory
+            </span>
+          </nav>
           <h1 className="text-2xl font-semibold tracking-tight text-tertiary md:text-3xl">Inventory</h1>
           <p className="text-sm text-muted-foreground">
-            {active.length} part{active.length === 1 ? "" : "s"}
-            {` · stock worth ${formatPeso(retailValue)} at retail`}
-            {isOwner && ` (${formatPeso(stockValue)} at cost)`}
+            Keep your parts and stock levels up to date. Stock worth {formatPeso(retailValue)} at retail
+            {isOwner && ` (${formatPeso(costValue)} at cost)`}.
           </p>
         </div>
-      </header>
-
-      {low.length > 0 && (
-        <Card className="border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base text-amber-900 dark:text-amber-100">
-              <AlertTriangle className="size-4" aria-hidden />
-              Low stock ({low.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="flex flex-wrap gap-2">
-              {low.map((p) => (
-                <li key={p.id} className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-sm">
-                  {p.name}
-                  <StockBadge part={p} />
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card className="overflow-hidden">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base text-tertiary">Parts</CardTitle>
-          <CardDescription>
-            {isOwner
-              ? "Stock only changes by restocks, adjustments and parts used on repairs, so the history always adds up."
-              : "What's in stock. Ask the owner to restock or add parts."}
-          </CardDescription>
-        </CardHeader>
-        {parts.length === 0 ? (
-          <p className="px-6 pb-6 text-sm text-muted-foreground">
-            No parts yet.{isOwner ? " Add your first one below." : ""}
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <th className="px-6 py-2 font-medium">SKU</th>
-                  <th className="px-3 py-2 font-medium">Part</th>
-                  <th className="px-3 py-2 text-right font-medium">In stock</th>
-                  <th className="px-3 py-2 text-right font-medium">Low at</th>
-                  <th className="px-3 py-2 text-right font-medium">Retail</th>
-                  {isOwner && <th className="px-3 py-2 text-right font-medium">Cost</th>}
-                  {isOwner && <th className="px-6 py-2"><span className="sr-only">Actions</span></th>}
-                </tr>
-              </thead>
-              <tbody>
-                {[...active, ...archived].map((p) => (
-                  <tr key={p.id} className={cn("border-b border-border last:border-0", !p.active && "text-muted-foreground")}>
-                    <td className="px-6 py-3 font-mono text-xs">{p.sku}</td>
-                    <td className="px-3 py-3 font-medium">
-                      {p.name}
-                      {!p.active && <span className="ml-2 text-xs font-normal">(archived)</span>}
-                    </td>
-                    <td className="px-3 py-3 text-right">
-                      <StockBadge part={p} />
-                    </td>
-                    <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{p.low_stock_at}</td>
-                    <td className="px-3 py-3 text-right tabular-nums">{formatPeso(Number(p.retail_price))}</td>
-                    {isOwner && <td className="px-3 py-3 text-right tabular-nums">{formatPeso(costs.get(p.id) ?? 0)}</td>}
-                    {isOwner && (
-                      <td className="px-6 py-3">
-                        <PartActions part={p} cost={costs.get(p.id) ?? 0} />
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {isOwner && (
+          <div className="flex flex-wrap gap-2">
+            <ImportButton current={exportRows} />
+            <ExportMenu current={exportRows} />
+            <AddPartButton />
           </div>
         )}
-      </Card>
+      </header>
 
       {isOwner && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base text-tertiary">
-              <ArrowDownUp className="size-4" aria-hidden />
-              Import &amp; export
-            </CardTitle>
-            <CardDescription>Bring in an existing inventory, or take a copy of yours.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ImportExport current={exportRows} />
-          </CardContent>
-        </Card>
+        <p className="-mt-1 text-sm text-primary">
+          Import an Excel (.xlsx), CSV or JSON file with SKU and Name columns, plus optional Category, Cost, Retail price,
+          Quantity and Low-stock level. Use Import parts to download a template and preview changes before saving.
+        </p>
       )}
 
-      {isOwner && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base text-tertiary">
-              <PackagePlus className="size-4" aria-hidden />
-              Add a part
-            </CardTitle>
-            <CardDescription>The cost is only ever shown to you.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <AddPartForm />
-          </CardContent>
-        </Card>
-      )}
+      <PartsTable parts={parts} costs={costs} isOwner={isOwner} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
@@ -214,8 +132,13 @@ export default async function InventoryPage({ searchParams }: PageProps<"/invent
                       <td className="py-2">{u.part.name}</td>
                       <td className="py-2 text-right font-medium tabular-nums">{u.quantity}</td>
                       <td className="py-2 text-right tabular-nums text-muted-foreground">{u.repairs}</td>
-                      <td className="py-2 text-right">
-                        <StockBadge part={u.part} />
+                      <td
+                        className={cn(
+                          "py-2 text-right tabular-nums",
+                          stockLevel(u.part) !== "ok" && "font-semibold text-amber-700 dark:text-amber-300",
+                        )}
+                      >
+                        {u.part.quantity}
                       </td>
                     </tr>
                   ))}
@@ -278,24 +201,5 @@ export default async function InventoryPage({ searchParams }: PageProps<"/invent
         </Card>
       </div>
     </main>
-  );
-}
-
-const LEVEL_STYLES: Record<StockLevel, string> = {
-  ok: "bg-muted text-foreground",
-  low: "bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
-  out: "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300",
-  negative: "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300",
-};
-
-// The stock count, coloured by level, with words so it isn't colour alone.
-function StockBadge({ part }: { part: Part }) {
-  const level = stockLevel(part);
-  const words = { ok: "", low: "low", out: "out", negative: "check count" }[level];
-  return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums", LEVEL_STYLES[level])}>
-      {part.quantity}
-      {words && <span className="font-normal">· {words}</span>}
-    </span>
   );
 }

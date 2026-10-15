@@ -4,12 +4,13 @@
  * files never leave the device until the owner presses Import.
  */
 
-export const COLUMNS = ["sku", "name", "cost", "retail_price", "quantity", "low_stock_at"] as const;
+export const COLUMNS = ["sku", "name", "category", "cost", "retail_price", "quantity", "low_stock_at"] as const;
 export type Column = (typeof COLUMNS)[number];
 
 export type FileRow = {
   sku: string;
   name: string;
+  category: string;
   cost: number;
   retail_price: number;
   quantity: number;
@@ -22,6 +23,7 @@ export type Problem = { row: number; reason: string };
 const ALIASES: Record<string, Column> = {
   sku: "sku", code: "sku", "part code": "sku", "item code": "sku",
   name: "name", part: "name", "part name": "name", description: "name", item: "name",
+  category: "category", type: "category", group: "category", "part type": "category",
   cost: "cost", "cost price": "cost", "unit cost": "cost", "buying price": "cost",
   retail_price: "retail_price", "retail price": "retail_price", retail: "retail_price", price: "retail_price",
   "selling price": "retail_price", srp: "retail_price",
@@ -31,8 +33,8 @@ const ALIASES: Record<string, Column> = {
 };
 
 const EXAMPLES: FileRow[] = [
-  { sku: "LCD-IP12", name: "iPhone 12 LCD screen", cost: 2500, retail_price: 3800, quantity: 4, low_stock_at: 2 },
-  { sku: "BAT-A52", name: "Galaxy A52 battery", cost: 650, retail_price: 1100, quantity: 10, low_stock_at: 3 },
+  { sku: "LCD-IP12", name: "iPhone 12 LCD screen", category: "Screens", cost: 2500, retail_price: 3800, quantity: 4, low_stock_at: 2 },
+  { sku: "BAT-A52", name: "Galaxy A52 battery", category: "Batteries", cost: 650, retail_price: 1100, quantity: 10, low_stock_at: 3 },
 ];
 
 // "₱1,200.50" -> 1200.5; "" -> NaN.
@@ -81,6 +83,7 @@ export function rowsFromTable(table: unknown[][]): { rows: FileRow[]; problems: 
     const row: FileRow = {
       sku: String(get("sku") ?? "").trim(),
       name: String(get("name") ?? "").trim(),
+      category: has("category") ? String(get("category")).trim() : "",
       cost: has("cost") ? toNumber(get("cost")) : 0,
       retail_price: has("retail_price") ? toNumber(get("retail_price")) : 0,
       quantity: has("quantity") ? toNumber(get("quantity")) : 0,
@@ -92,6 +95,7 @@ export function rowsFromTable(table: unknown[][]): { rows: FileRow[]; problems: 
       row.sku.length > 40 ? "SKU is longer than 40 characters." :
       !row.name ? "No name." :
       row.name.length > 100 ? "Name is longer than 100 characters." :
+      row.category.length > 50 ? "Category is longer than 50 characters." :
       !(Number.isFinite(row.cost) && row.cost >= 0 && row.cost <= 99_999_999.99) ? "Cost must be ₱0 or more." :
       !(Number.isFinite(row.retail_price) && row.retail_price >= 0 && row.retail_price <= 99_999_999.99) ? "Retail price must be ₱0 or more." :
       !(Number.isInteger(row.quantity) && row.quantity >= 0 && row.quantity <= 9999) ? "Quantity must be a whole number from 0 to 9,999." :
@@ -181,9 +185,9 @@ export async function downloadXlsx(rows: FileRow[], fileName: string) {
       sheet: "Inventory",
       data: [
         COLUMNS.map(bold),
-        ...rows.map((r) => [r.sku, r.name, peso(r.cost), peso(r.retail_price), r.quantity, r.low_stock_at]),
+        ...rows.map((r) => [r.sku, r.name, r.category, peso(r.cost), peso(r.retail_price), r.quantity, r.low_stock_at]),
       ],
-      columns: [16, 32, 12, 14, 10, 14].map((width) => ({ width })),
+      columns: [16, 32, 16, 12, 14, 10, 14].map((width) => ({ width })),
     },
   ] as Parameters<typeof writeXlsxFile>[0]).toFile(fileName);
 }
