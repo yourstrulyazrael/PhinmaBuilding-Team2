@@ -76,7 +76,11 @@ rate the technician who handled it (1–5 stars, optional comment), once,
 from their tracking page. Reviews are private to the shop: each
 technician sees their own (Account → Your reviews, the repair page, a
 notification); the owner sees everyone's, with each person's average on
-Workspace → Staff.
+Workspace → Staff. A **Reviews** page in the top bar (ticket 63) shows
+**CSAT** (share of 4–5★) and **DSAT** (share of 1–2★), filtered by period,
+rating and (owner) person, and a **leaderboard** ranking everyone by CSAT
+then DSAT (3 reviews in the period to be ranked). Everyone sees the
+leaderboard's scores; comments stay private as above.
 
 **Pickup, warranty and receipts** (tickets 44, 56–58): the owner can
 **Reassign** a repair to anyone current in the shop. When a repair is

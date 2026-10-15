@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react"
 import { EASE, GLIDE_MS } from "@/components/sliding-tabs";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, Boxes, ChartColumn, LayoutDashboard, Plus, Users } from "lucide-react";
+import { Bell, Boxes, ChartColumn, LayoutDashboard, Plus, Star, Users } from "lucide-react";
 import { RevealLabel, revealItem } from "@/components/reveal-label";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +16,8 @@ const LINKS = [
   { href: "/reports", label: "Reports & analytics", icon: ChartColumn, ownerOnly: true },
   { href: "/inventory", label: "Inventory", icon: Boxes, ownerOnly: false },
   { href: "/workspace", label: "Workspace", icon: Users, ownerOnly: false },
+  // Customer reviews, CSAT/DSAT and the leaderboard (ticket 63).
+  { href: "/reviews", label: "Reviews", icon: Star, ownerOnly: false },
 ];
 
 // The technician's navigation, in the top bar: square icon buttons, each
