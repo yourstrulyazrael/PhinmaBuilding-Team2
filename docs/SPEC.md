@@ -88,7 +88,10 @@ least one real apprentice. Customers never log in; they only view a
    device, problem, status, initial quote, revised estimate, notes,
    parts replaced, promised date, the shop name, the owner's contact and
    "Your technician: <name>". Never the customer's name or phone. A
-   wrong link shows "No repair found". It updates within a second or two
+   wrong link shows "No repair found". When the revised estimate is
+   waiting, the customer can **Approve** or **Decline** it. While the
+   repair is not finished, they can **Request cancellation** (with an
+   optional reason). A cancelled repair says so. It updates within a second or two
    of any change, and still re-checks every 15 seconds as a backup.
 8. **Workspace**: the **owner** sees every tab: **Customers**,
    **Notifications**, **Analytics** and **Shop settings** (their own
@@ -143,13 +146,31 @@ apprentices cannot see or pass it on.
   `quoted_by` both set to themselves.
 - Update: the **owner** may change anything on any job in their shop.
   An **apprentice** may change only jobs they handle, and only `status`,
-  `notes`, `parts_replaced` and `promised_date`. The database itself
+  `notes`, `parts_replaced`, `promised_date`, the payment record and
+  clearing a cancellation request. (Ticket 17–19 additions.) The database itself
   rejects an apprentice changing prices, `handled_by`, `quoted_by` or
   `shop_id`, so a hand-crafted request from a browser cannot get round
   it.
-- Delete: nobody.
+- **Status** also allows **Cancelled** (a 7th status; like Picked up,
+  it counts as finished).
+- **Estimate approval** (ticket 17): `estimate_status` (waiting,
+  approved or declined) and `estimate_answered_at`. Setting or changing
+  the revised estimate resets it to waiting. Only the customer can
+  answer, through `answer_estimate`; the database ignores any shop
+  account trying to set it.
+- **Cancellation request** (ticket 18): `cancel_requested_at` and
+  `cancel_reason` (up to 300 characters). Only the customer can make a
+  request, through `request_cancellation`; the shop can only clear it.
+  Setting Cancelled or Picked up clears it.
+- **Payment** (ticket 19): `amount_paid` (pesos), `payment_method`
+  (cash, GCash or other) and `paid_at` (set by the database). A record
+  only: no money moves through the app.
 
-**`get_tracking_page`** (a database function): anyone may call it with
+**`answer_estimate`** and **`request_cancellation`** (database
+functions): anyone with a tracking code may call them. Each does only
+its one job, on that one job, and only while the job is not finished.
+
+**`get_tracking_page`**) (a database function): anyone may call it with
 a tracking code. It returns one job's customer-safe fields, the shop
 name, the owner's contact number and the handling technician's name.
 Never the customer's name or phone. A wrong code returns nothing.
@@ -212,5 +233,5 @@ Phase 2 (only shown if finished and tested in time):
 - A full activity history log (phase 2 records only "Quoted by" and
   "Handled by")
 - More than one shop per owner, or one person in several shops
-- Inventory, intake photos, payments and receipts, warranty, estimate
-  approval (see `docs/LATER.md`)
+- Inventory, intake photos, receipts, warranty (see `docs/LATER.md`)
+- Online payments: payment is recorded by hand at pickup
