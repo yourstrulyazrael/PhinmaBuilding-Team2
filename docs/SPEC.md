@@ -107,9 +107,11 @@ least one real apprentice. Customers never log in; they only view a
    and exports the inventory as CSV, Excel or JSON, with templates
    (tickets 30–31). Analytics and Reports show parts sold, cost and
    profit.
-10. **Analytics** and **Reports** (owner only; their own pages in the
-   top bar, ticket 26): Today, the last 7 or 30 days (Reports also a
-   whole month); statistics with smooth line charts beneath. Reports
+10. **Reports & analytics** (owner only; one page in the top bar,
+   tickets 26 and 33; the old Analytics address redirects to it): Today,
+   the last 7 or 30 days, or a whole month; statistics (including open
+   repairs right now) with smooth line charts beneath, then jobs by
+   status, most common devices and payment methods. It
    lists every job received in the period (no customer phone numbers)
    and exports as Excel (.xlsx) or PDF (ticket 25). An **apprentice** sees only **Notifications**. Both see
    the **Overdue & awaiting pickup** panel. Owner-only tabs refuse

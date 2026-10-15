@@ -1,6 +1,6 @@
 /**
- * The time periods Analytics and Reports can show (ticket 26): Today,
- * the last 7 days, the last 30 days, or (Reports only) a whole month.
+ * The time periods Reports & analytics can show (tickets 26, 33): Today,
+ * the last 7 days, the last 30 days, or a whole month.
  * All dates are Manila dates, "YYYY-MM-DD".
  *
  * Every number, chart and table on those pages uses the same period,

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Boxes, ChartColumn, ClipboardList, LayoutDashboard, Plus, UserRound, Users } from "lucide-react";
+import { Boxes, ChartColumn, LayoutDashboard, Plus, UserRound, Users } from "lucide-react";
 import { RevealLabel, revealItem } from "@/components/reveal-label";
 import { cn } from "@/lib/utils";
 
@@ -12,8 +12,7 @@ import { cn } from "@/lib/utils";
 const LINKS = [
   { href: "/", label: "Overview", icon: LayoutDashboard, ownerOnly: false },
   { href: "/jobs/new", label: "Add a repair", icon: Plus, ownerOnly: false },
-  { href: "/analytics", label: "Analytics", icon: ChartColumn, ownerOnly: true },
-  { href: "/reports", label: "Reports", icon: ClipboardList, ownerOnly: true },
+  { href: "/reports", label: "Reports & analytics", icon: ChartColumn, ownerOnly: true },
   { href: "/inventory", label: "Inventory", icon: Boxes, ownerOnly: false },
   { href: "/workspace", label: "Workspace", icon: Users, ownerOnly: false },
   // On a phone the bar is full: My details is also in Workspace → Shop
