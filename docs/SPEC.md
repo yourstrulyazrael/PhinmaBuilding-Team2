@@ -103,6 +103,10 @@ least one real apprentice. Customers never log in; they only view a
    low-stock flags, restocks and adjustments (owner), the stock history,
    and the most used parts for Today / 7 / 30 days. Job detail gains
    **Parts used**, which deducts stock; the tracking page lists them.
+   Parts have a cost (owner only) and a retail price; the owner imports
+   and exports the inventory as CSV, Excel or JSON, with templates
+   (tickets 30–31). Analytics and Reports show parts sold, cost and
+   profit.
 10. **Analytics** and **Reports** (owner only; their own pages in the
    top bar, ticket 26): Today, the last 7 or 30 days (Reports also a
    whole month); statistics with smooth line charts beneath. Reports
@@ -183,7 +187,8 @@ least one real apprentice. Customers never log in; they only view a
 Read: the shop. Write: the owner. Delete: nobody (archive instead).
 
 **`part_costs`**: `part_id`, `cost`. Owner only, read and write: kept
-apart from `parts` so staff can't read costs.
+apart from `parts` so staff can't read costs. `parts.retail_price` (ticket 30) is
+the selling price, readable by the shop.
 
 **`stock_movements`**: `part_id`, `change` (+/−), `reason` (restock,
 adjustment, used, returned), `job_id`, `note`, `created_by`,
@@ -191,7 +196,9 @@ adjustment, used, returned), `job_id`, `note`, `created_by`,
 "used" and "returned" are made by the database from `job_parts`.
 Update/delete: nobody.
 
-**`job_parts`** (ticket 28): `job_id`, `part_id`, `quantity`. Read: the
+**`job_parts`** (ticket 28): `job_id`, `part_id`, `quantity`. `unit_price` records
+the retail price when used (ticket 30); the cost then is kept in the
+owner-only **`job_part_costs`** (`job_part_id`, `unit_cost`). Read: the
 shop. Insert/delete: the owner or the job's handler.
 
 **`answer_estimate`** and **`request_cancellation`** (database
