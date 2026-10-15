@@ -7,6 +7,7 @@ import { qrSvg, trackingUrl } from "@/lib/tracking-url";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PrintButton } from "./print-button";
+import { SaveImageButton } from "./save-image-button";
 
 /**
  * The claim slip the customer takes home. It deliberately leaves out
@@ -46,7 +47,27 @@ export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/sl
           <ArrowLeft className="mr-1.5 size-4" aria-hidden />
           Repair jobs
         </Link>
-        <PrintButton />
+        <div className="flex gap-2">
+          <SaveImageButton
+            slip={{
+              technicianName: technician?.display_name ?? "Zenith Repair",
+              technicianContact: technician?.contact_number ?? "",
+              rows: [
+                ["Device", job.device],
+                ["Problem", job.problem],
+                ["Initial quote", formatPeso(job.initial_quote)],
+                ...(job.revised_estimate !== null
+                  ? [["Revised estimate", formatPeso(job.revised_estimate)] as [string, string]]
+                  : []),
+                ["Received", formatDate(receivedOn)],
+                ["Promised by", formatDate(job.promised_date)],
+              ],
+              url,
+              fileName: `claim-slip-${job.device.replace(/[^\w-]+/g, "-").toLowerCase()}.png`,
+            }}
+          />
+          <PrintButton />
+        </div>
       </div>
 
       <Card className="flex flex-col gap-5 p-6 print:mx-auto print:max-w-sm print:shadow-none">

@@ -6,6 +6,9 @@ import { formatDate, formatPeso, type Job } from "@/lib/jobs";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusPicker } from "@/components/status-picker";
+import { CopyMessageButton } from "@/components/copy-message-button";
+import { trackingUrl } from "@/lib/tracking-url";
+import { updateMessage } from "@/lib/update-message";
 import { JobDetailsForm } from "./job-details-form";
 
 // The technician's view of one repair job. Unlike the claim slip and
@@ -34,7 +37,8 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
           <h1 className="text-2xl font-semibold tracking-tight text-tertiary">{job.device}</h1>
           <p className="text-sm text-muted-foreground">{job.problem}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-start gap-2">
+          <CopyMessageButton message={updateMessage(job, await trackingUrl(job.tracking_code))} />
           <Link href={`/jobs/${job.id}/slip`} className={buttonVariants({ variant: "secondary", size: "sm" })}>
             <QrCode className="mr-1.5 size-4" aria-hidden />
             Claim slip
