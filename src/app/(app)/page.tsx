@@ -72,7 +72,7 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
     [...lateJobs, ...dueTodayJobs].map((j) => j.customer_phone.replace(/\D/g, "") || j.id),
   ).size;
 
-  const matches = sortJobs(searchJobs(jobs, q), sort);
+  const matches = sortJobs(searchJobs(jobs, q), sort, names);
   const listed = {
     mine: matches.filter((j) => !isFinished(j.status) && j.handled_by === user.id),
     all: matches.filter((j) => !isFinished(j.status)),

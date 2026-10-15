@@ -140,6 +140,8 @@ export const SORTS = [
   { value: "newest", label: "Newest added" },
   { value: "oldest", label: "Oldest added" },
   { value: "customer", label: "Customer name" },
+  // By who handles it, A to Z; each person's soonest first (ticket 60).
+  { value: "staff", label: "Staff" },
 ] as const;
 
 export type Sort = (typeof SORTS)[number]["value"];
@@ -163,13 +165,23 @@ export function searchJobs(jobs: Job[], query: string) {
 }
 
 // A sorted copy; the original list is left alone.
-export function sortJobs(jobs: Job[], sort: Sort) {
+// `names` (technician id -> name) is needed for the Staff sort.
+export function sortJobs(jobs: Job[], sort: Sort, names: Record<string, string> = {}) {
   const sorted = [...jobs];
   switch (sort) {
     case "newest":
       return sorted.sort((a, b) => b.created_at.localeCompare(a.created_at));
     case "oldest":
       return sorted.sort((a, b) => a.created_at.localeCompare(b.created_at));
+    case "staff": {
+      const who = (j: Job) => names[j.handled_by] ?? "";
+      return sorted.sort(
+        (a, b) =>
+          who(a).localeCompare(who(b), "en", { sensitivity: "base" }) ||
+          a.promised_date.localeCompare(b.promised_date) ||
+          a.created_at.localeCompare(b.created_at),
+      );
+    }
     case "customer":
       return sorted.sort((a, b) => a.customer_name.localeCompare(b.customer_name, "en", { sensitivity: "base" }));
     default:
