@@ -183,6 +183,7 @@ least one real apprentice. Customers never log in; they only view a
   by the database). A record only: no money moves through the app.
 
 **`parts`** (ticket 27): `id`, `shop_id`, `sku` (unique in the shop), `name`,
+`category` (ticket 32),
 `quantity` (changed only by stock movements), `low_stock_at`, `active`.
 Read: the shop. Write: the owner. Delete: nobody (archive instead).
 
