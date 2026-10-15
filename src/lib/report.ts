@@ -20,6 +20,7 @@ export type ReportRow = {
   status: string;
   initialQuote: number;
   revisedEstimate: number | null;
+  parts: number; // parts used, on top of labour (ticket 47)
   paid: number | null;
   method: string;
   ref: string;
@@ -87,6 +88,7 @@ export function buildReport(jobs: Job[], period: Period, names: Map<string, stri
       status: statusLabel(j.status),
       initialQuote: Number(j.initial_quote),
       revisedEstimate: j.revised_estimate === null ? null : Number(j.revised_estimate),
+      parts: Number(j.parts_total ?? 0),
       paid: j.amount_paid === null ? null : Number(j.amount_paid),
       method: j.payment_method ? paymentLabel(j.payment_method) : "",
       ref: j.payment_ref ? `…${j.payment_ref}` : "",

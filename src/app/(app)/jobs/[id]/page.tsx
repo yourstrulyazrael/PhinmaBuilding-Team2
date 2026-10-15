@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { AlarmClock, ArrowLeft, ExternalLink, Lock, Package, Phone, QrCode, ThumbsDown, ThumbsUp, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDate, formatPeso, isFinished, paymentLabel, todayInManila, type Job } from "@/lib/jobs";
-import { currentPrice, isLate } from "@/lib/workspace";
+import { currentPrice, isLate, labourPrice, partsTotal } from "@/lib/workspace";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusPicker } from "@/components/status-picker";
@@ -178,17 +178,29 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
                 {job.customer_phone}
               </a>
             </dd>
+            {/* Labour (quote, then any revised estimate) + parts = total
+                (ticket 47). */}
             <dt className="text-muted-foreground">Initial quote</dt>
-            <dd className="font-medium tabular-nums">{formatPeso(job.initial_quote)}</dd>
+            <dd className="font-medium tabular-nums">
+              {formatPeso(job.initial_quote)} <span className="text-xs font-normal text-muted-foreground">labour</span>
+            </dd>
             {job.revised_estimate !== null && (
               <>
                 <dt className="text-muted-foreground">Revised estimate</dt>
                 <dd className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium tabular-nums">{formatPeso(job.revised_estimate)}</span>
+                  <span className="font-medium tabular-nums">
+                    {formatPeso(job.revised_estimate)} <span className="text-xs font-normal text-muted-foreground">labour</span>
+                  </span>
                   <EstimateAnswer job={job} />
                 </dd>
               </>
             )}
+            <dt className="text-muted-foreground">Parts</dt>
+            <dd className="tabular-nums">
+              {partsTotal(job) > 0 ? formatPeso(partsTotal(job)) : <span className="text-muted-foreground">None yet</span>}
+            </dd>
+            <dt className="font-medium text-tertiary">Total</dt>
+            <dd className="font-semibold tabular-nums text-tertiary">{formatPeso(currentPrice(job))}</dd>
             {job.amount_paid !== null && (
               <>
                 <dt className="text-muted-foreground">Paid</dt>
@@ -289,11 +301,11 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
               <div className="flex flex-col gap-0.5">
                 <p className="flex items-center gap-2 font-medium text-tertiary">
                   <TrendingUp className="size-4 text-highlight" aria-hidden />
-                  {nameOf(proposal.staff_id, viewer)} proposes a revised estimate of{" "}
+                  {nameOf(proposal.staff_id, viewer)} proposes a labour estimate of{" "}
                   <span className="tabular-nums">{formatPeso(proposal.amount)}</span>
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Now {formatPeso(currentPrice(job))} · {formatDateTime(proposal.created_at)} · approving asks the
+                  Labour now {formatPeso(labourPrice(job))} · {formatDateTime(proposal.created_at)} · approving asks the
                   customer to accept it
                 </p>
               </div>
@@ -319,7 +331,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
           {!viewer.isOwner && editable && !(shop?.canReviseEstimate ?? false) && !isFinished(job.status) ? (
             <ProposeEstimate
               jobId={job.id}
-              current={currentPrice(job)}
+              current={labourPrice(job)}
               last={
                 proposal
                   ? {

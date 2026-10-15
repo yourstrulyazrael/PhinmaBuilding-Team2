@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Ban, Bell, CalendarClock, CircleCheck, Clock, Hand, Hourglass, Package, PackageX, ThumbsDown, ThumbsUp, TrendingUp } from "lucide-react";
 import type { Part } from "@/lib/inventory";
-import { currentPrice, type Alert } from "@/lib/workspace";
+import { labourPrice, type Alert } from "@/lib/workspace";
 import { formatPeso, type Job } from "@/lib/jobs";
 import type { OwnerAnswer } from "@/lib/session";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -118,10 +118,10 @@ export function NotificationsList({
                   <TrendingUp className="mt-0.5 size-4 shrink-0 text-highlight" aria-hidden />
                   <span className="flex flex-col gap-0.5">
                     <span className="font-medium text-tertiary">
-                      {names[p.staffId] ?? "Someone"} proposes {formatPeso(p.amount)} for {p.job.device}
+                      {names[p.staffId] ?? "Someone"} proposes {formatPeso(p.amount)} labour for {p.job.device}
                     </span>
                     <span className="text-muted-foreground">
-                      {p.job.customer_name} · now {formatPeso(currentPrice(p.job))}. Open it to approve or reject.
+                      {p.job.customer_name} · labour now {formatPeso(labourPrice(p.job))}. Open it to approve or reject.
                     </span>
                   </span>
                 </Link>

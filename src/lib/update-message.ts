@@ -7,20 +7,26 @@ import { formatDate, formatPeso, statusLabel, type Job } from "@/lib/jobs";
  * phone number cannot end up in it by accident.
  */
 export function updateMessage(
-  job: Pick<Job, "device" | "status" | "initial_quote" | "revised_estimate" | "estimate_status">,
+  job: Pick<Job, "device" | "status" | "initial_quote" | "revised_estimate" | "estimate_status" | "parts_total">,
   trackingUrl: string,
 ) {
   const lines = [
     `Hi! Here's an update on your ${job.device} repair.`,
     "",
     `Status: ${statusLabel(job.status)}`,
-    `Initial quote: ${formatPeso(job.initial_quote)}`,
+    `Labour quote: ${formatPeso(job.initial_quote)}`,
   ];
   if (job.revised_estimate !== null) {
-    lines.push(`Revised estimate: ${formatPeso(job.revised_estimate)}`);
-    if (job.estimate_status === "pending") {
-      lines.push("Please approve the new estimate on your tracking page so we can continue.");
-    }
+    lines.push(`Revised labour: ${formatPeso(job.revised_estimate)}`);
+  }
+  // Parts are charged on top of labour (ticket 47).
+  const parts = Number(job.parts_total ?? 0);
+  if (parts > 0) {
+    lines.push(`Parts: ${formatPeso(parts)}`);
+    lines.push(`Total: ${formatPeso(Number(job.revised_estimate ?? job.initial_quote) + parts)}`);
+  }
+  if (job.revised_estimate !== null && job.estimate_status === "pending") {
+    lines.push("Please approve the new estimate on your tracking page so we can continue.");
   }
   lines.push("", `Track your repair anytime: ${trackingUrl}`);
   return lines.join("\n");

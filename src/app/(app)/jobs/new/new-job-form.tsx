@@ -30,7 +30,7 @@ export function NewJobForm({ today }: { today: string }) {
         <legend className="mb-3 text-sm font-semibold text-tertiary">Repair</legend>
         <Field label="Device" name="device" maxLength={100} placeholder="e.g. iPhone 12" />
         <Field
-          label="Initial quote (₱)"
+          label="Initial quote, labour (₱)"
           name="initial_quote"
           type="number"
           inputMode="decimal"

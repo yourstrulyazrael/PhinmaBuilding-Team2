@@ -163,9 +163,9 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
           <table className="mt-2 w-full min-w-[900px] text-sm print:min-w-0 print:text-[11px]">
             <thead>
               <tr className="border-b border-border text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                {["Received", "Device", "Problem", "Customer", "Status", "Quote", "Revised", "Paid", "Method", "Handled by"].map(
+                {["Received", "Device", "Problem", "Customer", "Status", "Labour", "Revised", "Parts", "Paid", "Method", "Handled by"].map(
                   (h) => (
-                    <th key={h} className={`px-3 py-2 font-medium ${["Quote", "Revised", "Paid"].includes(h) ? "text-right" : ""}`}>
+                    <th key={h} className={`px-3 py-2 font-medium ${["Labour", "Revised", "Parts", "Paid"].includes(h) ? "text-right" : ""}`}>
                       {h}
                     </th>
                   ),
@@ -182,6 +182,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
                   <td className="whitespace-nowrap px-3 py-2">{r.status}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{formatPeso(r.initialQuote)}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{r.revisedEstimate === null ? "" : formatPeso(r.revisedEstimate)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{r.parts > 0 ? formatPeso(r.parts) : ""}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{r.paid === null ? "" : formatPeso(r.paid)}</td>
                   <td className="whitespace-nowrap px-3 py-2">
                     {r.method}

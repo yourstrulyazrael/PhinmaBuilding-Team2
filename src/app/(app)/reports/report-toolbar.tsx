@@ -65,7 +65,7 @@ export function ReportToolbar({
         ...points.map((p) => [p.label, p.received, p.pickedUp, peso(p.earned)]),
       ];
 
-      const headers = ["Received", "Device", "Problem", "Customer", "Status", "Initial quote", "Revised estimate", "Paid", "Method", "Ref", "Handled by"];
+      const headers = ["Received", "Device", "Problem", "Customer", "Status", "Labour quote", "Revised labour", "Parts", "Paid", "Method", "Ref", "Handled by"];
       const jobs = [
         headers.map(bold),
         ...report.rows.map((r) => [
@@ -76,6 +76,7 @@ export function ReportToolbar({
           r.status,
           peso(r.initialQuote),
           peso(r.revisedEstimate),
+          peso(r.parts),
           peso(r.paid),
           r.method,
           r.ref,
@@ -86,7 +87,7 @@ export function ReportToolbar({
       await writeXlsxFile([
         { sheet: "Summary", data: summary, columns: [{ width: 34 }, { width: 14 }, { width: 16 }] },
         { sheet: "Trend", data: trendSheet, columns: [12, 12, 12, 16].map((width) => ({ width })) },
-        { sheet: "Jobs", data: jobs, columns: [12, 20, 30, 20, 16, 14, 16, 14, 10, 8, 18].map((width) => ({ width })) },
+        { sheet: "Jobs", data: jobs, columns: [12, 20, 30, 20, 16, 14, 16, 12, 14, 10, 8, 18].map((width) => ({ width })) },
       ] as Parameters<typeof writeXlsxFile>[0]).toFile(`zenith-report-${report.periodKey}.xlsx`);
     } catch {
       setError("Couldn't make the Excel file. Please try again.");

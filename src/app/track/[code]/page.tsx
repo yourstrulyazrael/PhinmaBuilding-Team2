@@ -35,6 +35,9 @@ type TrackedJob = {
   shop_name: string;
   shop_contact: string; // the shop phone, or the owner's number
   shop_address?: string; // after 016; "" when the shop has none
+  // After 023 (ticket 47): parts used, at retail, and each one.
+  parts_total?: number;
+  parts_lines?: { name: string; quantity: number; unit_price: number }[];
   technician_name: string; // who is handling the phone
 };
 
@@ -83,6 +86,10 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
   // Past the promised date and not ready: apologise (ticket 21). It goes
   // away when the shop sets a new date or the phone is ready.
   const late = isLate(job, todayInManila());
+  // Labour + parts = what they pay (ticket 47).
+  const lines = job.parts_lines ?? [];
+  const parts = Number(job.parts_total ?? 0);
+  const total = Number(job.revised_estimate ?? job.initial_quote) + parts;
   const updated = new Date(job.updated_at).toLocaleString("en-US", {
     timeZone: "Asia/Manila",
     month: "short",
@@ -96,7 +103,7 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
       {/* A new price waiting for the customer's answer comes first: it's
           the one thing on this page they need to act on (ticket 40). */}
       {job.estimate_status === "pending" && job.revised_estimate !== null && !finished && (
-        <EstimateQuestion code={code} initial={job.initial_quote} revised={job.revised_estimate} />
+        <EstimateQuestion code={code} initial={job.initial_quote} revised={job.revised_estimate} parts={parts} />
       )}
 
       <Card className="flex flex-col gap-4 p-6">
@@ -162,13 +169,14 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
 
       <Card className="p-6">
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3 text-sm">
-          <dt className="text-muted-foreground">Initial quote</dt>
-          <dd className="font-medium tabular-nums">{formatPeso(job.initial_quote)}</dd>
-          {job.revised_estimate !== null && (
-            <>
-              <dt className="text-muted-foreground">Revised estimate</dt>
-              <dd className="flex flex-wrap items-center gap-2">
-                <span className="font-medium tabular-nums">{formatPeso(job.revised_estimate)}</span>
+          {/* The price, itemised (ticket 47): labour, each part used at
+              its price, and the total. Never the shop's cost. */}
+          <dt className="text-muted-foreground">Labour</dt>
+          <dd className="flex flex-wrap items-center gap-2">
+            <span className="font-medium tabular-nums">{formatPeso(job.revised_estimate ?? job.initial_quote)}</span>
+            {job.revised_estimate !== null && (
+              <>
+                <span className="text-xs text-muted-foreground">revised from {formatPeso(job.initial_quote)}</span>
                 {job.estimate_status === "approved" && (
                   <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-primary">You approved</span>
                 )}
@@ -177,9 +185,31 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
                     You declined: the shop will contact you
                   </span>
                 )}
+              </>
+            )}
+          </dd>
+          {lines.length > 0 && (
+            <>
+              <dt className="text-muted-foreground">Parts</dt>
+              <dd>
+                <ul className="flex flex-col gap-1">
+                  {lines.map((l, i) => (
+                    <li key={i} className="flex justify-between gap-3">
+                      <span>
+                        {l.name}
+                        {l.quantity > 1 && <span className="text-muted-foreground"> ×{l.quantity}</span>}
+                      </span>
+                      <span className="tabular-nums">{formatPeso(Number(l.unit_price) * l.quantity)}</span>
+                    </li>
+                  ))}
+                </ul>
               </dd>
             </>
           )}
+          <dt className="border-t border-border pt-3 font-medium text-tertiary">Total</dt>
+          <dd className="border-t border-border pt-3 text-base font-semibold tabular-nums text-tertiary">
+            {formatPeso(total)}
+          </dd>
           <dt className="text-muted-foreground">Promised by</dt>
           <dd className="flex items-center gap-1.5 font-medium">
             <CalendarDays className="size-3.5 text-muted-foreground" aria-hidden />
@@ -191,10 +221,14 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
               <dd className="whitespace-pre-line">{job.notes}</dd>
             </>
           )}
-          {(job.parts_used || job.parts_replaced) && (
+          {/* Parts with prices are listed above; this is the shop's own
+              note on parts, and the plain list before 023 is run. */}
+          {((lines.length === 0 && job.parts_used) || job.parts_replaced) && (
             <>
               <dt className="text-muted-foreground">Parts replaced</dt>
-              <dd className="whitespace-pre-line">{[job.parts_used, job.parts_replaced].filter(Boolean).join("\n")}</dd>
+              <dd className="whitespace-pre-line">
+                {[lines.length === 0 ? job.parts_used : null, job.parts_replaced].filter(Boolean).join("\n")}
+              </dd>
             </>
           )}
         </dl>

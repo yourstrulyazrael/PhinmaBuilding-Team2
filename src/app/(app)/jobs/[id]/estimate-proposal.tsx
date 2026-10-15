@@ -68,7 +68,7 @@ export function ProposeEstimate({
     <>
       <form id={FORM_ID} action={formAction} className="flex flex-col gap-4 text-sm">
         <div className="flex flex-col gap-2">
-          <Label htmlFor="amount">Revised estimate (₱)</Label>
+          <Label htmlFor="amount">Revised estimate, labour (₱)</Label>
           <Input
             id="amount"
             name="amount"

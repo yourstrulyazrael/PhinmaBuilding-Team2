@@ -36,9 +36,21 @@ export function pickedUpOn(job: Job) {
   return manilaDate(job.paid_at ?? job.updated_at);
 }
 
-// What the customer will actually pay: the revised estimate if there is one.
+// What the customer will actually pay: labour (the revised estimate if
+// there is one, else the quote) plus the parts used.
 export function currentPrice(job: Job) {
+  return labourPrice(job) + partsTotal(job);
+}
+
+// The quote and any revised estimate are LABOUR; parts used are charged
+// on top (ticket 47). currentPrice is what the customer pays: both.
+export function labourPrice(job: Pick<Job, "initial_quote" | "revised_estimate">) {
   return Number(job.revised_estimate ?? job.initial_quote);
+}
+
+// Parts used on the repair, at retail. 0 before 023 is run.
+export function partsTotal(job: Pick<Job, "parts_total">) {
+  return Number(job.parts_total ?? 0);
 }
 
 // --- Customers ----------------------------------------------------------

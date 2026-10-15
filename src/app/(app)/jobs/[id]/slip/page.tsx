@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { LogoMark } from "@/components/logo";
 import { formatDate, formatPeso, type Job } from "@/lib/jobs";
+import { currentPrice, partsTotal } from "@/lib/workspace";
 import { qrSvg, trackingUrl } from "@/lib/tracking-url";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -57,10 +58,16 @@ export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/sl
               rows: [
                 ["Device", job.device],
                 ["Problem", job.problem],
-                ["Initial quote", formatPeso(job.initial_quote)],
+                ["Labour quote", formatPeso(job.initial_quote)],
                 ...(job.revised_estimate !== null
-                  ? [["Revised estimate", formatPeso(job.revised_estimate)] as [string, string]]
+                  ? [["Revised labour", formatPeso(job.revised_estimate)] as [string, string]]
                   : []),
+                ...(partsTotal(job) > 0
+                  ? ([
+                      ["Parts", formatPeso(partsTotal(job))],
+                      ["Total so far", formatPeso(currentPrice(job))],
+                    ] as [string, string][])
+                  : [["Parts", "Added on top when used"] as [string, string]]),
                 ["Received", formatDate(receivedOn)],
                 ["Promised by", formatDate(job.promised_date)],
                 ...(technician ? [["Your technician", technician] as [string, string]] : []),
@@ -95,12 +102,25 @@ export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/sl
           <dd className="font-medium text-tertiary">{job.device}</dd>
           <dt className="text-muted-foreground">Problem</dt>
           <dd>{job.problem}</dd>
-          <dt className="text-muted-foreground">Initial quote</dt>
+          <dt className="text-muted-foreground">Labour quote</dt>
           <dd className="font-medium tabular-nums">{formatPeso(job.initial_quote)}</dd>
           {job.revised_estimate !== null && (
             <>
-              <dt className="text-muted-foreground">Revised estimate</dt>
+              <dt className="text-muted-foreground">Revised labour</dt>
               <dd className="font-medium tabular-nums">{formatPeso(job.revised_estimate)}</dd>
+            </>
+          )}
+          {/* Parts are charged on top of labour (ticket 47). */}
+          <dt className="text-muted-foreground">Parts</dt>
+          {partsTotal(job) > 0 ? (
+            <dd className="font-medium tabular-nums">{formatPeso(partsTotal(job))}</dd>
+          ) : (
+            <dd className="text-muted-foreground">Added on top when used</dd>
+          )}
+          {partsTotal(job) > 0 && (
+            <>
+              <dt className="text-muted-foreground">Total so far</dt>
+              <dd className="font-semibold tabular-nums text-tertiary">{formatPeso(currentPrice(job))}</dd>
             </>
           )}
           <dt className="text-muted-foreground">Received</dt>

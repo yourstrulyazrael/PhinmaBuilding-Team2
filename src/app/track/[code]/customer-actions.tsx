@@ -10,7 +10,17 @@ import { Textarea } from "@/components/ui/textarea";
 
 // Approve or Decline a revised estimate (ticket 17). Decline confirms
 // and asks why first (ticket 41).
-export function EstimateQuestion({ code, initial, revised }: { code: string; initial: number; revised: number }) {
+export function EstimateQuestion({
+  code,
+  initial,
+  revised,
+  parts = 0,
+}: {
+  code: string;
+  initial: number;
+  revised: number;
+  parts?: number; // parts used so far, charged on top of labour (ticket 47)
+}) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>();
   // Decline asks "are you sure, and why?" first (ticket 41).
@@ -30,9 +40,15 @@ export function EstimateQuestion({ code, initial, revised }: { code: string; ini
       <div>
         <p className="font-medium text-tertiary">Please approve the new estimate</p>
         <p className="text-sm text-muted-foreground">
-          After checking your phone, the price changed from {formatPeso(initial)} to{" "}
-          <span className="font-semibold text-foreground">{formatPeso(revised)}</span>. Work continues once you
-          approve.
+          After checking your phone, the labour changed from {formatPeso(initial)} to{" "}
+          <span className="font-semibold text-foreground">{formatPeso(revised)}</span>
+          {Number(parts) > 0 ? (
+            <>
+              . With the parts ({formatPeso(parts)}), your total would be{" "}
+              <span className="font-semibold text-foreground">{formatPeso(Number(revised) + Number(parts))}</span>
+            </>
+          ) : null}
+          . Work continues once you approve.
         </p>
       </div>
 

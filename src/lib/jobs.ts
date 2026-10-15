@@ -58,6 +58,7 @@ export type Job = {
   estimate_status: "pending" | "approved" | "declined" | null;
   estimate_answered_at: string | null;
   estimate_decline_reason?: string; // why the customer declined (ticket 41); after 021
+  parts_total?: number | string; // parts used, at retail, kept by the database (ticket 47); after 023
   // A customer's cancellation request (ticket 18).
   cancel_requested_at: string | null;
   cancel_reason: string;

@@ -141,7 +141,10 @@ least one real apprentice. Customers never log in; they only view a
    Parts have a cost (owner only) and a retail price; the owner imports
    and exports the inventory as CSV, Excel or JSON, with templates
    (tickets 30–31). Analytics and Reports show parts sold, cost and
-   profit.
+   profit. **The quote and any revised estimate are labour; parts used
+   are charged on top** at their retail price (ticket 47): what the
+   customer pays is labour + parts, and the tracking page itemises it
+   (labour, each part with its price, total).
 10. **Reports & analytics** (owner only; one page in the top bar,
    tickets 26 and 33; the old Analytics address redirects to it): Today,
    the last 7 or 30 days, or a whole month; statistics (including open
