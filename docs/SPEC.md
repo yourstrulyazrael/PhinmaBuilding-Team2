@@ -58,8 +58,9 @@ least one real apprentice. Customers never log in; they only view a
    work continues when an apprentice is away.
 
 ## Screens
-1. **Sign in / Sign up**: email and password, with a switch between "I
-   have an account" and "Create an account".
+1. **Sign in / Set up your store**: email and password. Nobody can create
+   an account on their own (ticket 35): "Have a store code? Set up your
+   store" also asks for a **store code** the developer gave the owner.
 2. **Set up** (phase 2; shown once, after signing up): name, contact
    number and shop name; **Start a shop** makes them its owner. Staff
    never see this screen: the owner creates their accounts (ticket 22).
@@ -237,6 +238,14 @@ The owner creates apprentices' accounts in Workspace → Staff (email and a
 temporary password); apprentices can then change their password. This
 uses the normal sign-up, not the `service_role` key.
 Customers never need an account.
+
+**Sign-ups are closed** (ticket 35). The database refuses any new account
+unless it brings either a **store code** (made by the developer in the
+SQL Editor with `select new_store_code('who it is for');`, works once,
+lets that account start one shop) or a **staff ticket** (made by the
+owner's Add staff, works once, for 10 minutes, for that owner's shop).
+All stores share one Supabase project and are kept apart by RLS: every
+row belongs to a shop and people only ever see their own.
 
 ## Done for the demo
 On the **live Vercel URL**.

@@ -22,14 +22,34 @@ export default function LoginPage() {
       <Logo size={40} className="justify-center" />
       <Card>
         <CardHeader>
-          <CardTitle>{isSignup ? "Create an account" : "Sign in"}</CardTitle>
+          <CardTitle>{isSignup ? "Set up your store" : "Sign in"}</CardTitle>
           <CardDescription>
-            For the shop owner and staff. Staff: use the email and password your owner gave you. Customers don&apos;t need an account.
+            {isSignup
+              ? "Enter the store code you were given, then choose the email and password you will sign in with."
+              : "For the shop owner and staff. Staff: use the email and password your owner gave you. Customers don't need an account."}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form action={formAction} className="flex flex-col gap-4">
             <input type="hidden" name="mode" value={mode} />
+            {/* Accounts can only be made with a code from the developer
+                (ticket 35); the database checks it. */}
+            {isSignup && (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="store_code">Store code</Label>
+                <Input
+                  id="store_code"
+                  name="store_code"
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  placeholder="XXXX-XXXX-XXXX"
+                  maxLength={20}
+                  className="font-mono uppercase tracking-wider"
+                  required
+                />
+              </div>
+            )}
             <div className="flex flex-col gap-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" name="email" type="email" autoComplete="email" required />
@@ -41,7 +61,7 @@ export default function LoginPage() {
                 name="password"
                 type="password"
                 autoComplete={isSignup ? "new-password" : "current-password"}
-                minLength={isSignup ? 6 : undefined}
+                minLength={isSignup ? 8 : undefined}
                 required
               />
             </div>
@@ -53,7 +73,7 @@ export default function LoginPage() {
             )}
 
             <Button type="submit" disabled={pending}>
-              {pending ? "Please wait…" : isSignup ? "Create account" : "Sign in"}
+              {pending ? "Please wait…" : isSignup ? "Set up my store" : "Sign in"}
             </Button>
           </form>
 
@@ -62,7 +82,7 @@ export default function LoginPage() {
             onClick={() => setMode(isSignup ? "signin" : "signup")}
             className="mt-4 text-sm text-muted-foreground underline underline-offset-4"
           >
-            {isSignup ? "I have an account" : "Create an account"}
+            {isSignup ? "I already have an account" : "Have a store code? Set up your store"}
           </button>
         </CardContent>
       </Card>

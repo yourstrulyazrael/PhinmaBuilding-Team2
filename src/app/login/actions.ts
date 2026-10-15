@@ -24,11 +24,34 @@ export async function authenticate(
   const supabase = await createClient();
 
   if (mode === "signup") {
-    if (password.length < 6) {
-      return { error: "Use a password of at least 6 characters." };
+    // Nobody can sign up without a store code from the developer
+    // (ticket 35). The real check is in the database
+    // (supabase/sql/017-store-codes.sql); this only catches typos early.
+    const storeCode = String(formData.get("store_code") ?? "").replace(/[^a-z0-9]/gi, "").toUpperCase();
+    if (storeCode.length !== 12) {
+      return { error: "Enter the 12-character store code you were given, e.g. 1A2B-3C4D-5E6F." };
     }
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) return { error: error.message };
+    if (password.length < 8) {
+      return { error: "Use a password of at least 8 characters." };
+    }
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { store_code: storeCode } },
+    });
+    if (error) {
+      // When the database refuses the code, Supabase only says "Database
+      // error saving new user", so we say what it means.
+      if (/database error/i.test(error.message)) {
+        return { error: "That store code is not valid or has already been used." };
+      }
+      return { error: error.message };
+    }
+    // Supabase hides whether an email is taken: a taken email comes back
+    // with no identities.
+    if (data.user?.identities?.length === 0) {
+      return { error: "That email already has an account. Sign in instead." };
+    }
     // With "Confirm email" turned off, Supabase signs the new account in
     // straight away. No session means that setting is still on.
     if (!data.session) {

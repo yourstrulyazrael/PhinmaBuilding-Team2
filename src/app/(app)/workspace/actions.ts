@@ -37,9 +37,17 @@ export async function addStaff(_prev: AddStaffState, formData: FormData): Promis
   const shop = await getMyShop(supabase, user.id);
   if (shop?.role !== "owner") return { error: "Only the shop owner can add staff." };
 
-  // 1. Create the account.
+  // 1. Create the account. Sign-ups are closed (ticket 35), so first a
+  // one-time staff ticket for this shop; the database only accepts the
+  // sign-up with it.
+  const { data: ticket, error: ticketError } = await supabase.rpc("new_staff_ticket");
+  if (ticketError || !ticket) return { error: "Couldn't start adding staff. Has 017 been run in Supabase?" };
   const temporary = createTemporaryClient();
-  const { data: signUp, error: signUpError } = await temporary.auth.signUp({ email, password });
+  const { data: signUp, error: signUpError } = await temporary.auth.signUp({
+    email,
+    password,
+    options: { data: { staff_ticket: ticket } },
+  });
   if (signUpError) {
     return { error: /already|registered|exists/i.test(signUpError.message)
       ? "That email already has an account. Use a different email."

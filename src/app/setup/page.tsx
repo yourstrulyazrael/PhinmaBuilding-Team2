@@ -6,7 +6,8 @@ import { getShop, getSupabase, getUser } from "@/lib/session";
 
 /**
  * Shown once, after signing up: everyone must be in a shop before they
- * can see any jobs. Signing up yourself means starting a shop; staff
+ * can see any jobs. Signing up with a store code (ticket 35) means
+ * starting a shop; staff
  * accounts are created by the shop owner, already inside the shop
  * (ticket 22). Sits outside the (app) folder, so there is no sidebar.
  */
@@ -31,7 +32,7 @@ export default async function SetupPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-tertiary">Start your shop</CardTitle>
-          <CardDescription>You&apos;ll be the shop&apos;s owner. You can add staff from Shop settings.</CardDescription>
+          <CardDescription>You&apos;ll be the shop&apos;s owner. You can add staff from Workspace → Staff.</CardDescription>
         </CardHeader>
         <CardContent>
           <SetupForm displayName={technician?.display_name ?? ""} contactNumber={technician?.contact_number ?? ""} />
