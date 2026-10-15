@@ -8,7 +8,8 @@ same ticket, so apprentices never have more access than they should.
 
 **Blocked by:** 11
 
-**Status:** todo
+**Status:** todo — the invite code part is replaced by ticket 22; the
+apprentice limits still apply
 
 - [ ] The `shop_invites` table exists with Row Level Security on: only
       the owner can read the code; nobody else, ever

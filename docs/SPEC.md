@@ -46,8 +46,8 @@ least one real apprentice. Customers never log in; they only view a
    tracking link, so that I can paste it into Messenger.
 4. As a customer, I want to scan the QR and see my phone's status
    without an account, so that I do not have to message and ask.
-5. As an owner, I want to share an invite code so that my apprentices
-   can join my shop, and remove them when they leave, so that only
+5. As an owner, I want to create my apprentices' accounts myself
+   whenever someone starts, and remove them when they leave, so that only
    current staff can see our jobs.
 6. As an apprentice, I want "My jobs" to show the phones I am handling,
    so that I know exactly which phones are mine and none get forgotten.
@@ -60,10 +60,9 @@ least one real apprentice. Customers never log in; they only view a
 ## Screens
 1. **Sign in / Sign up**: email and password, with a switch between "I
    have an account" and "Create an account".
-2. **Set up** (phase 2; shown once, after signing up): name and contact
-   number, then either **Start a shop** (becomes its owner; asks for a
-   shop name) or **Join a shop** (type the owner's invite code; becomes
-   an apprentice).
+2. **Set up** (phase 2; shown once, after signing up): name, contact
+   number and shop name; **Start a shop** makes them its owner. Staff
+   never see this screen: the owner creates their accounts (ticket 22).
 3. **Jobs list** (home screen): tabs **My jobs** (the default), **All
    jobs**, Ready and Waiting on parts, soonest promised date first. Each
    row shows the device, customer name, status, promised date and
@@ -97,13 +96,13 @@ least one real apprentice. Customers never log in; they only view a
    of any change, and still re-checks every 15 seconds as a backup.
 8. **Workspace**: the **owner** sees every tab: **Customers**,
    **Notifications**, **Analytics** and **Shop settings** (their own
-   name and contact, the shop name, the **invite code** with a "Make a
-   new code" button, and the **Staff** list with **Remove** next to each
-   apprentice). An **apprentice** sees only **Notifications**. Both see
+   name and contact, the shop name, **Add staff** (name, contact, email,
+   temporary password), and the **Staff** list with **Remove** next to
+   each apprentice). An **apprentice** sees only **Notifications**. Both see
    the **Overdue & awaiting pickup** panel. Owner-only tabs refuse
    apprentices, even if they type the address.
 9. **Not in a shop**: a removed apprentice sees "You're not in a shop"
-   and can join one with a new invite code.
+   and is told to ask a shop owner.
 
 ## Data
 
@@ -112,19 +111,15 @@ least one real apprentice. Customers never log in; they only view a
 - Read: members of the shop. Update (name only): the owner. Insert: only
   through the "start a shop" database function. Delete: nobody.
 
-**`shop_invites`**: the shop's current invite code, kept apart so
-apprentices cannot see or pass it on.
-- `shop_id`, `code` (long and random, made by the database), `created_at`
-- Read and replace the code: the owner only. Nobody else, ever.
-
 **`shop_members`**: who belongs to which shop.
 - `shop_id`, `technician_id`, `role` (owner or apprentice), `joined_at`
 - A technician belongs to at most one shop.
 - Read: members of the same shop (so names can be shown on jobs).
 - Insert, update, delete: **nobody directly**, not even the owner, so an
   apprentice can never make themselves owner. Changes happen only
-  through three database functions: **start a shop**, **join with an
-  invite code**, and **remove an apprentice** (owner only; their jobs
+  through three database functions: **start a shop**, **add staff**
+  (owner only; only a brand-new account, made in the last 10 minutes and
+  in no shop), and **remove an apprentice** (owner only; their jobs
   move back to the owner).
 
 **`technicians`**: one row per technician account.
@@ -194,7 +189,9 @@ shop's totals (earnings, Analytics) are owner-only screens.
 ## Login
 Yes, for the owner and apprentices. Supabase Auth with email and
 password, with "Confirm email" turned off so that no emails are sent.
-Apprentices join a shop with an invite code, not an email invite.
+The owner creates apprentices' accounts in Shop settings (email and a
+temporary password); apprentices can then change their password. This
+uses the normal sign-up, not the `service_role` key.
 Customers never need an account.
 
 ## Done for the demo
@@ -214,7 +211,7 @@ Phase 1 (ticket 07, must pass first):
       see this shop's jobs.
 
 Phase 2 (only shown if finished and tested in time):
-- [ ] The owner shares the invite code; an apprentice joins with it.
+- [ ] The owner creates an apprentice's account; the apprentice signs in.
 - [ ] The apprentice adds a job; it shows "Quoted by" and "Handled by"
       the apprentice, and the owner sees it in All jobs.
 - [ ] The apprentice taps "Ready for pickup"; the judge's tracking page
@@ -224,7 +221,6 @@ Phase 2 (only shown if finished and tested in time):
 - [ ] The owner reassigns a job, and removes an apprentice; the removed
       apprentice's jobs go back to the owner and they can no longer see
       the shop's jobs.
-- [ ] After "Make a new code", the old invite code no longer works.
 - [ ] The owner and at least one real apprentice have used it for real
       jobs for a week.
 
