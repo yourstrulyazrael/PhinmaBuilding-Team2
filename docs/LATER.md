@@ -20,3 +20,15 @@ Potential next steps:
   repair history.
 - **Built-in printer support**: print directly to receipt or thermal
   printers; the current prototype uses the device's print dialog.
+
+## Parked from the dashboard design reference (ticket 03)
+
+The landing page follows the reference design, minus these pieces:
+
+- **Workspace tools** links: customers, inventory, team, reports, shop
+  settings.
+- **Notification bell** and **workspace switcher** in the top bar.
+- **Search box** and **sort menu** on the Repair jobs list (useful once a
+  technician has dozens of jobs, not 3–5).
+- **"Preview workspace" banner**: not needed, jobs are saved in Supabase.
+- **"Need a hand?"** help box in the sidebar.

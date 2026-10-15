@@ -1,44 +1,31 @@
 @import "tailwindcss";
 
 /* Design tokens. Change these to re-skin the whole app at once —
-   every component below reads from them. */
-:root {
-  --background: #ffffff;
-  --foreground: #0a0a0a;
-  --card: #ffffff;
-  --card-foreground: #0a0a0a;
-  --primary: #1a1a1a;
-  --primary-foreground: #fafafa;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #1a1a1a;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --destructive: #dc2626;
-  --destructive-foreground: #fafafa;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
-  --ring: #0a0a0a;
-  --radius: 0.625rem;
-}
+   every component below reads from them.
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #fafafa;
-    --card: #141414;
-    --card-foreground: #fafafa;
-    --primary: #fafafa;
-    --primary-foreground: #1a1a1a;
-    --secondary: #27272a;
-    --secondary-foreground: #fafafa;
-    --muted: #27272a;
-    --muted-foreground: #a1a1aa;
-    --destructive: #ef4444;
-    --destructive-foreground: #fafafa;
-    --border: #27272a;
-    --input: #3f3f46;
-    --ring: #d4d4d8;
-  }
+   Zenith Repair colours:
+   - Primary   = forest green (buttons, highlights)
+   - Secondary = white (cards and surfaces)
+   - Tertiary  = navy blue (text, headings, accents) */
+:root {
+  --background: #f4f7f5;
+  --foreground: #14213d;
+  --card: #ffffff;
+  --card-foreground: #14213d;
+  --primary: #1f5f3f;
+  --primary-foreground: #ffffff;
+  --secondary: #ffffff;
+  --secondary-foreground: #14213d;
+  --tertiary: #1e2b4f;
+  --tertiary-foreground: #ffffff;
+  --muted: #eaf1ec;
+  --muted-foreground: #5b6478;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #dfe6e1;
+  --input: #d5ddd8;
+  --ring: #1f5f3f;
+  --radius: 0.625rem;
 }
 
 @theme inline {
@@ -50,6 +37,8 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
+  --color-tertiary: var(--tertiary);
+  --color-tertiary-foreground: var(--tertiary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-destructive: var(--destructive);
