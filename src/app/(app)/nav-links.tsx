@@ -212,7 +212,6 @@ export function NotificationsLink({ keys, userId }: { keys: string[]; userId: st
     <Link
       href="/notifications"
       aria-current={onPage ? "page" : undefined}
-      data-nav-item
       aria-label={label}
       className={cn(revealItem, onPage ? activeItem : idleItem)}
     >
@@ -249,7 +248,6 @@ export function AccountLink({ name, contact }: { name: string; contact?: string 
     <Link
       href="/account"
       aria-current={active ? "page" : undefined}
-      data-nav-item
       aria-label={`Account: ${name}`}
       className={cn(revealItem, active ? activeItem : idleItem)}
     >
@@ -275,16 +273,18 @@ export function AccountLink({ name, contact }: { name: string; contact?: string 
 
 /**
  * The navbar's gliding highlight (ticket 59), like the Today · 7 days ·
- * 30 days pill: one outline that glides to the page you're on, across
- * both groups of buttons (pages on the left, bell and account on the
- * right). Put it first inside the top bar's row.
+ * 30 days pill: one outline that glides between the page buttons on the
+ * left (those marked data-nav-item). The bell and account on the right
+ * keep their own fixed outline; on those pages this one fades out. Put
+ * it first inside the top bar's row.
  *
  * - It starts gliding the moment a button is clicked, before the page
  *   loads, then the address confirms it.
  * - Smooth: placed at its new spot, drawn at the old one with a
  *   transform, and that transform animated away on the graphics card
  *   (same timing as the period pill).
- * - On pages with no button (a repair, a slip) it fades out; on a phone,
+ * - On pages with no page button (a repair, a slip, Notifications,
+ *   Account) it fades out; on a phone,
  *   where the page icons scroll sideways, it follows the scroll.
  * - Until it's placed, the active button outlines itself; once placed,
  *   the row is marked data-nav-glide="on" and the buttons' own outline
@@ -358,7 +358,7 @@ export function NavGlide() {
     <span
       ref={ref}
       aria-hidden
-      className="pointer-events-none absolute left-0 top-0 rounded-xl bg-nav-active/10 opacity-0 ring-2 ring-inset ring-nav-active will-change-transform [transform-origin:0_0]"
+      className="pointer-events-none absolute left-0 top-0 rounded-xl bg-nav-active/10 opacity-0 ring-2 ring-inset ring-nav-active transition-opacity duration-200 will-change-transform [transform-origin:0_0] motion-reduce:transition-none"
     />
   );
 }
