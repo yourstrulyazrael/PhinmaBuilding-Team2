@@ -8,8 +8,8 @@ the README so nobody has to hunt for it.
 
 **Status:** todo
 
-- [ ] Pushing to `main` triggers a Vercel deploy that finishes without
+- [x] Pushing to `main` triggers a Vercel deploy that finishes without
       errors
 - [ ] At least one teammate opens the live URL on their phone
-- [ ] The live URL is at the top of the README
+- [x] The live URL is at the top of the README
 - [ ] Works on the live URL

@@ -1,6 +1,6 @@
 # PHINMA AI Builder — team template
 
-**Your live URL:** _paste it here as soon as you have one (Ticket 01)_
+**Your live URL:** https://team2-omega.vercel.app/
 
 This is your team's starting point. It is already a working Next.js app
 that deploys to Vercel. You will delete the starter page and build your
