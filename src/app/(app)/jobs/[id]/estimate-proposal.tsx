@@ -12,56 +12,6 @@ import { Textarea } from "@/components/ui/textarea";
 // Proposing and answering a revised estimate on one repair (ticket 39).
 // "use client" because they show "Sending…" and errors in place.
 
-// Staff: the new amount and why. Sent to the owner, not the customer.
-function ProposeEstimateForm({ jobId, current }: { jobId: string; current: number }) {
-  const [state, formAction, pending] = useActionState<ActionResult, FormData>(
-    proposeRevisedEstimate.bind(null, jobId),
-    {},
-  );
-  return (
-    <form action={formAction} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="amount">Revised estimate (₱)</Label>
-        <Input
-          id="amount"
-          name="amount"
-          type="number"
-          inputMode="decimal"
-          min={0}
-          step="0.01"
-          placeholder={`Now ${current.toFixed(2)}`}
-          required
-          className="max-w-48"
-        />
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="reason">Why the new amount?</Label>
-        <Textarea
-          id="reason"
-          name="reason"
-          minLength={10}
-          maxLength={500}
-          rows={3}
-          required
-          placeholder="e.g. Opened it up: the charging port is also damaged and needs replacing."
-        />
-        <p className="text-xs text-muted-foreground">
-          10 to 500 characters. Goes to your owner to approve; the customer is asked only after that.
-        </p>
-      </div>
-      {state.error && (
-        <p role="alert" className="text-sm text-destructive">
-          {state.error}
-        </p>
-      )}
-      <Button type="submit" disabled={pending} className="w-fit">
-        <Send className="mr-1.5 size-4" aria-hidden />
-        {pending ? "Sending…" : "Send to owner"}
-      </Button>
-    </form>
-  );
-}
-
 export type LastProposal = {
   amount: number;
   reason: string;
@@ -70,37 +20,105 @@ export type LastProposal = {
   sentOn: string; // already formatted for display
 };
 
+const FORM_ID = "propose-estimate";
+
 /**
- * Staff's revised estimate, under "Update for the customer": the form
- * itself, shown straight away. While a proposal waits for the owner, it
- * shows that instead; after an answer, one line above the form says how
- * it went.
+ * Staff's revised estimate, under "Update for the customer" (ticket 39):
+ * the amount and why, shown straight away; then `children` (Parts used);
+ * then "Send to owner" at the very end of the card.
+ *
+ * Parts used has its own form, and forms can't sit inside each other, so
+ * the button lives outside this one and points at it with form="…".
+ * While a proposal waits for the owner, that shows instead of the form;
+ * after an answer, one line above the form says how it went.
  */
-export function ProposeEstimate({ jobId, current, last }: { jobId: string; current: number; last: LastProposal | null }) {
+export function ProposeEstimate({
+  jobId,
+  current,
+  last,
+  children,
+}: {
+  jobId: string;
+  current: number;
+  last: LastProposal | null;
+  children: React.ReactNode;
+}) {
+  const [state, formAction, pending] = useActionState<ActionResult, FormData>(
+    proposeRevisedEstimate.bind(null, jobId),
+    {},
+  );
+
   if (last?.status === "pending") {
     return (
-      <div className="flex flex-col gap-1 text-sm">
-        <p className="font-medium">Revised estimate</p>
-        <p className="text-muted-foreground">
-          <span className="font-medium text-highlight">Waiting for your owner:</span> you proposed{" "}
-          <span className="tabular-nums">{formatPeso(last.amount)}</span> on {last.sentOn}.
-        </p>
-        <p className="whitespace-pre-line text-xs text-muted-foreground">&ldquo;{last.reason}&rdquo;</p>
-      </div>
+      <>
+        <div className="flex flex-col gap-1 text-sm">
+          <p className="font-medium">Revised estimate</p>
+          <p className="text-muted-foreground">
+            <span className="font-medium text-highlight">Waiting for your owner:</span> you proposed{" "}
+            <span className="tabular-nums">{formatPeso(last.amount)}</span> on {last.sentOn}.
+          </p>
+          <p className="whitespace-pre-line text-xs text-muted-foreground">&ldquo;{last.reason}&rdquo;</p>
+        </div>
+        {children}
+      </>
     );
   }
 
   return (
-    <div className="flex flex-col gap-3 text-sm">
-      {last && (
-        <p className="text-xs text-muted-foreground">
-          Your last proposal, <span className="tabular-nums">{formatPeso(last.amount)}</span>, was{" "}
-          {last.status === "approved" ? "approved" : "not approved"}.
-          {last.ownerNote && <> Owner&apos;s note: {last.ownerNote}</>}
-        </p>
-      )}
-      <ProposeEstimateForm jobId={jobId} current={current} />
-    </div>
+    <>
+      <form id={FORM_ID} action={formAction} className="flex flex-col gap-4 text-sm">
+        {last && (
+          <p className="text-xs text-muted-foreground">
+            Your last proposal, <span className="tabular-nums">{formatPeso(last.amount)}</span>, was{" "}
+            {last.status === "approved" ? "approved" : "not approved"}.
+            {last.ownerNote && <> Owner&apos;s note: {last.ownerNote}</>}
+          </p>
+        )}
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="amount">Revised estimate (₱)</Label>
+          <Input
+            id="amount"
+            name="amount"
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step="0.01"
+            placeholder={`Now ${current.toFixed(2)}`}
+            required
+            className="max-w-48"
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="reason">Why the new amount?</Label>
+          <Textarea
+            id="reason"
+            name="reason"
+            minLength={10}
+            maxLength={500}
+            rows={3}
+            required
+            placeholder="e.g. Opened it up: the charging port is also damaged and needs replacing."
+          />
+          <p className="text-xs text-muted-foreground">
+            10 to 500 characters. Goes to your owner to approve; the customer is asked only after that.
+          </p>
+        </div>
+      </form>
+
+      {children}
+
+      <div className="flex flex-col items-end gap-2">
+        {state.error && (
+          <p role="alert" className="text-sm text-destructive">
+            {state.error}
+          </p>
+        )}
+        <Button type="submit" form={FORM_ID} disabled={pending}>
+          <Send className="mr-1.5 size-4" aria-hidden />
+          {pending ? "Sending…" : "Send to owner"}
+        </Button>
+      </div>
+    </>
   );
 }
 

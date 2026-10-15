@@ -67,6 +67,20 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
   const url = await trackingUrl(job.tracking_code);
   const late = isLate(job, todayInManila());
 
+  // Parts used, inside "Update for the customer" (ticket 28).
+  const partsUsed = (
+    <section className="flex flex-col gap-3" aria-labelledby="parts-used">
+      <div className="flex flex-col gap-0.5">
+        <h3 id="parts-used" className="flex items-center gap-1.5 text-sm font-medium">
+          <Package className="size-3.5 text-muted-foreground" aria-hidden />
+          Parts used
+        </h3>
+        <p className="text-xs text-muted-foreground">Taken out of stock.</p>
+      </div>
+      <PartsUsed jobId={job.id} used={used} parts={pickable} editable={editable} />
+    </section>
+  );
+
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 py-6 md:px-8 md:py-10">
       <Link href="/" className={buttonVariants({ variant: "ghost", size: "sm", className: "w-fit" })}>
@@ -232,7 +246,10 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
             </dl>
           )}
 
-          {!viewer.isOwner && editable && !(shop?.canReviseEstimate ?? false) && !isFinished(job.status) && (
+          {/* Staff who propose a revised estimate get its fields here,
+              then Parts used, then "Send to owner" last (ticket 39).
+              Everyone else just gets Parts used. */}
+          {!viewer.isOwner && editable && !(shop?.canReviseEstimate ?? false) && !isFinished(job.status) ? (
             <ProposeEstimate
               jobId={job.id}
               current={currentPrice(job)}
@@ -247,19 +264,12 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
                     }
                   : null
               }
-            />
+            >
+              {partsUsed}
+            </ProposeEstimate>
+          ) : (
+            partsUsed
           )}
-
-          <section className="flex flex-col gap-3" aria-labelledby="parts-used">
-            <div className="flex flex-col gap-0.5">
-              <h3 id="parts-used" className="flex items-center gap-1.5 text-sm font-medium">
-                <Package className="size-3.5 text-muted-foreground" aria-hidden />
-                Parts used
-              </h3>
-              <p className="text-xs text-muted-foreground">Taken out of stock.</p>
-            </div>
-            <PartsUsed jobId={job.id} used={used} parts={pickable} editable={editable} />
-          </section>
         </CardContent>
       </Card>
     </main>
