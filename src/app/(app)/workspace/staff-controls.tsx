@@ -63,15 +63,15 @@ export function StaffActions({ staffId, name, contact, openJobs }: { staffId: st
   return (
     <div className="flex flex-wrap gap-2">
       <Button type="button" variant="secondary" size="sm" onClick={() => setMode("edit")}>
-        <Pencil className="mr-1.5 size-3.5" aria-hidden />
+        <Pencil className="size-3.5" aria-hidden />
         Edit
       </Button>
       <Button type="button" variant="secondary" size="sm" onClick={() => setMode("password")}>
-        <KeyRound className="mr-1.5 size-3.5" aria-hidden />
+        <KeyRound className="size-3.5" aria-hidden />
         Reset password
       </Button>
       <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => setMode("remove")}>
-        <UserMinus className="mr-1.5 size-3.5" aria-hidden />
+        <UserMinus className="size-3.5" aria-hidden />
         Remove
       </Button>
     </div>
@@ -233,11 +233,11 @@ export function RequestDecision({ requestId }: { requestId: string }) {
       {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
       <div className="flex gap-2">
         <Button type="button" size="sm" disabled={pending} onClick={() => decide(true)}>
-          <Check className="mr-1.5 size-3.5" aria-hidden />
+          <Check className="size-3.5" aria-hidden />
           Approve
         </Button>
         <Button type="button" variant="secondary" size="sm" disabled={pending} onClick={() => decide(false)}>
-          <X className="mr-1.5 size-3.5" aria-hidden />
+          <X className="size-3.5" aria-hidden />
           Reject
         </Button>
       </div>

@@ -6,6 +6,7 @@ import { periodFrom } from "@/lib/periods";
 import { mostUsed, REASON_LABELS, stockLevel, type JobPart, type Movement, type Part } from "@/lib/inventory";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PeriodPicker } from "@/components/period-picker";
+import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
 import { AddPartButton, CategoryList } from "./part-forms";
 import { ExportMenu, ImportButton } from "./import-export";
@@ -67,32 +68,26 @@ export default async function InventoryPage({ searchParams }: PageProps<"/invent
     <main className="mx-auto flex w-full max-w-[120rem] flex-col gap-5 px-4 py-6 md:px-8 md:py-10 2xl:px-12">
       <CategoryList categories={categories} />
 
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm">
-            <Store className="size-4 text-muted-foreground" aria-hidden />
-            <Link href="/" className="font-medium text-foreground hover:underline">
-              {shop?.name ?? "Your shop"}
-            </Link>
-            <span className="text-muted-foreground">/</span>
-            <span aria-current="page" className="font-medium text-primary">
-              Inventory
-            </span>
-          </nav>
-          <h1 className="text-2xl font-semibold tracking-tight text-tertiary md:text-3xl">Inventory</h1>
-          <p className="text-sm text-muted-foreground">
+      <PageHeader
+        eyebrow={shop?.name ?? "Your shop"}
+        icon={Store}
+        title="Inventory"
+        description={
+          <>
             Keep your parts and stock levels up to date. Stock worth {formatPeso(retailValue)} at retail
             {isOwner && ` (${formatPeso(costValue)} at cost)`}.
-          </p>
-        </div>
-        {isOwner && (
-          <div className="flex flex-wrap gap-2">
-            <ImportButton current={exportRows} />
-            <ExportMenu current={exportRows} />
-            <AddPartButton />
-          </div>
-        )}
-      </header>
+          </>
+        }
+        actions={
+          isOwner && (
+            <>
+              <ImportButton current={exportRows} />
+              <ExportMenu current={exportRows} />
+              <AddPartButton />
+            </>
+          )
+        }
+      />
 
       {isOwner && (
         <p className="-mt-1 text-sm text-primary">

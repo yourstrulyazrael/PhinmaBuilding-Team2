@@ -87,7 +87,7 @@ export function JobSearch({
           defaultValue={sort}
           key={sort}
           onChange={(e) => e.currentTarget.form?.requestSubmit()}
-          className="h-10 w-full appearance-none rounded-[var(--radius)] border border-input bg-background pl-9 pr-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
+          className="h-10 w-full appearance-none rounded-[var(--radius)] border border-input bg-card pl-9 pr-3 text-base shadow-xs transition-[border-color,box-shadow] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/15 md:text-sm"
         >
           {SORTS.map((s) => (
             <option key={s.value} value={s.value}>

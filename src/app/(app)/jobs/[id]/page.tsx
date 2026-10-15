@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { AlarmClock, ArrowLeft, ExternalLink, Lock, Package, Phone, QrCode, ThumbsDown, ThumbsUp, TrendingUp } from "lucide-react";
+import { AlarmClock, ExternalLink, Lock, Package, Phone, QrCode, Smartphone, ThumbsDown, ThumbsUp, TrendingUp } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
 import { formatDate, formatPeso, isFinished, paymentLabel, todayInManila, type Job } from "@/lib/jobs";
 import { currentPrice, isLate, labourPrice, partsTotal } from "@/lib/workspace";
@@ -84,32 +85,30 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 py-6 md:px-8 md:py-10">
-      <Link href="/" className={buttonVariants({ variant: "ghost", size: "sm", className: "w-fit" })}>
-        <ArrowLeft className="mr-1.5 size-4" aria-hidden />
-        Repair jobs
-      </Link>
-
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-tertiary">{job.device}</h1>
-          <p className="text-sm text-muted-foreground">{job.problem}</p>
-        </div>
-        <div className="flex flex-wrap items-start gap-2">
-          <CopyMessageButton message={updateMessage(job, url)} />
-          <Link href={`/jobs/${job.id}/slip`} className={buttonVariants({ variant: "secondary", size: "sm" })}>
-            <QrCode className="mr-1.5 size-4" aria-hidden />
-            Claim slip
-          </Link>
-          <Link
-            href={`/track/${job.tracking_code}`}
-            target="_blank"
-            className={buttonVariants({ variant: "secondary", size: "sm" })}
-          >
-            <ExternalLink className="mr-1.5 size-4" aria-hidden />
-            Customer view
-          </Link>
-        </div>
-      </header>
+      <PageHeader
+        back={{ href: "/", label: "Repair jobs" }}
+        eyebrow="Repair job"
+        icon={Smartphone}
+        title={job.device}
+        description={job.problem}
+        actions={
+          <>
+            <CopyMessageButton message={updateMessage(job, url)} />
+            <Link href={`/jobs/${job.id}/slip`} className={buttonVariants({ variant: "secondary", size: "sm" })}>
+              <QrCode className="size-4" aria-hidden />
+              Claim slip
+            </Link>
+            <Link
+              href={`/track/${job.tracking_code}`}
+              target="_blank"
+              className={buttonVariants({ variant: "secondary", size: "sm" })}
+            >
+              <ExternalLink className="size-4" aria-hidden />
+              Customer view
+            </Link>
+          </>
+        }
+      />
 
       {!editable && (
         <p

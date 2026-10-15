@@ -45,7 +45,7 @@ export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/sl
     <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 py-6 md:py-10 print:max-w-none print:p-0">
       <div className="flex items-center justify-between gap-2 print:hidden">
         <Link href="/" className={buttonVariants({ variant: "ghost", size: "sm" })}>
-          <ArrowLeft className="mr-1.5 size-4" aria-hidden />
+          <ArrowLeft className="size-4" aria-hidden />
           Repair jobs
         </Link>
         <div className="flex gap-2">

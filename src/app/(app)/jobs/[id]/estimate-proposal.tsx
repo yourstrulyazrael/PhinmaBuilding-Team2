@@ -107,7 +107,7 @@ export function ProposeEstimate({
           </p>
         )}
         <Button type="submit" form={FORM_ID} disabled={pending}>
-          <Send className="mr-1.5 size-4" aria-hidden />
+          <Send className="size-4" aria-hidden />
           {pending ? "Sending…" : "Send to owner"}
         </Button>
       </div>
@@ -148,11 +148,11 @@ export function ProposalDecision({ proposalId, jobId }: { proposalId: string; jo
       )}
       <div className="flex gap-2">
         <Button type="button" size="sm" disabled={pending} onClick={() => decide(true)}>
-          <Check className="mr-1.5 size-3.5" aria-hidden />
+          <Check className="size-3.5" aria-hidden />
           Approve
         </Button>
         <Button type="button" variant="secondary" size="sm" disabled={pending} onClick={() => decide(false)}>
-          <X className="mr-1.5 size-3.5" aria-hidden />
+          <X className="size-3.5" aria-hidden />
           Reject
         </Button>
       </div>

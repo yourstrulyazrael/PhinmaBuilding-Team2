@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Clock, UserCog, UsersRound } from "lucide-react";
+import { Briefcase, Clock, UserCog, UsersRound } from "lucide-react";
 import { formatDate, isFinished, todayInManila, type Job } from "@/lib/jobs";
 import { isLate, overdueAndAwaiting } from "@/lib/workspace";
-import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/page-header";
 import { StaffTab } from "./staff-tab";
 import { CustomersTab } from "./customers-tab";
 import { getShop, getSupabase, getUser } from "@/lib/session";
@@ -79,47 +79,43 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
 
   return (
     <main className="mx-auto flex w-full max-w-[120rem] flex-col gap-4 px-4 py-6 md:px-8 md:py-10 2xl:px-12">
-      <Link href="/" className={buttonVariants({ variant: "ghost", size: "sm", className: "w-fit" })}>
-        <ArrowLeft className="mr-1.5 size-4" aria-hidden />
-        Repair desk
-      </Link>
+      <PageHeader
+        back={{ href: "/", label: "Repair desk" }}
+        eyebrow="Your workspace"
+        icon={Briefcase}
+        title="Workspace tools"
+        description="Customers and staff, all in one place."
+      />
 
-      <header className="flex flex-col gap-1">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-          Your workspace
-        </p>
-        <h1 className="text-2xl font-semibold tracking-tight text-tertiary md:text-3xl">Workspace tools</h1>
-        <p className="text-sm text-muted-foreground">
-          Customers and staff, all in one place.
-        </p>
-      </header>
-
-      <Card className="p-1.5">
-        <nav className="flex flex-wrap gap-1" aria-label="Workspace tools">
-          {tabs.map(({ key, label, icon: Icon }) => (
-            <Link
-              key={key}
-              href={key === "customers" ? "/workspace" : `/workspace?tab=${key}`}
-              aria-current={tab === key ? "page" : undefined}
-              className={cn(
-                "flex items-center gap-2 rounded-[var(--radius)] px-3 py-2 text-sm font-medium transition-colors",
-                tab === key ? "bg-muted text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-            >
-              <Icon className="size-4" aria-hidden />
-              {label}
-              {key === "staff" && requests.length > 0 && (
-                <span
-                  className="rounded-full bg-highlight px-1.5 text-[11px] text-white dark:text-[#0f1729]"
-                  title="Requests to revise quotes"
-                >
-                  {requests.length}
-                </span>
-              )}
-            </Link>
-          ))}
-        </nav>
-      </Card>
+      {/* A segmented switch (ticket 48): a recessed track, the open tab
+          raised on a white tile. */}
+      <nav
+        className="inline-flex w-full flex-wrap gap-1 rounded-[var(--radius)] border border-border/70 bg-muted/70 p-1 sm:w-fit"
+        aria-label="Workspace tools"
+      >
+        {tabs.map(({ key, label, icon: Icon }) => (
+          <Link
+            key={key}
+            href={key === "customers" ? "/workspace" : `/workspace?tab=${key}`}
+            aria-current={tab === key ? "page" : undefined}
+            className={cn(
+              "flex flex-1 items-center justify-center gap-2 rounded-[calc(var(--radius)-4px)] px-4 py-2 text-sm font-medium transition-all sm:flex-none",
+              tab === key ? "bg-card text-primary shadow-card" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Icon className="size-4" aria-hidden />
+            {label}
+            {key === "staff" && requests.length > 0 && (
+              <span
+                className="rounded-full bg-highlight px-1.5 text-[11px] text-white dark:text-[#0f1729]"
+                title="Requests to revise quotes"
+              >
+                {requests.length}
+              </span>
+            )}
+          </Link>
+        ))}
+      </nav>
 
       {tab === "customers" && <CustomersTab jobs={jobs} />}
       {tab === "staff" && (

@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import { Bell } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 import { NotificationsList } from "./notifications-list";
 import { getNames, getNotifications, getUser } from "@/lib/session";
 
@@ -15,10 +17,7 @@ export default async function NotificationsPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 md:py-10">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-tertiary md:text-3xl">Notifications</h1>
-        <p className="text-sm text-muted-foreground">What needs you right now, in your shop.</p>
-      </header>
+      <PageHeader eyebrow="Inbox" icon={Bell} title="Notifications" description="What needs you right now, in your shop." />
       <NotificationsList
         alerts={alerts}
         me={user.id}

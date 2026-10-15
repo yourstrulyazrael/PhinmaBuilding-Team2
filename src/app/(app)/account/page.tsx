@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Calculator, KeyRound, Mail, Receipt, Store, UserRound } from "lucide-react";
 import { formatDate } from "@/lib/jobs";
 import { manilaDate } from "@/lib/workspace";
+import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DetailsForm, EmailForm, EstimateRequestForm, PasswordForm, ShopDetailsForm, SlipNoteForm } from "./account-forms";
 import { getMe, getShop, getSupabase, getUser } from "@/lib/session";
@@ -35,12 +36,12 @@ export default async function AccountPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-6 md:py-10">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-tertiary md:text-3xl">Account</h1>
-        <p className="text-sm text-muted-foreground">
-          {owner ? "Your shop, your claim slip and how you sign in." : "Your details and how you sign in."}
-        </p>
-      </header>
+      <PageHeader
+        eyebrow={owner ? "Owner" : "Staff"}
+        icon={UserRound}
+        title="Account"
+        description={owner ? "Your shop, your claim slip and how you sign in." : "Your details and how you sign in."}
+      />
 
       {owner && (
         <Section icon={Store} title="Store details" description="Shown on every claim slip and tracking page.">

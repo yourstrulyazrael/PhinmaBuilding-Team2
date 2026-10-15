@@ -100,11 +100,11 @@ export function EstimateQuestion({
       ) : (
         <div className="flex gap-2">
           <Button type="button" size="sm" disabled={pending} onClick={() => answer(true)}>
-            <Check className="mr-1.5 size-4" aria-hidden />
+            <Check className="size-4" aria-hidden />
             {pending ? "Sending…" : "Approve"}
           </Button>
           <Button type="button" size="sm" variant="secondary" disabled={pending} onClick={() => setDeclining(true)}>
-            <X className="mr-1.5 size-4" aria-hidden />
+            <X className="size-4" aria-hidden />
             Decline
           </Button>
         </div>

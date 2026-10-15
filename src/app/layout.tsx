@@ -1,5 +1,11 @@
 import type { Metadata } from "next";
+import { Geist } from "next/font/google";
 import "./globals.css";
+
+// The interface font (ticket 48). next/font downloads it once at build
+// time and serves it from our own site: no request to Google from the
+// browser. Falls back to the system font while it loads.
+const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
 
 export const metadata: Metadata = {
   title: "Zenith Repair",
@@ -31,7 +37,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     // suppressHydrationWarning: the script above may add "dark" to this
     // tag before React starts, which is expected.
-    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
+    <html lang="en" className={`${geist.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         {/* Also adds the tab icon (see above). */}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />

@@ -49,7 +49,7 @@ export function SaveImageButton({ slip }: { slip: SlipImageData }) {
 
   return (
     <Button type="button" variant="secondary" onClick={save} disabled={busy}>
-      <ImageDown className="mr-1.5 size-4" aria-hidden />
+      <ImageDown className="size-4" aria-hidden />
       {busy ? "Saving…" : "Save as image"}
     </Button>
   );

@@ -8,6 +8,7 @@ import { StatusPicker } from "@/components/status-picker";
 import { cn } from "@/lib/utils";
 import { currentPrice, isLate } from "@/lib/workspace";
 import { JobSearch } from "./job-search";
+import { PageHeader } from "@/components/page-header";
 import { canChange, type Viewer } from "@/lib/people";
 import { HandledBy } from "@/components/handled-by";
 import { StatusBadge } from "@/components/status-badge";
@@ -85,24 +86,18 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
 
   return (
     <main className="mx-auto flex w-full max-w-[120rem] flex-col gap-6 px-4 py-6 md:px-8 md:py-10 2xl:px-12">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-            <Wrench className="size-3.5" aria-hidden />
-            Your repair desk
-          </p>
-          <h1 className="text-2xl font-semibold tracking-tight text-tertiary md:text-3xl">
-            {greeting()}, {technician.display_name}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Here&apos;s what&apos;s happening with your repair jobs today.
-          </p>
-        </div>
-        <Link href="/jobs/new" className={buttonVariants()}>
-          <Plus className="mr-1.5 size-4" aria-hidden />
-          Add a repair
-        </Link>
-      </header>
+      <PageHeader
+        eyebrow="Your repair desk"
+        icon={Wrench}
+        title={`${greeting()}, ${technician.display_name}`}
+        description="Here's what's happening with your repair jobs today."
+        actions={
+          <Link href="/jobs/new" className={buttonVariants()}>
+            <Plus className="size-4" aria-hidden />
+            Add a repair
+          </Link>
+        }
+      />
 
       {(lateCount > 0 || dueTodayCount > 0) && (
         <Link

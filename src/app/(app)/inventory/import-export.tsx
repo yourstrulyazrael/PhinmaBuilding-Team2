@@ -66,7 +66,7 @@ export function ImportButton({ current }: { current: FileRow[] }) {
   return (
     <>
       <Button type="button" variant="secondary" onClick={() => setOpen(true)}>
-        <FileUp className="mr-1.5 size-4" aria-hidden />
+        <FileUp className="size-4" aria-hidden />
         Import parts
       </Button>
       <Modal
@@ -142,7 +142,7 @@ function ImportPanel({ current, onDone }: { current: FileRow[]; onDone: () => vo
         <div className="flex flex-wrap gap-2">
           {FORMATS.map(({ key, label, icon: Icon }) => (
             <Button key={key} type="button" size="sm" variant="secondary" onClick={() => save(templateRows(), key, "inventory-template")}>
-              <Icon className="mr-1.5 size-4" aria-hidden />
+              <Icon className="size-4" aria-hidden />
               {label}
             </Button>
           ))}
@@ -243,7 +243,7 @@ function ImportPanel({ current, onDone }: { current: FileRow[]; onDone: () => vo
           </div>
           <div className="flex justify-end">
             <Button type="button" onClick={runImport} disabled={pending || toImport === 0}>
-              <Upload className="mr-1.5 size-4" aria-hidden />
+              <Upload className="size-4" aria-hidden />
               {pending ? "Importing…" : toImport === 0 ? "Nothing to import" : `Import ${toImport} part${toImport === 1 ? "" : "s"}`}
             </Button>
           </div>

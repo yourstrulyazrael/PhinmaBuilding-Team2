@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 export function PrintButton() {
   return (
     <Button type="button" onClick={() => window.print()}>
-      <Printer className="mr-1.5 size-4" aria-hidden />
+      <Printer className="size-4" aria-hidden />
       Print
     </Button>
   );

@@ -23,9 +23,9 @@ export function CopyMessageButton({ message, label = "Copy update message" }: { 
     <div className="flex flex-col items-start gap-1">
       <Button type="button" variant="secondary" size="sm" onClick={copy}>
         {state === "copied" ? (
-          <Check className="mr-1.5 size-4" aria-hidden />
+          <Check className="size-4" aria-hidden />
         ) : (
-          <Copy className="mr-1.5 size-4" aria-hidden />
+          <Copy className="size-4" aria-hidden />
         )}
         {state === "copied" ? "Copied" : label}
       </Button>

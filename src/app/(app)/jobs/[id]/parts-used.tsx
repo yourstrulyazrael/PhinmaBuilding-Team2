@@ -85,7 +85,7 @@ export function PartsUsed({
                 name="part_id"
                 required
                 defaultValue=""
-                className="h-10 rounded-[var(--radius)] border border-input bg-background px-3 text-base md:text-sm"
+                className="h-10 rounded-[var(--radius)] border border-input bg-card px-3 text-base shadow-xs transition-[border-color,box-shadow] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/15 md:text-sm"
               >
                 <option value="" disabled>
                   Choose a part…
@@ -102,7 +102,7 @@ export function PartsUsed({
               <Input name="quantity" type="number" inputMode="numeric" min={1} max={99} step={1} defaultValue={1} required />
             </label>
             <Button type="submit" disabled={pending}>
-              <Plus className="mr-1.5 size-4" aria-hidden />
+              <Plus className="size-4" aria-hidden />
               {pending ? "Adding…" : "Add"}
             </Button>
           </form>

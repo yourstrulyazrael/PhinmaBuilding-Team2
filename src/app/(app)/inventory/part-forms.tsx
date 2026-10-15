@@ -68,7 +68,7 @@ export function AddPartButton() {
   return (
     <>
       <Button type="button" onClick={() => setOpen(true)}>
-        <Plus className="mr-1.5 size-4" aria-hidden />
+        <Plus className="size-4" aria-hidden />
         Add part
       </Button>
       <Modal open={open} onClose={() => setOpen(false)} title="Add a part" description="The cost is only ever shown to you.">
@@ -93,7 +93,7 @@ function AddPartForm({ onDone }: { onDone: () => void }) {
       <div className="flex justify-end gap-2">
         <Button type="button" variant="ghost" onClick={onDone}>Cancel</Button>
         <Button type="submit" disabled={pending}>
-          <PackagePlus className="mr-1.5 size-4" aria-hidden />
+          <PackagePlus className="size-4" aria-hidden />
           {pending ? "Adding…" : "Add part"}
         </Button>
       </div>

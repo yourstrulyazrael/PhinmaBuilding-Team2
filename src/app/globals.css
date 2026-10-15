@@ -29,7 +29,9 @@
   --highlight: #2563c9;
   /* The page you are on, in the top bar: forest green here, blue in dark. */
   --nav-active: #1f5f3f;
-  --radius: 0.625rem;
+  --radius: 0.875rem;
+  /* Soft, layered depth for cards (ticket 48): navy-tinted, never grey. */
+  --card-shadow: 0 1px 2px rgb(20 33 61 / 0.05), 0 6px 20px -8px rgb(20 33 61 / 0.12);
   /* Chart lines (validated colour-blind safe on the white card, ticket 26). */
   --chart-1: #2a78d6;
   --chart-2: #008300;
@@ -62,6 +64,7 @@
     --ring: #5cbf8a;
     --highlight: #7aa9f7;
     --nav-active: #7aa9f7;
+    --card-shadow: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 10px 28px -14px rgb(0 0 0 / 0.7);
     /* Chart lines, stepped for the dark card (validated). */
     --chart-1: #3987e5;
     --chart-2: #008300;
@@ -99,16 +102,26 @@
   --color-highlight: var(--highlight);
   --color-nav-active: var(--nav-active);
   --radius-base: var(--radius);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --shadow-card: var(--card-shadow);
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   /* The status menu fades and drops in. */
   --animate-menu-in: menu-in 120ms ease-out;
 }
 
 body {
-  background: var(--background);
+  /* A faint glow of the brand green at the top of every page (ticket 48),
+     fading into the usual background. Same colours, just more depth. */
+  background:
+    radial-gradient(70rem 26rem at 50% -8rem, color-mix(in oklab, var(--primary) 9%, transparent), transparent 70%)
+      no-repeat,
+    var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+}
+
+::selection {
+  background: color-mix(in oklab, var(--primary) 22%, transparent);
 }
 
 /* A hand cursor on everything you can click. Tailwind v4 no longer

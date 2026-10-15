@@ -100,11 +100,11 @@ export function ReportToolbar({
     <div className="flex flex-col items-end gap-1 print:hidden">
       <div className="flex gap-2">
         <Button type="button" variant="secondary" onClick={exportExcel} disabled={busy}>
-          <FileSpreadsheet className="mr-1.5 size-4" aria-hidden />
+          <FileSpreadsheet className="size-4" aria-hidden />
           {busy ? "Making file…" : "Export Excel"}
         </Button>
         <Button type="button" onClick={() => window.print()}>
-          <FileDown className="mr-1.5 size-4" aria-hidden />
+          <FileDown className="size-4" aria-hidden />
           Export PDF
         </Button>
       </div>
