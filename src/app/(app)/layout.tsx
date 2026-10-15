@@ -42,7 +42,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             <Logo size={32} nameClassName="hidden sm:inline" />
           </Link>
 
-          <NavLinks />
+          <NavLinks isOwner={shop.role === "owner"} />
 
           <div className="ml-auto flex items-center gap-1">
             <ThemeSwitch />

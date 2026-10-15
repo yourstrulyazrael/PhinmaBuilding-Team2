@@ -1,6 +1,6 @@
 /**
- * The monthly report (ticket 25): one month's summary and every job
- * received that month. Worked out from the shop's jobs, like the rest
+ * The report (tickets 25–26): one period's summary (today, the last 7
+ * or 30 days, or a month) and every job received in it. Worked out from the shop's jobs, like the rest
  * of the Workspace. Used by the report page (PDF) and the Excel export,
  * so both always show the same numbers.
  *
@@ -8,7 +8,8 @@
  * and passed around.
  */
 import { isFinished, paymentLabel, PAYMENT_METHODS, statusLabel, STATUSES, type Job } from "@/lib/jobs";
-import { currentPrice, daysBetween, manilaDate, pickedUpOn } from "@/lib/workspace";
+import { daysBetween, manilaDate, paidFor, pickedUpOn } from "@/lib/workspace";
+import type { Period } from "@/lib/periods";
 
 export type ReportRow = {
   received: string; // "YYYY-MM-DD"
@@ -25,12 +26,12 @@ export type ReportRow = {
 };
 
 export type Report = {
-  month: string; // "YYYY-MM"
-  monthLabel: string; // "October 2026"
+  periodKey: string; // "today" | "7d" | "30d" | "2026-10"
+  periodLabel: string; // "Last 7 days", "October 2026"
   received: number;
   pickedUp: number;
   cancelled: number;
-  stillOpen: number; // of the jobs received this month
+  stillOpen: number; // of the jobs received in the period
   earned: number;
   avgTurnaround: number | null;
   byMethod: { label: string; count: number; total: number }[];
@@ -38,31 +39,18 @@ export type Report = {
   rows: ReportRow[];
 };
 
-// "2026-10" -> "October 2026"
-export function monthLabel(month: string) {
-  return new Date(`${month}-01T00:00:00Z`).toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-}
+export function buildReport(jobs: Job[], period: Period, names: Map<string, string>): Report {
+  const inPeriod = (date: string) => date >= period.from && date <= period.to;
 
-export function isMonth(value: unknown): value is string {
-  return typeof value === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
-}
-
-export function buildReport(jobs: Job[], month: string, names: Map<string, string>): Report {
-  const inMonth = (date: string) => date.startsWith(month);
-
-  // Jobs that came in this month: the table, and the status breakdown.
+  // Jobs that came in during the period: the table, and the status breakdown.
   const receivedJobs = jobs
-    .filter((j) => inMonth(manilaDate(j.created_at)))
+    .filter((j) => inPeriod(manilaDate(j.created_at)))
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
 
-  // Jobs that finished this month (whenever they came in): the money.
-  const pickedUpJobs = jobs.filter((j) => j.status === "picked_up" && inMonth(pickedUpOn(j)));
-  const cancelledJobs = jobs.filter((j) => j.status === "cancelled" && inMonth(manilaDate(j.updated_at)));
-  const paid = (j: Job) => Number(j.amount_paid ?? currentPrice(j));
+  // Jobs that finished during the period (whenever they came in): the money.
+  const pickedUpJobs = jobs.filter((j) => j.status === "picked_up" && inPeriod(pickedUpOn(j)));
+  const cancelledJobs = jobs.filter((j) => j.status === "cancelled" && inPeriod(manilaDate(j.updated_at)));
+  const paid = paidFor;
 
   const turnarounds = pickedUpJobs.map((j) => daysBetween(manilaDate(j.created_at), pickedUpOn(j)));
 
@@ -75,8 +63,8 @@ export function buildReport(jobs: Job[], month: string, names: Map<string, strin
     .filter((m) => m.count > 0);
 
   return {
-    month,
-    monthLabel: monthLabel(month),
+    periodKey: period.key,
+    periodLabel: period.label,
     received: receivedJobs.length,
     pickedUp: pickedUpJobs.length,
     cancelled: cancelledJobs.length,

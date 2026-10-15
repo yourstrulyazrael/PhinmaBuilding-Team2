@@ -26,6 +26,9 @@
   --input: #d5ddd8;
   --ring: #1f5f3f;
   --radius: 0.625rem;
+  /* Chart lines (validated colour-blind safe on the white card, ticket 26). */
+  --chart-1: #2a78d6;
+  --chart-2: #008300;
   /* Lets the browser draw date pickers, dropdowns and scrollbars to match. */
   color-scheme: light;
 }
@@ -53,6 +56,9 @@
     --border: #2a3632;
     --input: #36443f;
     --ring: #5cbf8a;
+    /* Chart lines, stepped for the dark card (validated). */
+    --chart-1: #3987e5;
+    --chart-2: #008300;
     color-scheme: dark;
   }
 }

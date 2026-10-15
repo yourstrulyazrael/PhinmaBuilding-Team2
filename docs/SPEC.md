@@ -98,9 +98,11 @@ least one real apprentice. Customers never log in; they only view a
    **Notifications**, **Analytics**, **Staff** (the staff list, each one's "Can revise
    estimates" switch, **Add staff** and **Remove**) and **Shop settings**
    (the shop name, their own name and contact, and their password).
-   Analytics has **Reports** for the owner: a monthly report (summary
-   and every job received that month, no customer phone numbers) that
-   exports as Excel (.xlsx) or PDF (ticket 25). An **apprentice** sees only **Notifications**. Both see
+10. **Analytics** and **Reports** (owner only; their own pages in the
+   top bar, ticket 26): Today, the last 7 or 30 days (Reports also a
+   whole month); statistics with smooth line charts beneath. Reports
+   lists every job received in the period (no customer phone numbers)
+   and exports as Excel (.xlsx) or PDF (ticket 25). An **apprentice** sees only **Notifications**. Both see
    the **Overdue & awaiting pickup** panel. Owner-only tabs refuse
    apprentices, even if they type the address.
 9. **Not in a shop**: a removed apprentice sees "You're not in a shop"

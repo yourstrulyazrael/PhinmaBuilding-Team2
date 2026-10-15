@@ -4,6 +4,7 @@
  * calculated from the `jobs` rows RLS already lets them read.
  */
 import { isFinished, STATUSES, type Job, type Status } from "@/lib/jobs";
+import type { Period } from "@/lib/periods";
 
 // --- Small helpers ------------------------------------------------------
 
@@ -143,11 +144,15 @@ export function overdueAndAwaiting(jobs: Job[], today: string) {
 }
 
 // --- Analytics ----------------------------------------------------------
+//
+// Everything is for one period (src/lib/periods.ts): jobs RECEIVED in
+// it, and jobs PICKED UP in it. "Open repairs" is always right now.
 
-export function analytics(jobs: Job[], today: string) {
-  const month = today.slice(0, 7); // "YYYY-MM"
+export function analytics(jobs: Job[], period: Period) {
+  const inside = (date: string) => date >= period.from && date <= period.to;
+  const received = jobs.filter((j) => inside(manilaDate(j.created_at)));
+  const pickedUp = jobs.filter((j) => j.status === "picked_up" && inside(pickedUpOn(j)));
   const open = jobs.filter((j) => !isFinished(j.status));
-  const pickedUp = jobs.filter((j) => j.status === "picked_up");
 
   const turnarounds = pickedUp.map((j) => daysBetween(manilaDate(j.created_at), pickedUpOn(j)));
   const avgTurnaround = turnarounds.length
@@ -155,7 +160,7 @@ export function analytics(jobs: Job[], today: string) {
     : null;
 
   const deviceCounts = new Map<string, { label: string; count: number }>();
-  for (const job of jobs) {
+  for (const job of received) {
     const key = job.device.trim().toLowerCase();
     const entry = deviceCounts.get(key) ?? { label: job.device.trim(), count: 0 };
     entry.count += 1;
@@ -163,21 +168,73 @@ export function analytics(jobs: Job[], today: string) {
   }
 
   return {
-    receivedThisMonth: jobs.filter((j) => manilaDate(j.created_at).startsWith(month)).length,
-    pickedUpThisMonth: pickedUp.filter((j) => pickedUpOn(j).startsWith(month)).length,
+    received: received.length,
+    pickedUp: pickedUp.length,
     // What was actually paid; older jobs without a payment record count
     // their final price.
-    earnedThisMonth: pickedUp
-      .filter((j) => pickedUpOn(j).startsWith(month))
-      .reduce((sum, j) => sum + Number(j.amount_paid ?? currentPrice(j)), 0),
+    earned: pickedUp.reduce((sum, j) => sum + paidFor(j), 0),
     openCount: open.length,
     openValue: open.reduce((sum, j) => sum + currentPrice(j), 0),
     avgTurnaround,
     byStatus: STATUSES.map((s) => ({
       status: s.value as Status,
       label: s.label,
-      count: jobs.filter((j) => j.status === s.value).length,
+      count: received.filter((j) => j.status === s.value).length,
     })),
     topDevices: [...deviceCounts.values()].sort((a, b) => b.count - a.count).slice(0, 5),
   };
+}
+
+// What a picked-up job brought in: the amount paid, or its final price
+// for older jobs from before payments were recorded.
+export function paidFor(job: Job) {
+  return Number(job.amount_paid ?? currentPrice(job));
+}
+
+export type TrendPoint = { key: string; label: string; received: number; pickedUp: number; earned: number };
+
+// The hour (0–23) of a timestamp, in Manila.
+function manilaHour(timestamp: string) {
+  return (
+    Number(new Date(timestamp).toLocaleString("en-US", { hour: "numeric", hour12: false, timeZone: "Asia/Manila" })) % 24
+  );
+}
+
+/**
+ * The points for the line charts: one per hour for Today (up to the
+ * current hour), one per day otherwise. Each counts the jobs received,
+ * the jobs picked up and the money earned in that hour or day.
+ */
+export function trend(jobs: Job[], period: Period, now = new Date().toISOString()): TrendPoint[] {
+  const pickedUp = jobs.filter((j) => j.status === "picked_up");
+  const pickupTime = (j: Job) => j.paid_at ?? j.updated_at;
+
+  if (period.bucket === "hour") {
+    const day = period.from;
+    const lastHour = manilaDate(now) === day ? manilaHour(now) : 23;
+    return Array.from({ length: lastHour + 1 }, (_, hour) => {
+      const isHour = (ts: string) => manilaDate(ts) === day && manilaHour(ts) === hour;
+      const out = pickedUp.filter((j) => isHour(pickupTime(j)));
+      return {
+        key: `${day} ${hour}`,
+        label: `${hour % 12 || 12} ${hour < 12 ? "AM" : "PM"}`,
+        received: jobs.filter((j) => isHour(j.created_at)).length,
+        pickedUp: out.length,
+        earned: out.reduce((s, j) => s + paidFor(j), 0),
+      };
+    });
+  }
+
+  const points: TrendPoint[] = [];
+  for (let date = period.from; date <= period.to; date = addDays(date, 1)) {
+    const out = pickedUp.filter((j) => manilaDate(pickupTime(j)) === date);
+    points.push({
+      key: date,
+      label: new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }),
+      received: jobs.filter((j) => manilaDate(j.created_at) === date).length,
+      pickedUp: out.length,
+      earned: out.reduce((s, j) => s + paidFor(j), 0),
+    });
+  }
+  return points;
 }

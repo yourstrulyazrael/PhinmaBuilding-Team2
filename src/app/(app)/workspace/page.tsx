@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Bell, ChartColumn, Clock, Settings2, UserCog, UsersRound } from "lucide-react";
+import { ArrowLeft, Bell, Clock, Settings2, UserCog, UsersRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, todayInManila, type Job } from "@/lib/jobs";
 import { attentionAlerts, isLate, overdueAndAwaiting } from "@/lib/workspace";
@@ -13,20 +13,18 @@ import { ShopSettings } from "./shop-settings";
 import { StaffTab } from "./staff-tab";
 import { CustomersTab } from "./customers-tab";
 import { NotificationsTab } from "./notifications-tab";
-import { AnalyticsTab } from "./analytics-tab";
 
 // ownerOnly tabs are left out entirely for staff: not shown, and typing
 // the address falls back to the first tab.
 const TABS = [
   { key: "customers", label: "Customers", icon: UsersRound, ownerOnly: false },
   { key: "notifications", label: "Notifications", icon: Bell, ownerOnly: false },
-  { key: "analytics", label: "Analytics", icon: ChartColumn, ownerOnly: false },
   { key: "staff", label: "Staff", icon: UserCog, ownerOnly: true },
   { key: "settings", label: "Shop settings", icon: Settings2, ownerOnly: false },
 ] as const;
 
 /**
- * The technician's Workspace: customers, notifications, analytics,
+ * The technician's Workspace: customers, notifications,
  * staff (owner only) and shop settings in one place. Everything is worked out from their own
  * jobs (src/lib/workspace.ts), so there are no extra tables.
  */
@@ -69,7 +67,7 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
         </p>
         <h1 className="text-2xl font-semibold tracking-tight text-tertiary md:text-3xl">Workspace tools</h1>
         <p className="text-sm text-muted-foreground">
-          Customers, reminders, numbers and settings, all from your repair jobs.
+          Customers, reminders, staff and settings, all in one place.
         </p>
       </header>
 
@@ -97,7 +95,6 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
 
       {tab === "customers" && <CustomersTab jobs={jobs} />}
       {tab === "notifications" && <NotificationsTab jobs={jobs} today={today} />}
-      {tab === "analytics" && <AnalyticsTab jobs={jobs} today={today} isOwner={shop?.role === "owner"} />}
       {tab === "settings" && shop && (
         <ShopSettings
           shop={shop}
