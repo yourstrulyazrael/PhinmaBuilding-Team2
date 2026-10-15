@@ -12,6 +12,7 @@ export type Part = {
   name: string;
   quantity: number;
   low_stock_at: number;
+  retail_price: number; // what the customer is charged (ticket 30)
   active: boolean;
   created_at: string;
 };
@@ -32,6 +33,7 @@ export type JobPart = {
   job_id: string;
   part_id: string;
   quantity: number;
+  unit_price: number; // the retail price when it was used (ticket 30)
   created_at: string;
 };
 
@@ -82,4 +84,26 @@ export function mostUsed(jobParts: JobPart[], parts: Part[], period: Period): Pa
     })
     .sort((a, b) => b.quantity - a.quantity || b.repairs - a.repairs)
     .slice(0, 10);
+}
+
+export type PartsMoney = { sold: number; cost: number; profit: number; units: number };
+
+/**
+ * Parts on repairs in a period (ticket 30): what they sold for (retail
+ * price when used), what they cost the shop (cost when used), and the
+ * difference. Owner only: `unitCosts` comes from job_part_costs, which
+ * staff can't read.
+ */
+export function partsMoney(jobParts: JobPart[], unitCosts: Map<string, number>, period: Period): PartsMoney {
+  let sold = 0;
+  let cost = 0;
+  let units = 0;
+  for (const jp of jobParts) {
+    const day = manilaDate(jp.created_at);
+    if (day < period.from || day > period.to) continue;
+    sold += Number(jp.unit_price) * jp.quantity;
+    cost += (unitCosts.get(jp.id) ?? 0) * jp.quantity;
+    units += jp.quantity;
+  }
+  return { sold, cost, profit: sold - cost, units };
 }

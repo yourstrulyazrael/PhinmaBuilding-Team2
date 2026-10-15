@@ -10,6 +10,7 @@
 import { isFinished, paymentLabel, PAYMENT_METHODS, statusLabel, STATUSES, type Job } from "@/lib/jobs";
 import { daysBetween, manilaDate, paidFor, pickedUpOn } from "@/lib/workspace";
 import type { Period } from "@/lib/periods";
+import type { PartsMoney } from "@/lib/inventory";
 
 export type ReportRow = {
   received: string; // "YYYY-MM-DD"
@@ -36,10 +37,11 @@ export type Report = {
   avgTurnaround: number | null;
   byMethod: { label: string; count: number; total: number }[];
   byStatus: { label: string; count: number }[];
+  parts: PartsMoney; // parts used on repairs: sold, cost, profit (ticket 30)
   rows: ReportRow[];
 };
 
-export function buildReport(jobs: Job[], period: Period, names: Map<string, string>): Report {
+export function buildReport(jobs: Job[], period: Period, names: Map<string, string>, parts: PartsMoney): Report {
   const inPeriod = (date: string) => date >= period.from && date <= period.to;
 
   // Jobs that came in during the period: the table, and the status breakdown.
@@ -72,6 +74,7 @@ export function buildReport(jobs: Job[], period: Period, names: Map<string, stri
     earned: pickedUpJobs.reduce((s, j) => s + paid(j), 0),
     avgTurnaround: turnarounds.length ? turnarounds.reduce((s, d) => s + d, 0) / turnarounds.length : null,
     byMethod,
+    parts,
     byStatus: STATUSES.map((s) => ({
       label: s.label,
       count: receivedJobs.filter((j) => j.status === s.value).length,

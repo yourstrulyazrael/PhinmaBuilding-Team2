@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getMyShop } from "@/lib/shop";
 import { formatDate, formatPeso, todayInManila, type Job } from "@/lib/jobs";
 import { buildReport } from "@/lib/report";
+import { partsMoney, type JobPart } from "@/lib/inventory";
 import { periodFrom } from "@/lib/periods";
 import { trend } from "@/lib/workspace";
 import { PeriodPicker } from "@/components/period-picker";
@@ -30,14 +31,21 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
   const period = periodFrom((await searchParams).period, todayInManila(), "30d", true);
 
   // RLS: only this shop's jobs, and only shopmates' names.
-  const [{ data, error }, { data: people }] = await Promise.all([
+  const [{ data, error }, { data: people }, { data: usedRows }, { data: costRows }] = await Promise.all([
     supabase.from("jobs").select("*"),
     supabase.from("technicians").select("id, display_name"),
+    supabase.from("job_parts").select("*"),
+    supabase.from("job_part_costs").select("job_part_id, unit_cost"),
   ]);
   if (error) throw error;
   const names = new Map((people ?? []).map((p) => [p.id as string, p.display_name as string]));
   const jobs = (data ?? []) as Job[];
-  const report = buildReport(jobs, period, names);
+  const parts = partsMoney(
+    (usedRows ?? []) as JobPart[],
+    new Map((costRows ?? []).map((c) => [c.job_part_id as string, Number(c.unit_cost)])),
+    period,
+  );
+  const report = buildReport(jobs, period, names, parts);
   const points = trend(jobs, period);
 
   return (
@@ -68,6 +76,12 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
           label="Avg. turnaround"
           value={report.avgTurnaround === null ? "–" : `${report.avgTurnaround.toFixed(1)} days`}
         />
+      </section>
+
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-3 print:grid-cols-3" aria-label="Parts">
+        <Stat label="Parts sold" value={formatPeso(report.parts.sold)} note={`${report.parts.units} used on repairs, at retail`} />
+        <Stat label="Parts cost" value={formatPeso(report.parts.cost)} />
+        <Stat label="Parts profit" value={formatPeso(report.parts.profit)} />
       </section>
 
       <Card className="p-4 print:break-inside-avoid print:shadow-none">

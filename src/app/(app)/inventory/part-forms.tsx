@@ -22,7 +22,7 @@ function Message({ state, pending }: { state: FormState; pending: boolean }) {
   return null;
 }
 
-// SKU, name, cost and low-stock level: shared by Add and Edit.
+// SKU, name, cost, retail price and low-stock level: shared by Add and Edit.
 function PartFields({ part, cost }: { part?: Part; cost?: number }) {
   return (
     <>
@@ -34,6 +34,9 @@ function PartFields({ part, cost }: { part?: Part; cost?: number }) {
       </Field>
       <Field label="Cost (₱)">
         <Input name="cost" type="number" inputMode="decimal" min={0} step="0.01" defaultValue={cost ?? ""} placeholder="What the shop pays" required />
+      </Field>
+      <Field label="Retail price (₱)">
+        <Input name="retail_price" type="number" inputMode="decimal" min={0} step="0.01" defaultValue={part?.retail_price ?? ""} placeholder="What the customer pays" required />
       </Field>
       <Field label="Low-stock level">
         <Input name="low_stock_at" type="number" inputMode="numeric" min={0} step={1} defaultValue={part?.low_stock_at ?? 2} required />
@@ -47,7 +50,7 @@ export function AddPartForm() {
   const [state, formAction, pending] = useActionState<FormState, FormData>(addPart, {});
   return (
     <form key={state.done ?? "new"} action={formAction} className="flex flex-col gap-4">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <PartFields />
         <Field label="Starting stock">
           <Input name="starting" type="number" inputMode="numeric" min={0} step={1} defaultValue={0} required />

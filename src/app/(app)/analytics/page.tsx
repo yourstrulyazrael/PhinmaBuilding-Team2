@@ -5,6 +5,7 @@ import { getMyShop } from "@/lib/shop";
 import { formatPeso, todayInManila, type Job } from "@/lib/jobs";
 import { periodFrom } from "@/lib/periods";
 import { analytics, trend } from "@/lib/workspace";
+import { partsMoney, type JobPart } from "@/lib/inventory";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PeriodPicker } from "@/components/period-picker";
 import { TrendCharts } from "@/components/trend-charts";
@@ -27,9 +28,19 @@ export default async function AnalyticsPage({ searchParams }: PageProps<"/analyt
   const today = todayInManila();
   const period = periodFrom((await searchParams).period, today, "30d");
 
-  // RLS: only this shop's jobs.
-  const { data, error } = await supabase.from("jobs").select("*");
+  // RLS: only this shop's jobs and parts. job_part_costs is owner-only,
+  // like this page.
+  const [{ data, error }, { data: usedRows }, { data: costRows }] = await Promise.all([
+    supabase.from("jobs").select("*"),
+    supabase.from("job_parts").select("*"),
+    supabase.from("job_part_costs").select("job_part_id, unit_cost"),
+  ]);
   if (error) throw error;
+  const parts = partsMoney(
+    (usedRows ?? []) as JobPart[],
+    new Map((costRows ?? []).map((c) => [c.job_part_id as string, Number(c.unit_cost)])),
+    period,
+  );
   const jobs = (data ?? []) as Job[];
   const a = analytics(jobs, period);
   const points = trend(jobs, period);
@@ -55,6 +66,16 @@ export default async function AnalyticsPage({ searchParams }: PageProps<"/analyt
           label="Average turnaround"
           value={a.avgTurnaround === null ? "–" : `${a.avgTurnaround.toFixed(1)} days`}
           note="Drop-off to pickup"
+        />
+      </section>
+
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="Parts">
+        <Stat label="Parts sold" value={formatPeso(parts.sold)} note={`${parts.units} part${parts.units === 1 ? "" : "s"} used on repairs, at retail`} />
+        <Stat label="Parts cost" value={formatPeso(parts.cost)} note="What those parts cost the shop" />
+        <Stat
+          label="Parts profit"
+          value={formatPeso(parts.profit)}
+          note={parts.sold > 0 ? `${Math.round((parts.profit / parts.sold) * 100)}% margin` : "Sold minus cost"}
         />
       </section>
 

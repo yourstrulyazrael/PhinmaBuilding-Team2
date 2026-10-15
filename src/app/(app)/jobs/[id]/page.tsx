@@ -34,8 +34,8 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
     getMyShop(supabase, user.id),
     loadNames(supabase),
     // Parts used on this repair, and the catalog to pick from (ticket 28).
-    supabase.from("job_parts").select("id, part_id, quantity").eq("job_id", id).order("created_at"),
-    supabase.from("parts").select("id, sku, name, quantity, active").order("name"),
+    supabase.from("job_parts").select("*").eq("job_id", id).order("created_at"),
+    supabase.from("parts").select("*").order("name"),
   ]);
   if (!job) notFound();
 
@@ -50,8 +50,11 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
     name: catalog.get(u.part_id)?.name ?? "Part",
     sku: catalog.get(u.part_id)?.sku ?? "",
     quantity: u.quantity as number,
+    unitPrice: Number(u.unit_price ?? 0),
   }));
-  const pickable = (partRows ?? []).filter((p) => p.active).map((p) => ({ id: p.id, name: p.name, sku: p.sku, quantity: p.quantity }));
+  const pickable = (partRows ?? [])
+    .filter((p) => p.active)
+    .map((p) => ({ id: p.id, name: p.name, sku: p.sku, quantity: p.quantity, price: Number(p.retail_price ?? 0) }));
 
   const url = await trackingUrl(job.tracking_code);
   const late = isLate(job, todayInManila());

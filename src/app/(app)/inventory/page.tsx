@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AlertTriangle, History, PackagePlus, TrendingUp } from "lucide-react";
+import { AlertTriangle, ArrowDownUp, History, PackagePlus, TrendingUp } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getMyShop } from "@/lib/shop";
 import { loadNames } from "@/lib/people";
@@ -20,6 +20,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PeriodPicker } from "@/components/period-picker";
 import { cn } from "@/lib/utils";
 import { AddPartForm, PartActions } from "./part-forms";
+import { ImportExport } from "./import-export";
 
 /**
  * Inventory (tickets 27–29), in the top bar for owner and staff.
@@ -55,6 +56,19 @@ export default async function InventoryPage({ searchParams }: PageProps<"/invent
   const active = parts.filter((p) => p.active);
   const archived = parts.filter((p) => !p.active);
   const stockValue = active.reduce((sum, p) => sum + Math.max(0, p.quantity) * (costs.get(p.id) ?? 0), 0);
+  const retailValue = active.reduce((sum, p) => sum + Math.max(0, p.quantity) * Number(p.retail_price), 0);
+  // The current inventory in the import template's columns (owner only:
+  // it includes costs).
+  const exportRows = parts
+    .filter((p) => p.active)
+    .map((p) => ({
+      sku: p.sku,
+      name: p.name,
+      cost: costs.get(p.id) ?? 0,
+      retail_price: Number(p.retail_price),
+      quantity: p.quantity,
+      low_stock_at: p.low_stock_at,
+    }));
 
   return (
     <main className="mx-auto flex w-full max-w-[120rem] flex-col gap-4 px-4 py-6 md:px-8 md:py-10 2xl:px-12">
@@ -63,7 +77,8 @@ export default async function InventoryPage({ searchParams }: PageProps<"/invent
           <h1 className="text-2xl font-semibold tracking-tight text-tertiary md:text-3xl">Inventory</h1>
           <p className="text-sm text-muted-foreground">
             {active.length} part{active.length === 1 ? "" : "s"}
-            {isOwner && ` · stock worth ${formatPeso(stockValue)} at cost`}
+            {` · stock worth ${formatPeso(retailValue)} at retail`}
+            {isOwner && ` (${formatPeso(stockValue)} at cost)`}
           </p>
         </div>
       </header>
@@ -111,6 +126,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/invent
                   <th className="px-3 py-2 font-medium">Part</th>
                   <th className="px-3 py-2 text-right font-medium">In stock</th>
                   <th className="px-3 py-2 text-right font-medium">Low at</th>
+                  <th className="px-3 py-2 text-right font-medium">Retail</th>
                   {isOwner && <th className="px-3 py-2 text-right font-medium">Cost</th>}
                   {isOwner && <th className="px-6 py-2"><span className="sr-only">Actions</span></th>}
                 </tr>
@@ -127,6 +143,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/invent
                       <StockBadge part={p} />
                     </td>
                     <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{p.low_stock_at}</td>
+                    <td className="px-3 py-3 text-right tabular-nums">{formatPeso(Number(p.retail_price))}</td>
                     {isOwner && <td className="px-3 py-3 text-right tabular-nums">{formatPeso(costs.get(p.id) ?? 0)}</td>}
                     {isOwner && (
                       <td className="px-6 py-3">
@@ -140,6 +157,21 @@ export default async function InventoryPage({ searchParams }: PageProps<"/invent
           </div>
         )}
       </Card>
+
+      {isOwner && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base text-tertiary">
+              <ArrowDownUp className="size-4" aria-hidden />
+              Import &amp; export
+            </CardTitle>
+            <CardDescription>Bring in an existing inventory, or take a copy of yours.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ImportExport current={exportRows} />
+          </CardContent>
+        </Card>
+      )}
 
       {isOwner && (
         <Card>
