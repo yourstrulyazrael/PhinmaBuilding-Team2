@@ -68,10 +68,6 @@ export function JobDetailsForm({ job, canReviseEstimate }: { job: Job; canRevise
           />
         </div>
       </div>
-      <p className="text-xs text-muted-foreground">
-        Confirm any revised estimate with the customer before continuing the repair.
-      </p>
-
       {state.error && (
         <p role="alert" className="text-sm text-destructive">
           {state.error}

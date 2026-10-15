@@ -193,16 +193,16 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
         </CardContent>
       </Card>
 
-      {/* What the customer sees, and the revised estimate, in one card
-          (ticket 39). The owner answers a waiting proposal at the top;
-          staff who handle this repair, and can't set the estimate
-          themselves, propose one from the line under the form. */}
+      {/* One card for everything the customer sees about the work: the
+          update form, the revised estimate (ticket 39) and the parts used
+          (ticket 28). Plain labels, no dividers, so it reads as one form.
+          The owner answers a waiting proposal at the top. */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base text-tertiary">Update for the customer</CardTitle>
-          <CardDescription>Shown on the customer&apos;s tracking page.</CardDescription>
+          <CardDescription>Shown on the customer&apos;s tracking page, with the names of the parts used.</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-5">
+        <CardContent className="flex flex-col gap-6">
           {viewer.isOwner && proposal?.status === "pending" && (
             <div className="flex flex-col gap-3 rounded-[var(--radius)] border border-highlight/40 bg-highlight/5 p-4 text-sm">
               <div className="flex flex-col gap-0.5">
@@ -233,37 +233,33 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
           )}
 
           {!viewer.isOwner && editable && !(shop?.canReviseEstimate ?? false) && !isFinished(job.status) && (
-            <div className="border-t border-border pt-4">
-              <ProposeEstimate
-                jobId={job.id}
-                current={currentPrice(job)}
-                last={
-                  proposal
-                    ? {
-                        amount: Number(proposal.amount),
-                        reason: proposal.reason,
-                        status: proposal.status,
-                        ownerNote: proposal.owner_note,
-                        sentOn: formatDateTime(proposal.created_at),
-                      }
-                    : null
-                }
-              />
-            </div>
+            <ProposeEstimate
+              jobId={job.id}
+              current={currentPrice(job)}
+              last={
+                proposal
+                  ? {
+                      amount: Number(proposal.amount),
+                      reason: proposal.reason,
+                      status: proposal.status,
+                      ownerNote: proposal.owner_note,
+                      sentOn: formatDateTime(proposal.created_at),
+                    }
+                  : null
+              }
+            />
           )}
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base text-tertiary">
-            <Package className="size-4" aria-hidden />
-            Parts used
-          </CardTitle>
-          <CardDescription>Taken out of stock. The customer sees the part names.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <PartsUsed jobId={job.id} used={used} parts={pickable} editable={editable} />
+          <section className="flex flex-col gap-3" aria-labelledby="parts-used">
+            <div className="flex flex-col gap-0.5">
+              <h3 id="parts-used" className="flex items-center gap-1.5 text-sm font-medium">
+                <Package className="size-3.5 text-muted-foreground" aria-hidden />
+                Parts used
+              </h3>
+              <p className="text-xs text-muted-foreground">Taken out of stock.</p>
+            </div>
+            <PartsUsed jobId={job.id} used={used} parts={pickable} editable={editable} />
+          </section>
         </CardContent>
       </Card>
     </main>
