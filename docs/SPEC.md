@@ -71,6 +71,13 @@ keeps its older names (`revised_estimate`, `promised_date`).
 default); every amount, for shop and customer, is shown in it. Amounts
 are not converted.
 
+**Reviews** (ticket 62): once a repair is picked up, the customer can
+rate the technician who handled it (1–5 stars, optional comment), once,
+from their tracking page. Reviews are private to the shop: each
+technician sees their own (Account → Your reviews, the repair page, a
+notification); the owner sees everyone's, with each person's average on
+Workspace → Staff.
+
 **Pickup, warranty and receipts** (tickets 44, 56–58): the owner can
 **Reassign** a repair to anyone current in the shop. When a repair is
 **Ready for pickup**, its page offers a ready-made message (total, address,
@@ -341,7 +348,7 @@ Phase 2 (only shown if finished and tested in time):
 - Built-in printer support (we use the device's normal print screen)
 - Automatic SMS or Messenger delivery, and email invites (both need a
   paid service)
-- Customer accounts and ratings
+- Customer accounts (customers rate their technician without one, ticket 62)
 - Deleting repair jobs
 - A full activity history log (phase 2 records only "Quoted by" and
   "Handled by")

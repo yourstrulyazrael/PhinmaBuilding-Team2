@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
-import { Calculator, KeyRound, Mail, Receipt, Store, UserRound } from "lucide-react";
+import { Calculator, KeyRound, Mail, Receipt, Star, Store, UserRound } from "lucide-react";
 import { formatDate } from "@/lib/jobs";
 import { manilaDate } from "@/lib/workspace";
 import { PageHeader } from "@/components/page-header";
+import { Stars } from "@/components/stars";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DetailsForm, EmailForm, EstimateRequestForm, PasswordForm, ShopDetailsForm, SlipNoteForm } from "./account-forms";
 import { getMe, getShop, getSupabase, getUser } from "@/lib/session";
@@ -24,6 +25,22 @@ export default async function AccountPage() {
 
   // Staff: their latest request to revise estimates (ticket 37). RLS only
   // shows people their own requests.
+  // Reviews of this person's own work (ticket 62), newest first. RLS
+  // allows it; for the owner, filtered to their own repairs here.
+  const { data: reviewRows } = await (await getSupabase())
+    .from("reviews")
+    .select("id, rating, comment, created_at, jobs (device)")
+    .eq("technician_id", user.id)
+    .order("created_at", { ascending: false });
+  const reviews = (reviewRows ?? []).map((r) => ({
+    id: r.id as string,
+    rating: Number(r.rating),
+    comment: (r.comment as string) ?? "",
+    createdAt: r.created_at as string,
+    device: (r.jobs as unknown as { device: string } | null)?.device ?? "A repair",
+  }));
+  const average = reviews.length ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
+
   const { data: lastRequest } = owner
     ? { data: null }
     : await (await getSupabase())
@@ -121,6 +138,47 @@ export default async function AccountPage() {
           )}
         </Section>
       )}
+
+      <Section
+        icon={Star}
+        title="Your reviews"
+        description={
+          owner
+            ? "What customers said about repairs you handled. Everyone's ratings are on Workspace → Staff."
+            : "What customers said about repairs you handled. Only you and the owner see these."
+        }
+      >
+        {reviews.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No reviews yet. Customers can rate you on their tracking page once they&apos;ve picked up their phone.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <p className="flex items-center gap-2 text-sm">
+              <Stars rating={average} />
+              <span className="font-semibold text-tertiary">{average.toFixed(1)}</span>
+              <span className="text-muted-foreground">
+                from {reviews.length} review{reviews.length === 1 ? "" : "s"}
+              </span>
+            </p>
+            <ul className="flex flex-col divide-y divide-border border-t border-border">
+              {reviews.slice(0, 10).map((r) => (
+                <li key={r.id} className="flex flex-col gap-1 py-3 text-sm">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <Stars rating={r.rating} />
+                    <span className="font-medium">{r.device}</span>
+                    <span className="text-xs text-muted-foreground">{formatDate(manilaDate(r.createdAt))}</span>
+                  </span>
+                  {r.comment && <span className="whitespace-pre-line text-muted-foreground">&ldquo;{r.comment}&rdquo;</span>}
+                </li>
+              ))}
+            </ul>
+            {reviews.length > 10 && (
+              <p className="text-xs text-muted-foreground">Showing the 10 newest of {reviews.length}.</p>
+            )}
+          </div>
+        )}
+      </Section>
 
       <Section icon={Mail} title="Email" description="The address you sign in with.">
         <EmailForm email={user.email ?? ""} pendingEmail={user.new_email ?? undefined} />

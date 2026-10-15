@@ -3,7 +3,8 @@ import { Ban, Bell, CalendarClock, CircleCheck, Clock, Hand, Hourglass, Package,
 import type { Part } from "@/lib/inventory";
 import { labourPrice, type Alert } from "@/lib/workspace";
 import { formatPeso, type Job } from "@/lib/jobs";
-import type { OwnerAnswer } from "@/lib/session";
+import type { NewReview, OwnerAnswer } from "@/lib/session";
+import { Stars } from "@/components/stars";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ export function NotificationsList({
   requests,
   proposals,
   answers,
+  reviews,
 }: {
   alerts: Alert[];
   me: string;
@@ -42,6 +44,7 @@ export function NotificationsList({
   requests: number; // owner: staff requests to revise estimates (ticket 37)
   proposals: Proposal[]; // owner: revised estimates proposed on a repair (ticket 39)
   answers: OwnerAnswer[]; // staff: the owner approved or rejected what they sent (ticket 42)
+  reviews: NewReview[]; // new customer reviews: your own, or everyone's for the owner (ticket 62)
 }) {
   return (
     <Card>
@@ -55,6 +58,27 @@ export function NotificationsList({
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        {reviews.length > 0 && (
+          <ul className="flex flex-col gap-2">
+            {reviews.map((r) => (
+              <li key={r.id}>
+                <Link
+                  href={`/jobs/${r.jobId}`}
+                  className="flex items-start gap-3 rounded-[var(--radius)] border border-amber-300 bg-amber-50 p-3 text-sm hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/50 dark:hover:bg-amber-950"
+                >
+                  <Stars rating={r.rating} className="mt-0.5 shrink-0" />
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="font-medium text-tertiary">
+                      New review for {r.device}
+                      {r.technicianId !== me && <span className="font-normal text-muted-foreground"> · {names[r.technicianId] ?? "Someone"}</span>}
+                    </span>
+                    {r.comment && <span className="whitespace-pre-line text-muted-foreground">&ldquo;{r.comment}&rdquo;</span>}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
         {answers.length > 0 && (
           <ul className="flex flex-col gap-2">
             {answers.map((a) => (
@@ -150,7 +174,7 @@ export function NotificationsList({
           </Link>
         )}
         {alerts.length === 0 ? (
-          answers.length + proposals.length + requests + lowStock.length === 0 && (
+          answers.length + reviews.length + proposals.length + requests + lowStock.length === 0 && (
             <p className="text-sm text-muted-foreground">All caught up. Nothing needs your attention.</p>
           )
         ) : (

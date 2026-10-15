@@ -43,3 +43,18 @@ export async function requestCancellation(code: string, reason: string): Promise
   revalidatePath(`/track/${code}`);
   return {};
 }
+
+// The customer rates the technician once the phone is picked up (ticket
+// 62): 1 to 5 stars and an optional comment, once per repair. The
+// database checks the repair was picked up and not already reviewed.
+export async function submitReview(code: string, rating: number, comment: string): Promise<CustomerActionResult> {
+  if (!isTrackingCode(code)) return { error: "This link isn't valid." };
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) return { error: "Pick 1 to 5 stars." };
+  const note = comment.trim();
+  if (note.length > 500) return { error: "Please keep the comment under 500 characters." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("submit_review", { code, rating, comment: note });
+  if (error) return { error: error.code === "PGRST202" ? "Reviews aren't open yet. Please try again later." : error.message };
+  revalidatePath(`/track/${code}`);
+  redirect(`/track/${code}?reviewed=1`);
+}

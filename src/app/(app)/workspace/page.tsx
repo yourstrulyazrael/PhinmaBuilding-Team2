@@ -55,6 +55,16 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
   // (ticket 36). Only fetched there; the database refuses anyone else.
   const { data: accounts } =
     tab === "staff" ? await supabase.rpc("shop_staff_accounts") : { data: null };
+  // Each person's average rating from customers' reviews (ticket 62).
+  const { data: reviewRows } =
+    tab === "staff" ? await supabase.from("reviews").select("technician_id, rating") : { data: null };
+  const ratingOf = new Map<string, { sum: number; count: number }>();
+  for (const r of reviewRows ?? []) {
+    const t = ratingOf.get(r.technician_id as string) ?? { sum: 0, count: 0 };
+    t.sum += Number(r.rating);
+    t.count += 1;
+    ratingOf.set(r.technician_id as string, t);
+  }
   const accountOf = new Map(
     ((accounts ?? []) as { id: string; email: string; created_at: string; last_sign_in_at: string | null }[]).map(
       (a) => [a.id, a],
@@ -136,6 +146,7 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
               lastSignIn: account?.last_sign_in_at ?? null,
               openJobs: theirs.filter((j) => !isFinished(j.status)).length,
               totalJobs: theirs.length,
+              rating: ratingOf.get(m.technician_id) ?? null,
             };
           })}
         />

@@ -60,13 +60,13 @@ export const getMe = cache(async () => {
 export const getNotifications = cache(async () => {
   const supabase = await getSupabase();
   const shop = await getShop();
-  if (!shop) return { alerts: [], lowStock: [], requests: 0, proposals: [], answers: [] as OwnerAnswer[], keys: [] as string[] };
+  if (!shop) return { alerts: [], lowStock: [], requests: 0, proposals: [], answers: [] as OwnerAnswer[], reviews: [] as NewReview[], keys: [] as string[] };
 
   const owner = shop.role === "owner";
   // Staff: the owner's answers to their proposals and requests from the
   // last two days (ticket 42). RLS only returns their own.
   const since = new Date(Date.now() - 2 * 86_400_000).toISOString();
-  const [{ data: jobRows }, { data: partRows }, { data: requestRows }, { data: proposalRows }, { data: answeredProposals }, { data: answeredRequests }] = await Promise.all([
+  const [{ data: jobRows }, { data: partRows }, { data: requestRows }, { data: proposalRows }, { data: answeredProposals }, { data: answeredRequests }, { data: reviewRows }] = await Promise.all([
     supabase.from("jobs").select("*").not("status", "in", "(picked_up,cancelled)"),
     supabase.from("parts").select("*"),
     owner
@@ -90,6 +90,9 @@ export const getNotifications = cache(async () => {
           .neq("status", "pending")
           .gte("decided_at", since)
       : Promise.resolve({ data: [] }),
+    // New customer reviews from the last two days (ticket 62). RLS: staff
+    // get reviews of their own work, the owner gets everyone's.
+    supabase.from("reviews").select("id, job_id, technician_id, rating, comment, created_at, jobs (device)").gte("created_at", since),
   ]);
   // Some reminders (a customer approving a revised estimate, ticket 40)
   // are only for the owner and the person handling that repair.
@@ -140,10 +143,34 @@ export const getNotifications = cache(async () => {
     ...requestIds.map((id) => `request:${id}`),
     ...proposals.map((p) => `proposal:${p.id}`),
     ...answers.map((a) => `answer:${a.kind}:${a.id}`),
+    ...(reviewRows ?? []).map((r) => `review:${r.id}`),
   ];
 
-  return { alerts, lowStock: low, requests: requestIds.length, proposals, answers, keys };
+  const reviews: NewReview[] = (reviewRows ?? [])
+    .map((r) => ({
+      id: r.id as string,
+      jobId: r.job_id as string,
+      technicianId: r.technician_id as string,
+      rating: Number(r.rating),
+      comment: (r.comment as string) ?? "",
+      createdAt: r.created_at as string,
+      device: (r.jobs as unknown as { device: string } | null)?.device ?? "A repair",
+    }))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  return { alerts, lowStock: low, requests: requestIds.length, proposals, answers, reviews, keys };
 });
+
+// A customer's review from the last two days (ticket 62).
+export type NewReview = {
+  id: string;
+  jobId: string;
+  technicianId: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  device: string;
+};
 
 // The owner approving or rejecting something a staff member sent: a
 // revised estimate they proposed on a repair, or their request to set

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AlarmClock, CalendarDays, CircleCheck, Phone, ShieldCheck } from "lucide-react";
+import { AlarmClock, CalendarDays, CircleCheck, Phone, ShieldCheck, Star } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { createClient } from "@/lib/supabase/server";
 import { STATUSES, formatDate, formatPeso, isFinished, isTrackingCode, todayInManila, type Status } from "@/lib/jobs";
@@ -8,7 +8,8 @@ import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { cn } from "@/lib/utils";
 import { AutoRefresh } from "./auto-refresh";
-import { CancelRequestForm, EstimateQuestion } from "./customer-actions";
+import { CancelRequestForm, EstimateQuestion, ReviewForm } from "./customer-actions";
+import { Stars } from "@/components/stars";
 import { CurrencyProvider } from "@/components/currency";
 import { setRequestCurrency } from "@/lib/money";
 
@@ -43,6 +44,7 @@ type TrackedJob = {
   shop_currency?: string; // after 026 (ticket 54)
   warranty_until?: string | null; // "YYYY-MM-DD", after 027 (ticket 57)
   shop_hours?: string; // after 027 (ticket 56)
+  review_rating?: number | null; // their own rating, after 028 (ticket 62)
   technician_name: string; // who is handling the phone
 };
 
@@ -54,7 +56,7 @@ type TrackedJob = {
 export default async function TrackingPage({ params, searchParams }: PageProps<"/track/[code]">) {
   const { code } = await params;
   // Set after the customer answers a revised quote (ticket 52).
-  const answered = (await searchParams).answered;
+  const { answered, reviewed } = await searchParams;
 
   let job: TrackedJob | null = null;
   if (isTrackingCode(code)) {
@@ -71,6 +73,7 @@ export default async function TrackingPage({ params, searchParams }: PageProps<"
         <Logo name={job?.shop_name ?? "Zenith Repair"} />
 
         {job && (answered === "approved" || answered === "declined") && <AnswerThanks answer={answered} />}
+        {job && reviewed === "1" && job.review_rating ? <ReviewThanks rating={job.review_rating} /> : null}
         {job ? <JobStatus job={job} code={code} /> : <NotFound />}
       </main>
     </CurrencyProvider>
@@ -114,6 +117,16 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
 
   return (
     <>
+      {/* Picked up: rate the technician (ticket 62), or see their rating. */}
+      {job.status === "picked_up" &&
+        (job.review_rating ? (
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            You rated {job.technician_name || "your technician"} <Stars rating={job.review_rating} />
+          </p>
+        ) : (
+          <ReviewForm code={code} technician={job.technician_name} />
+        ))}
+
       {/* A new price waiting for the customer's answer comes first: it's
           the one thing on this page they need to act on (ticket 40). */}
       {job.estimate_status === "pending" && job.revised_estimate !== null && !finished && (
@@ -326,6 +339,23 @@ function AnswerThanks({ answer }: { answer: "approved" | "declined" }) {
             ? "The shop has been told and will carry on with your repair."
             : "The shop has been told and will contact you about what to do next."}
         </p>
+      </div>
+    </div>
+  );
+}
+
+// After sending a review (ticket 62).
+function ReviewThanks({ rating }: { rating: number }) {
+  return (
+    <div
+      role="status"
+      className="flex items-start gap-3 rounded-[var(--radius)] border border-amber-300 bg-amber-50 p-4 shadow-card dark:border-amber-800 dark:bg-amber-950/50"
+    >
+      <Star className="mt-0.5 size-5 shrink-0 fill-amber-400 text-amber-400" aria-hidden />
+      <div className="flex flex-col gap-1">
+        <p className="font-medium text-tertiary">Thank you for your review!</p>
+        <Stars rating={rating} />
+        <p className="text-sm text-muted-foreground">It helps the shop keep doing good work.</p>
       </div>
     </div>
   );

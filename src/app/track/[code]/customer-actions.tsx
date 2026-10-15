@@ -3,8 +3,8 @@
 import { useMoney } from "@/components/currency";
 
 import { useState, useTransition } from "react";
-import { Ban, Check, X } from "lucide-react";
-import { answerEstimate, requestCancellation } from "./actions";
+import { Ban, Check, Star, X } from "lucide-react";
+import { answerEstimate, requestCancellation, submitReview } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -176,6 +176,93 @@ export function CancelRequestForm({ code }: { code: string }) {
           {error}
         </p>
       )}
+    </form>
+  );
+}
+
+const STAR_WORDS = ["", "Poor", "Fair", "Good", "Very good", "Excellent"];
+
+// Rate the technician after pickup (ticket 62): 1 to 5 stars (tap or use
+// the arrow keys) and an optional comment. Only the shop sees it.
+export function ReviewForm({ code, technician }: { code: string; technician: string }) {
+  const [rating, setRating] = useState(0);
+  const [hover, setHover] = useState(0);
+  const [comment, setComment] = useState("");
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string>();
+  const shown = hover || rating;
+
+  function send() {
+    setError(undefined);
+    startTransition(async () => {
+      // On success the action shows the thank-you page.
+      const result = await submitReview(code, rating, comment);
+      if (result?.error) setError(result.error);
+    });
+  }
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (rating) send();
+      }}
+      className="flex flex-col gap-3 rounded-[var(--radius)] border border-border bg-card p-4 shadow-card"
+    >
+      <div>
+        <p className="font-medium text-tertiary">How did {technician || "your technician"} do?</p>
+        <p className="text-sm text-muted-foreground">Your review goes to the shop only.</p>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <div role="radiogroup" aria-label="Rating" className="flex gap-1" onMouseLeave={() => setHover(0)}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button
+              key={n}
+              type="button"
+              role="radio"
+              aria-checked={rating === n}
+              aria-label={`${n} star${n === 1 ? "" : "s"}: ${STAR_WORDS[n]}`}
+              onClick={() => setRating(n)}
+              onMouseEnter={() => setHover(n)}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowRight" || e.key === "ArrowUp") setRating(Math.min(5, (rating || 0) + 1));
+                if (e.key === "ArrowLeft" || e.key === "ArrowDown") setRating(Math.max(1, (rating || 2) - 1));
+              }}
+              className="rounded-md p-0.5 transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:hover:scale-100"
+            >
+              <Star
+                className={n <= shown ? "size-8 fill-amber-400 text-amber-400" : "size-8 text-muted-foreground/40"}
+                aria-hidden
+              />
+            </button>
+          ))}
+        </div>
+        <span className="text-sm font-medium text-muted-foreground" aria-live="polite">
+          {STAR_WORDS[shown]}
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="review-comment">Anything to add? (optional)</Label>
+        <Textarea
+          id="review-comment"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          rows={3}
+          maxLength={500}
+          placeholder="e.g. Quick and friendly. The screen looks brand new."
+        />
+      </div>
+
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
+      <Button type="submit" disabled={pending || !rating} className="w-fit">
+        {pending ? "Sending…" : "Send review"}
+      </Button>
     </form>
   );
 }

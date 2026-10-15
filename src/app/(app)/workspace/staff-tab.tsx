@@ -5,6 +5,7 @@ import { manilaDate } from "@/lib/workspace";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddStaffForm } from "./staff-forms";
 import { EstimateAccess, RequestDecision, StaffActions } from "./staff-controls";
+import { Stars } from "@/components/stars";
 
 export type StaffMember = {
   id: string;
@@ -18,6 +19,7 @@ export type StaffMember = {
   lastSignIn: string | null;
   openJobs: number;
   totalJobs: number;
+  rating: { sum: number; count: number } | null; // from customers' reviews (ticket 62)
 };
 
 // A staff member asking to revise estimates (ticket 37).
@@ -121,6 +123,19 @@ export function StaffTab({ staff, requests }: { staff: StaffMember[]; requests: 
                   <dt className="text-muted-foreground">Repairs</dt>
                   <dd>
                     {m.openJobs} open · {m.totalJobs} in total
+                  </dd>
+                  <dt className="text-muted-foreground">Rating</dt>
+                  <dd className="flex items-center gap-2">
+                    {m.rating ? (
+                      <>
+                        <Stars rating={m.rating.sum / m.rating.count} />
+                        <span className="text-xs text-muted-foreground">
+                          {(m.rating.sum / m.rating.count).toFixed(1)} · {m.rating.count} review{m.rating.count === 1 ? "" : "s"}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">No reviews yet</span>
+                    )}
                   </dd>
                 </dl>
 

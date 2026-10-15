@@ -18,6 +18,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { CancelRequest } from "./cancel-request";
 import { PartsUsed } from "./parts-used";
 import { ReassignSelect } from "./reassign-select";
+import { Stars } from "@/components/stars";
 import { ProposalDecision, ProposeEstimate } from "./estimate-proposal";
 import { getShop, getSupabase, getUser, getNames } from "@/lib/session";
 
@@ -31,7 +32,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
   if (!user) redirect("/login");
 
   // RLS: a job from another shop returns nothing -> "not found".
-  const [{ data: job }, shop, names, { data: usedRows }, { data: partRows }, { data: proposal }, { data: memberRows }] = await Promise.all([
+  const [{ data: job }, shop, names, { data: usedRows }, { data: partRows }, { data: proposal }, { data: memberRows }, { data: review }] = await Promise.all([
     supabase.from("jobs").select("*").eq("id", id).maybeSingle<Job>(),
     getShop(),
     getNames(),
@@ -49,6 +50,9 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
       .maybeSingle(),
     // Who the owner can hand it to (ticket 44): the shop's current members.
     supabase.from("shop_members").select("*").order("joined_at"),
+    // The customer's review (ticket 62). RLS: the owner, or the
+    // technician it's about; anyone else gets nothing.
+    supabase.from("reviews").select("rating, comment, created_at").eq("job_id", id).maybeSingle(),
   ]);
   if (!job) notFound();
 
@@ -286,6 +290,18 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
             )}
             <dt className="text-muted-foreground">Estimated completion date</dt>
             <dd>{formatDate(job.promised_date)}</dd>
+            {review && (
+              <>
+                <dt className="text-muted-foreground">Review</dt>
+                <dd className="flex flex-col gap-1">
+                  <span className="flex items-center gap-2">
+                    <Stars rating={review.rating} />
+                    <span className="text-xs text-muted-foreground">{formatDateTime(review.created_at)}</span>
+                  </span>
+                  {review.comment && <span className="whitespace-pre-line">&ldquo;{review.comment}&rdquo;</span>}
+                </dd>
+              </>
+            )}
           </dl>
           <p className="mt-4 text-xs text-muted-foreground">
             Customer name and phone are private: never on the claim slip or tracking page.
