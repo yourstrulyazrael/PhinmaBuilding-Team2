@@ -18,6 +18,9 @@ export type Status = (typeof STATUSES)[number]["value"];
 
 export type Job = {
   id: string;
+  shop_id: string;
+  handled_by: string; // who is responsible for the phone now
+  quoted_by: string; // who gave the initial quote
   customer_name: string;
   customer_phone: string;
   device: string;

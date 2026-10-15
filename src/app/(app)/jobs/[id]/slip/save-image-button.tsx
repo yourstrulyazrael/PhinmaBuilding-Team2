@@ -6,8 +6,8 @@ import QRCode from "qrcode";
 import { Button } from "@/components/ui/button";
 
 export type SlipImageData = {
-  technicianName: string;
-  technicianContact: string;
+  shopName: string;
+  shopContact: string;
   rows: [label: string, value: string][];
   url: string;
   fileName: string;
@@ -92,21 +92,21 @@ async function drawSlip(slip: SlipImageData): Promise<Blob> {
   ctx.fillRect(0, 0, WIDTH, height);
   ctx.textBaseline = "top";
 
-  // Header: technician's name and contact, "CLAIM SLIP" on the right.
+  // Header: shop name and contact, "CLAIM SLIP" on the right.
   let y = PAD;
   ctx.fillStyle = GREEN;
   ctx.fillRect(PAD, y, 36, 36);
   ctx.fillStyle = "#ffffff";
   ctx.font = `bold 18px ${FONT}`;
   ctx.textAlign = "center";
-  ctx.fillText(slip.technicianName.charAt(0).toUpperCase(), PAD + 18, y + 9);
+  ctx.fillText(slip.shopName.charAt(0).toUpperCase(), PAD + 18, y + 9);
   ctx.textAlign = "left";
   ctx.fillStyle = NAVY;
   ctx.font = `600 16px ${FONT}`;
-  ctx.fillText(slip.technicianName, PAD + 48, y, WIDTH - PAD * 2 - 150);
+  ctx.fillText(slip.shopName, PAD + 48, y, WIDTH - PAD * 2 - 150);
   ctx.fillStyle = GREY;
   ctx.font = `12px ${FONT}`;
-  ctx.fillText(slip.technicianContact, PAD + 48, y + 21);
+  ctx.fillText(slip.shopContact, PAD + 48, y + 21);
   ctx.font = `600 10px ${FONT}`;
   ctx.textAlign = "right";
   ctx.fillText("CLAIM SLIP", WIDTH - PAD, y + 4);

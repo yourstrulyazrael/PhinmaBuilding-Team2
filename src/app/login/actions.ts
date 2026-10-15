@@ -38,8 +38,8 @@ export async function authenticate(
           "Turn off \"Confirm email\" in Supabase (Authentication → Sign In / Providers → Email).",
       };
     }
-    // New accounts fill in My details first: the claim slip needs them.
-    redirect("/details");
+    // New accounts set up their shop first: every job belongs to one.
+    redirect("/setup");
   }
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });

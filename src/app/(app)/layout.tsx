@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { LogOut, Wrench } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { getMyShop } from "@/lib/shop";
 import { signOut } from "../login/actions";
 import { NavLinks } from "./nav-links";
 
@@ -15,6 +16,10 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  // Every page in here needs a shop: jobs belong to one.
+  const shop = await getMyShop(supabase, user.id);
+  if (!shop) redirect("/setup");
 
   const { data: technician } = await supabase
     .from("technicians")

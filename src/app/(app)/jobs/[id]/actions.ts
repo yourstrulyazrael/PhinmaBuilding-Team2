@@ -14,7 +14,8 @@ export async function setStatus(jobId: string, status: string): Promise<ActionRe
   }
 
   const supabase = await createClient();
-  // RLS only lets a technician update their own jobs. For anyone else's
+  // RLS only lets someone update jobs they may change (the owner: any job
+  // in the shop; anyone else: jobs they handle). For any other
   // job this matches no rows, so we check that one row came back.
   const { data, error } = await supabase
     .from("jobs")

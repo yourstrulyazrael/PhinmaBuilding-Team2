@@ -4,6 +4,7 @@ import { ArrowLeft, Wrench } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatPeso, type Job } from "@/lib/jobs";
 import { qrSvg, trackingUrl } from "@/lib/tracking-url";
+import { getMyShop } from "@/lib/shop";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PrintButton } from "./print-button";
@@ -22,15 +23,12 @@ export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/sl
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // RLS: a technician can only load their own jobs, so another
-  // technician's job id simply returns nothing.
-  const [{ data: job }, { data: technician }] = await Promise.all([
+  // RLS: only jobs from this person's shop load, so any other
+  // job id simply returns nothing. The slip shows the shop's name and
+  // the owner's contact, not whoever happens to be signed in.
+  const [{ data: job }, shop] = await Promise.all([
     supabase.from("jobs").select("*").eq("id", id).maybeSingle<Job>(),
-    supabase
-      .from("technicians")
-      .select("display_name, contact_number")
-      .eq("id", user.id)
-      .maybeSingle(),
+    getMyShop(supabase, user.id),
   ]);
   if (!job) notFound();
 
@@ -50,8 +48,8 @@ export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/sl
         <div className="flex gap-2">
           <SaveImageButton
             slip={{
-              technicianName: technician?.display_name ?? "Zenith Repair",
-              technicianContact: technician?.contact_number ?? "",
+              shopName: shop?.name ?? "Zenith Repair",
+              shopContact: shop?.ownerContact ?? "",
               rows: [
                 ["Device", job.device],
                 ["Problem", job.problem],
@@ -78,9 +76,9 @@ export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/sl
             </span>
             <div>
               <p className="font-semibold leading-tight text-tertiary">
-                {technician?.display_name ?? "Zenith Repair"}
+                {shop?.name ?? "Zenith Repair"}
               </p>
-              <p className="text-xs text-muted-foreground">{technician?.contact_number}</p>
+              <p className="text-xs text-muted-foreground">{shop?.ownerContact}</p>
             </div>
           </div>
           <p className="text-right text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">

@@ -32,7 +32,7 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // RLS: only ever this technician's own jobs and details.
+  // RLS: only ever this shop's jobs, and this person's own details.
   const [{ data, error }, { data: technician }] = await Promise.all([
     supabase.from("jobs").select("*"),
     supabase.from("technicians").select("display_name, contact_number").eq("id", user.id).maybeSingle(),

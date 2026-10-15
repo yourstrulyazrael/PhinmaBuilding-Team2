@@ -26,8 +26,9 @@ type TrackedJob = {
   parts_replaced: string;
   promised_date: string;
   updated_at: string;
-  technician_name: string;
-  technician_contact: string;
+  shop_name: string;
+  shop_contact: string; // the owner's number
+  technician_name: string; // who is handling the phone
 };
 
 /**
@@ -52,7 +53,7 @@ export default async function TrackingPage({ params }: PageProps<"/track/[code]"
           <Wrench className="size-4" aria-hidden />
         </span>
         <span className="text-lg font-semibold tracking-tight text-tertiary">
-          {job?.technician_name ?? "Zenith Repair"}
+          {job?.shop_name ?? "Zenith Repair"}
         </span>
       </div>
 
@@ -156,15 +157,15 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
 
       <Card className="flex items-center justify-between gap-3 p-4">
         <div className="min-w-0">
-          <p className="text-xs text-muted-foreground">Your technician</p>
-          <p className="truncate text-sm font-medium text-tertiary">{job.technician_name}</p>
+          <p className="text-xs text-muted-foreground">Your repair shop</p>
+          <p className="truncate text-sm font-medium text-tertiary">{job.shop_name}</p>
         </div>
         <a
-          href={`tel:${job.technician_contact.replace(/[^\d+]/g, "")}`}
+          href={`tel:${job.shop_contact.replace(/[^\d+]/g, "")}`}
           className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius)] border border-border px-3 py-2 text-sm font-medium hover:bg-muted"
         >
           <Phone className="size-4" aria-hidden />
-          {job.technician_contact}
+          {job.shop_contact}
         </a>
       </Card>
     </>

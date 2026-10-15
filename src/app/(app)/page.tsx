@@ -31,11 +31,11 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
     .eq("id", user.id)
     .maybeSingle();
 
-  // Claim slips need the technician's name and contact, so fill those
-  // in before anything else.
-  if (!technician) redirect("/details");
+  // The layout already sends anyone without a shop to Set up; this is a
+  // safety net in case that ever changes.
+  if (!technician) redirect("/setup");
 
-  // RLS means this only ever returns the signed-in technician's jobs.
+  // RLS means this only ever returns jobs from the signed-in person's shop.
   const { data, error } = await supabase.from("jobs").select("*");
   if (error) throw error;
   const jobs = (data ?? []) as Job[];

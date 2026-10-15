@@ -11,14 +11,14 @@ export default async function NewJobPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // A job must belong to a technician with saved details (the database
-  // insists), so send them to fill those in first.
+  // A job must belong to a shop (the database insists), so anyone
+  // without one is sent to Set up first.
   const { data: technician } = await supabase
     .from("technicians")
     .select("id")
     .eq("id", user.id)
     .maybeSingle();
-  if (!technician) redirect("/details");
+  if (!technician) redirect("/setup");
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col px-4 py-6 md:py-10">
@@ -26,7 +26,7 @@ export default async function NewJobPage() {
         <CardHeader>
           <CardTitle className="text-tertiary">Add a repair</CardTitle>
           <CardDescription>
-            The customer&apos;s name and phone stay private. Only you can see them.
+            The customer&apos;s name and phone stay private. Only your shop can see them.
           </CardDescription>
         </CardHeader>
         <CardContent>
