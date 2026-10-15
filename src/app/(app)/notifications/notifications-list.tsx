@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Ban, Bell, CalendarClock, CircleCheck, Clock, Hand, Hourglass, Package, PackageX, ThumbsDown, TrendingUp } from "lucide-react";
+import { Ban, Bell, CalendarClock, CircleCheck, Clock, Hand, Hourglass, Package, PackageX, ThumbsDown, ThumbsUp, TrendingUp } from "lucide-react";
 import type { Part } from "@/lib/inventory";
 import { currentPrice, type Alert } from "@/lib/workspace";
 import { formatPeso, type Job } from "@/lib/jobs";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 const KINDS: Record<Alert["kind"], { icon: typeof Bell; tone: string }> = {
   cancel: { icon: Ban, tone: "bg-red-50 text-destructive dark:bg-red-950" },
   declined: { icon: ThumbsDown, tone: "bg-red-50 text-destructive dark:bg-red-950" },
+  approved: { icon: ThumbsUp, tone: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" },
   overdue: { icon: CalendarClock, tone: "bg-red-50 text-destructive dark:bg-red-950" },
   due_today: { icon: Clock, tone: "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300" },
   due_tomorrow: { icon: Hourglass, tone: "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300" },

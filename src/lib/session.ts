@@ -69,7 +69,10 @@ export const getNotifications = cache(async () => {
       ? supabase.from("estimate_proposals").select("id, job_id, staff_id, amount").eq("status", "pending")
       : Promise.resolve({ data: [] }),
   ]);
-  const alerts = attentionAlerts((jobRows ?? []) as Job[], todayInManila());
+  // Some reminders (a customer approving a revised estimate, ticket 40)
+  // are only for the owner and the person handling that repair.
+  const user = await getUser();
+  const alerts = attentionAlerts((jobRows ?? []) as Job[], todayInManila(), user ? { id: user.id, isOwner: owner } : undefined);
   const low = lowStock((partRows ?? []) as Part[]);
   const waiting = requests ?? 0;
   // Only proposals on repairs that are still open need an answer.

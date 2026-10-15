@@ -113,6 +113,10 @@ least one real apprentice. Customers never log in; they only view a
    sees it on that repair and in Notifications (counted by the bell) and
    **Approves** (it becomes the revised estimate, and the customer is
    asked to accept it as usual) or **Rejects** it, with an optional note.
+   On the tracking page, a revised estimate waiting for the customer's
+   answer is the **first thing shown** (ticket 40). When the customer
+   **approves**, the owner and the person handling the repair get a
+   notification (and a count on the bell) that day and the next.
    Removing someone keeps their login and their name on past repairs,
    but they lose all access at once and their open repairs move to the
    owner (deleting the login would need the `service_role` key). Settings live on

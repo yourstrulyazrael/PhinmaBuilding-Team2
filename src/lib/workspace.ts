@@ -3,7 +3,7 @@
  * No extra tables: customers, notifications and analytics are all
  * calculated from the `jobs` rows RLS already lets them read.
  */
-import { isFinished, STATUSES, type Job, type Status } from "@/lib/jobs";
+import { formatPeso, isFinished, STATUSES, type Job, type Status } from "@/lib/jobs";
 import type { Period } from "@/lib/periods";
 
 // --- Small helpers ------------------------------------------------------
@@ -80,14 +80,18 @@ export function groupCustomers(jobs: Job[]): Customer[] {
 
 export type Alert = {
   job: Job;
-  kind: "cancel" | "declined" | "overdue" | "due_today" | "due_tomorrow" | "ready" | "parts" | "estimate";
+  kind: "cancel" | "declined" | "approved" | "overdue" | "due_today" | "due_tomorrow" | "ready" | "parts" | "estimate";
   message: string;
 };
 
 const PARTS_WAIT_DAYS = 3;
 
+// Who is looking: some reminders are only for the owner and the person
+// handling the repair.
+export type AlertViewer = { id: string; isOwner: boolean };
+
 // Jobs that need the technician's attention, most urgent kind first.
-export function attentionAlerts(jobs: Job[], today: string): Alert[] {
+export function attentionAlerts(jobs: Job[], today: string, viewer?: AlertViewer): Alert[] {
   const alerts: Alert[] = [];
   for (const job of jobs) {
     if (isFinished(job.status)) continue;
@@ -100,6 +104,24 @@ export function attentionAlerts(jobs: Job[], today: string): Alert[] {
     }
     if (job.estimate_status === "declined") {
       alerts.push({ job, kind: "declined", message: "Customer declined the revised estimate" });
+    }
+    // The customer said yes (ticket 40): tell the owner and whoever is
+    // handling the repair, on the day they answered and the day after.
+    // Reminders are worked out fresh each time, so it then drops off by
+    // itself rather than needing to be dismissed.
+    if (
+      job.estimate_status === "approved" &&
+      job.estimate_answered_at &&
+      manilaDate(job.estimate_answered_at) >= addDays(today, -1) &&
+      viewer &&
+      (viewer.isOwner || job.handled_by === viewer.id)
+    ) {
+      const amount = job.revised_estimate === null ? "" : ` of ${formatPeso(job.revised_estimate)}`;
+      alerts.push({
+        job,
+        kind: "approved",
+        message: `Customer approved the revised estimate${amount}: you can carry on with the repair`,
+      });
     }
     if (isLate(job, today)) {
       const days = daysBetween(job.promised_date, today);
@@ -132,7 +154,7 @@ export function attentionAlerts(jobs: Job[], today: string): Alert[] {
       alerts.push({ job, kind: "estimate", message: "Waiting for the customer to approve the revised estimate" });
     }
   }
-  const order: Alert["kind"][] = ["cancel", "declined", "overdue", "due_today", "due_tomorrow", "ready", "parts", "estimate"];
+  const order: Alert["kind"][] = ["cancel", "declined", "approved", "overdue", "due_today", "due_tomorrow", "ready", "parts", "estimate"];
   return alerts.sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind));
 }
 

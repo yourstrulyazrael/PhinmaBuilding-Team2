@@ -93,6 +93,12 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
 
   return (
     <>
+      {/* A new price waiting for the customer's answer comes first: it's
+          the one thing on this page they need to act on (ticket 40). */}
+      {job.estimate_status === "pending" && job.revised_estimate !== null && !finished && (
+        <EstimateQuestion code={code} initial={job.initial_quote} revised={job.revised_estimate} />
+      )}
+
       <Card className="flex flex-col gap-4 p-6">
         <div className="flex flex-col gap-1">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -152,10 +158,6 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
             </p>
           </div>
         </div>
-      )}
-
-      {job.estimate_status === "pending" && job.revised_estimate !== null && !finished && (
-        <EstimateQuestion code={code} initial={job.initial_quote} revised={job.revised_estimate} />
       )}
 
       <Card className="p-6">
