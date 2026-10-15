@@ -95,10 +95,9 @@ least one real apprentice. Customers never log in; they only view a
    the original date (ticket 21). It updates within a second or two
    of any change, and still re-checks every 15 seconds as a backup.
 8. **Workspace**: the **owner** sees every tab: **Customers**,
-   **Notifications**, **Analytics** and **Shop settings** (their own
-   name and contact, the shop name, **Add staff** (name, contact, email,
-   temporary password), and the **Staff** list with **Remove** next to
-   each apprentice). An **apprentice** sees only **Notifications**. Both see
+   **Notifications**, **Analytics**, **Staff** (the staff list, each one's "Can revise
+   estimates" switch, **Add staff** and **Remove**) and **Shop settings**
+   (the shop name, their own name and contact, and their password). An **apprentice** sees only **Notifications**. Both see
    the **Overdue & awaiting pickup** panel. Owner-only tabs refuse
    apprentices, even if they type the address.
 9. **Not in a shop**: a removed apprentice sees "You're not in a shop"

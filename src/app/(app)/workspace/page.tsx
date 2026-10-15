@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Bell, ChartColumn, Clock, Settings2, UsersRound } from "lucide-react";
+import { ArrowLeft, Bell, ChartColumn, Clock, Settings2, UserCog, UsersRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, todayInManila, type Job } from "@/lib/jobs";
 import { attentionAlerts, isLate, overdueAndAwaiting } from "@/lib/workspace";
@@ -10,20 +10,24 @@ import { StatusBadge } from "@/components/status-badge";
 import { cn } from "@/lib/utils";
 import { getMyShop } from "@/lib/shop";
 import { ShopSettings } from "./shop-settings";
+import { StaffTab } from "./staff-tab";
 import { CustomersTab } from "./customers-tab";
 import { NotificationsTab } from "./notifications-tab";
 import { AnalyticsTab } from "./analytics-tab";
 
+// ownerOnly tabs are left out entirely for staff: not shown, and typing
+// the address falls back to the first tab.
 const TABS = [
-  { key: "customers", label: "Customers", icon: UsersRound },
-  { key: "notifications", label: "Notifications", icon: Bell },
-  { key: "analytics", label: "Analytics", icon: ChartColumn },
-  { key: "settings", label: "Shop settings", icon: Settings2 },
+  { key: "customers", label: "Customers", icon: UsersRound, ownerOnly: false },
+  { key: "notifications", label: "Notifications", icon: Bell, ownerOnly: false },
+  { key: "analytics", label: "Analytics", icon: ChartColumn, ownerOnly: false },
+  { key: "staff", label: "Staff", icon: UserCog, ownerOnly: true },
+  { key: "settings", label: "Shop settings", icon: Settings2, ownerOnly: false },
 ] as const;
 
 /**
- * The technician's Workspace: customers, notifications, analytics and
- * shop settings in one place. Everything is worked out from their own
+ * The technician's Workspace: customers, notifications, analytics,
+ * staff (owner only) and shop settings in one place. Everything is worked out from their own
  * jobs (src/lib/workspace.ts), so there are no extra tables.
  */
 export default async function WorkspacePage({ searchParams }: PageProps<"/workspace">) {
@@ -47,7 +51,8 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
   const today = todayInManila();
 
   const { tab: tabParam } = await searchParams;
-  const tab = TABS.find((t) => t.key === tabParam)?.key ?? "customers";
+  const tabs = TABS.filter((t) => !t.ownerOnly || shop?.role === "owner");
+  const tab = tabs.find((t) => t.key === tabParam)?.key ?? "customers";
   const alertCount = attentionAlerts(jobs, today).length;
   const panel = overdueAndAwaiting(jobs, today);
 
@@ -70,7 +75,7 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
 
       <Card className="p-1.5">
         <nav className="flex flex-wrap gap-1" aria-label="Workspace tools">
-          {TABS.map(({ key, label, icon: Icon }) => (
+          {tabs.map(({ key, label, icon: Icon }) => (
             <Link
               key={key}
               href={key === "customers" ? "/workspace" : `/workspace?tab=${key}`}
@@ -98,6 +103,10 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
           shop={shop}
           displayName={technician?.display_name ?? ""}
           contactNumber={technician?.contact_number ?? ""}
+        />
+      )}
+      {tab === "staff" && (
+        <StaffTab
           staff={(members ?? []).map((m) => {
             const person = people?.find((p) => p.id === m.technician_id);
             return {
