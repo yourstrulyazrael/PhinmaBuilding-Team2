@@ -120,6 +120,8 @@ export function SlidingTabs({
             }}
             href={href}
             onClick={() => setPicked(key)}
+            // Same page, new option: stay where you are, don't jump to the top.
+            scroll={false}
             aria-current={key === active ? "page" : undefined}
             className={cn(
               "relative z-10 flex items-center justify-center gap-2 rounded-[calc(var(--radius)-4px)] px-3 py-1.5 text-sm font-medium",

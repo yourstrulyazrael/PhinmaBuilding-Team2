@@ -23,7 +23,7 @@ export function PeriodPicker({ path, current, allowMonth = false }: { path: stri
 
       {allowMonth && (
         // Picking a month reloads the page with ?period=YYYY-MM.
-        <Form action={path} className="flex items-center gap-2">
+        <Form action={path} scroll={false} className="flex items-center gap-2">
           <label className="flex items-center gap-2 text-sm text-muted-foreground">
             <CalendarRange className="size-4" aria-hidden />
             <span className="sr-only">A whole month</span>

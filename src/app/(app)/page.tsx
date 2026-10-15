@@ -148,6 +148,7 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
             <Link
               key={t.key}
               href={tabHref(t.key)}
+              scroll={false}
               aria-current={tab === t.key ? "page" : undefined}
               className={cn(
                 "-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-3 pb-2.5 text-sm font-medium",
@@ -232,7 +233,7 @@ function EmptyState({ tab, q, clearHref }: { tab: string; q: string; clearHref: 
     return (
       <div className="flex flex-col items-center gap-2 px-4 py-10 text-center text-sm text-muted-foreground md:px-6">
         <p>No repairs match “{q}”.</p>
-        <Link href={clearHref} className="font-medium text-primary underline-offset-4 hover:underline">
+        <Link href={clearHref} scroll={false} className="font-medium text-primary underline-offset-4 hover:underline">
           Clear search
         </Link>
       </div>
