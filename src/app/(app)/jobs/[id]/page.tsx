@@ -57,7 +57,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
       <Card>
         <CardHeader>
           <CardTitle className="text-base text-tertiary">Status</CardTitle>
-          <CardDescription>Tap to change. The customer&apos;s page updates within 15 seconds.</CardDescription>
+          <CardDescription>Tap to change. The customer&apos;s page updates straight away.</CardDescription>
         </CardHeader>
         <CardContent>
           <StatusPicker jobId={job.id} status={job.status} variant="buttons" />

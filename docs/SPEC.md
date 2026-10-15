@@ -70,8 +70,9 @@ are the only user who logs in. Customers only view a **tracking page**.
    device, problem, status, initial quote, revised estimate, notes,
    parts replaced, promised date and the technician's contact. It never
    shows the customer's name or phone number. A wrong link shows "No
-   repair found". While open, it re-checks the status every 15 seconds,
-   so the customer never has to refresh.
+   repair found". While open, it updates within a second or two of any
+   change (Supabase Realtime, ticket 09), and still re-checks every 15
+   seconds as a backup, so the customer never has to refresh.
 
 ## Data
 
@@ -142,5 +143,3 @@ On the **live Vercel URL**:
 - Automatic SMS or Messenger delivery
 - Customer accounts and ratings
 - Deleting repair jobs
-- Instant (Supabase Realtime) updates on the tracking page; it re-checks
-  every 15 seconds instead (see `docs/LATER.md`)

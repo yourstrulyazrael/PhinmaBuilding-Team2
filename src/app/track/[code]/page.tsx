@@ -56,7 +56,7 @@ export default async function TrackingPage({ params }: PageProps<"/track/[code]"
         </span>
       </div>
 
-      {job ? <JobStatus job={job} /> : <NotFound />}
+      {job ? <JobStatus job={job} code={code} /> : <NotFound />}
     </main>
   );
 }
@@ -73,7 +73,7 @@ function NotFound() {
   );
 }
 
-function JobStatus({ job }: { job: TrackedJob }) {
+function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
   const current = STATUSES.findIndex((s) => s.value === job.status);
   const updated = new Date(job.updated_at).toLocaleString("en-US", {
     timeZone: "Asia/Manila",
@@ -96,7 +96,7 @@ function JobStatus({ job }: { job: TrackedJob }) {
         <div className="flex flex-col gap-1">
           <StatusBadge status={job.status} className="px-3 py-1 text-sm" />
           <p className="text-xs text-muted-foreground">Last updated {updated}</p>
-          <AutoRefresh />
+          <AutoRefresh code={code} />
         </div>
 
         {/* The six statuses, with only the current one marked. The
