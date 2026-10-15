@@ -29,8 +29,18 @@ The landing page follows the reference design, minus these pieces:
   settings were built in ticket 10. Still parked:
   - **Inventory** (parts in stock): needs a new table with RLS and its
     own add/edit forms, so it gets its own ticket.
-  - **Technicians / team**: staff accounts break the spec's "one
-    independent technician working alone".
+  - **Technicians / team**: now planned as phase 2 (see PROBLEM.md),
+    after ticket 07.
+
+## Out of scope for phase 2 (staff accounts)
+
+- **Full activity history log**: phase 2 only records "Quoted by" and
+  "Handled by".
+- **More than one shop per owner.**
+- **Apprentices seeing earnings or other staff's account details.**
+- **Email invites**: would need a paid email service; phase 2 uses an
+  invite code instead.
+- **Inventory**: still its own future ticket.
 - **Notification bell** and **workspace switcher** in the top bar.
 - **"Preview workspace" banner**: not needed, jobs are saved in Supabase.
 - **"Need a hand?"** help box in the sidebar.
