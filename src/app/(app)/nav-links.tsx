@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
+import { EASE, GLIDE_MS } from "@/components/sliding-tabs";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Bell, Boxes, ChartColumn, LayoutDashboard, Plus, Users } from "lucide-react";
@@ -55,6 +56,7 @@ export function NavLinks({ isOwner }: { isOwner: boolean }) {
             key={href}
             href={href}
             aria-current={active ? "page" : undefined}
+            data-nav-item
             aria-keyshortcuts={`Alt+${i + 1}`}
             className={cn(revealItem, active ? activeItem : idleItem)}
           >
@@ -210,6 +212,7 @@ export function NotificationsLink({ keys, userId }: { keys: string[]; userId: st
     <Link
       href="/notifications"
       aria-current={onPage ? "page" : undefined}
+      data-nav-item
       aria-label={label}
       className={cn(revealItem, onPage ? activeItem : idleItem)}
     >
@@ -246,6 +249,7 @@ export function AccountLink({ name, contact }: { name: string; contact?: string 
     <Link
       href="/account"
       aria-current={active ? "page" : undefined}
+      data-nav-item
       aria-label={`Account: ${name}`}
       className={cn(revealItem, active ? activeItem : idleItem)}
     >
@@ -266,5 +270,95 @@ export function AccountLink({ name, contact }: { name: string; contact?: string 
         </span>
       </RevealLabel>
     </Link>
+  );
+}
+
+/**
+ * The navbar's gliding highlight (ticket 59), like the Today · 7 days ·
+ * 30 days pill: one outline that glides to the page you're on, across
+ * both groups of buttons (pages on the left, bell and account on the
+ * right). Put it first inside the top bar's row.
+ *
+ * - It starts gliding the moment a button is clicked, before the page
+ *   loads, then the address confirms it.
+ * - Smooth: placed at its new spot, drawn at the old one with a
+ *   transform, and that transform animated away on the graphics card
+ *   (same timing as the period pill).
+ * - On pages with no button (a repair, a slip) it fades out; on a phone,
+ *   where the page icons scroll sideways, it follows the scroll.
+ * - Until it's placed, the active button outlines itself; once placed,
+ *   the row is marked data-nav-glide="on" and the buttons' own outline
+ *   is hidden (globals.css), so there is only ever one.
+ */
+export function NavGlide() {
+  const pathname = usePathname();
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useLayoutEffect(() => {
+    const pill = ref.current;
+    const row = pill?.parentElement;
+    if (!pill || !row) return;
+
+    const place = (el: HTMLElement | null, glide: boolean) => {
+      if (!el) {
+        pill.style.opacity = "0";
+        return;
+      }
+      const wasShowing = pill.style.opacity === "1";
+      const from = wasShowing ? pill.getBoundingClientRect() : null;
+      pill.getAnimations().forEach((a) => a.cancel());
+
+      const r = el.getBoundingClientRect();
+      const c = row.getBoundingClientRect();
+      const x = r.left - c.left;
+      const y = r.top - c.top;
+      pill.style.width = `${r.width}px`;
+      pill.style.height = `${r.height}px`;
+      pill.style.transform = `translate(${x}px, ${y}px)`;
+      pill.style.opacity = "1";
+      row.dataset.navGlide = "on";
+
+      if (!glide || !from || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const to = pill.getBoundingClientRect();
+      if (Math.abs(from.left - to.left) < 0.5 && Math.abs(from.width - to.width) < 0.5) return;
+      pill.animate(
+        [
+          { transform: `translate(${x + from.left - to.left}px, ${y + from.top - to.top}px) scale(${from.width / to.width}, ${from.height / to.height})` },
+          { transform: `translate(${x}px, ${y}px) scale(1, 1)` },
+        ],
+        { duration: GLIDE_MS, easing: EASE },
+      );
+    };
+    const current = () => row.querySelector<HTMLElement>('[data-nav-item][aria-current="page"]');
+
+    // The page changed: glide to its button (or fade out if none).
+    place(current(), true);
+
+    // A click: start gliding at once.
+    const onClick = (e: MouseEvent) => {
+      const link = (e.target as HTMLElement).closest<HTMLElement>("a[data-nav-item]");
+      if (link && row.contains(link) && !e.metaKey && !e.ctrlKey && !e.shiftKey) place(link, true);
+    };
+    // Resized, or the page icons scrolled sideways on a phone: re-place.
+    const follow = () => {
+      if (pill.getAnimations().length === 0) place(current(), false);
+    };
+    row.addEventListener("click", onClick);
+    row.addEventListener("scroll", follow, true);
+    const watch = new ResizeObserver(follow);
+    watch.observe(row);
+    return () => {
+      row.removeEventListener("click", onClick);
+      row.removeEventListener("scroll", follow, true);
+      watch.disconnect();
+    };
+  }, [pathname]);
+
+  return (
+    <span
+      ref={ref}
+      aria-hidden
+      className="pointer-events-none absolute left-0 top-0 rounded-xl bg-nav-active/10 opacity-0 ring-2 ring-inset ring-nav-active will-change-transform [transform-origin:0_0]"
+    />
   );
 }

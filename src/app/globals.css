@@ -120,6 +120,15 @@ body {
   font-family: var(--font-sans);
 }
 
+/* The navbar's gliding highlight is in place (ticket 59): the active
+   button drops its own outline and tint, so there's only one. Before
+   that (first paint), the button outlines itself. Unlayered, so it wins
+   over the utility classes. */
+[data-nav-glide="on"] [data-nav-item][aria-current="page"] {
+  background-color: transparent;
+  box-shadow: none;
+}
+
 ::selection {
   background: color-mix(in oklab, var(--primary) 22%, transparent);
 }

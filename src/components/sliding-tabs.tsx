@@ -33,8 +33,8 @@ const LOOKS = {
 // The glide: about 0.4 s with a soft, iOS-like ease (fast start, long
 // gentle settle). The text colours change on the same curve, so a label
 // turns white as the pill arrives under it.
-const GLIDE_MS = 420;
-const EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
+export const GLIDE_MS = 420;
+export const EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
 
 /**
  * A row of options with ONE highlight that glides to the picked one

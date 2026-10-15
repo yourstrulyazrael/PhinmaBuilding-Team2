@@ -5,7 +5,7 @@ import { Logo } from "@/components/logo";
 import { RevealLabel, revealItem } from "@/components/reveal-label";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { signOut } from "../login/actions";
-import { AccountLink, NavLinks, NotificationsLink } from "./nav-links";
+import { AccountLink, NavGlide, NavLinks, NotificationsLink } from "./nav-links";
 import { ShopLive } from "./shop-live";
 import { CurrencyProvider } from "@/components/currency";
 import { getMe, getNotifications, getShop, getUser } from "@/lib/session";
@@ -36,7 +36,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         <header className="sticky top-0 z-20 border-b border-border bg-card/90 backdrop-blur print:hidden">
           {/* Full width: logo and pages hug the left edge; theme, bell,
               account and sign out the right edge, at any screen size. */}
-          <div className="flex h-14 w-full items-center gap-2 px-4 md:h-16 md:gap-4 md:px-8 2xl:px-12">
+          <div className="relative flex h-14 w-full items-center gap-2 px-4 md:h-16 md:gap-4 md:px-8 2xl:px-12">
+            {/* The highlight that glides to the current page (ticket 59). */}
+            <NavGlide />
             <Link href="/" aria-label="Zenith Repair: Overview" className="shrink-0 rounded-[var(--radius)]">
               {/* On a narrow phone, just the logo: the buttons need the room. */}
               <Logo size={36} nameClassName="hidden sm:inline" />
