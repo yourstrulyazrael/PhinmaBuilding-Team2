@@ -1,9 +1,18 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type MenuItem = { label: string; icon?: React.ComponentType<{ className?: string }>; onSelect: () => void };
+export type MenuItem = {
+  label: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  onSelect: () => void;
+  // For a pick-one menu (e.g. the theme): the current choice gets a ✓.
+  checked?: boolean;
+};
+
+const CLOSE_MS = 120; // the fade-out (matches --animate-menu-out)
 
 const WIDTH = 192; // px
 
@@ -11,6 +20,7 @@ const WIDTH = 192; // px
  * A small dropdown menu (the ⋮ on a table row, or Export ▾). Uses fixed
  * positioning so a table card can't cut it off, opens upwards near the
  * bottom of the screen, and works with the keyboard (↑ ↓ Enter Esc).
+ * It drops in when it opens and fades out when it closes (ticket 65).
  */
 export function Menu({
   label,
@@ -25,7 +35,24 @@ export function Menu({
   triggerClassName?: string;
   align?: "start" | "end";
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpenNow] = useState(false);
+  // Still drawn for a moment after closing, so it can fade out.
+  const [closing, setClosing] = useState(false);
+  const closeTimer = useRef<number | undefined>(undefined);
+  // Only ever called to close an open menu, or to open a closed one.
+  const setOpen = useCallback((next: boolean) => {
+    window.clearTimeout(closeTimer.current);
+    if (next) {
+      setClosing(false);
+      setOpenNow(true);
+      return;
+    }
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setClosing(true);
+      closeTimer.current = window.setTimeout(() => setClosing(false), CLOSE_MS);
+    }
+    setOpenNow(false);
+  }, []);
   const [active, setActive] = useState(0);
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const button = useRef<HTMLButtonElement>(null);
@@ -41,7 +68,8 @@ export function Menu({
       top: below ? rect.bottom + 4 : Math.max(8, rect.top - 4 - height),
       left: Math.max(8, Math.min(left, window.innerWidth - WIDTH - 8)),
     });
-    setActive(0);
+    // Start on the current choice, if the menu has one.
+    setActive(Math.max(0, items.findIndex((it) => it.checked)));
     setOpen(true);
   }
 
@@ -61,7 +89,7 @@ export function Menu({
       window.removeEventListener("scroll", close, true);
       window.removeEventListener("resize", close);
     };
-  }, [open]);
+  }, [open, setOpen]);
 
   function pick(i: number) {
     setOpen(false);
@@ -95,7 +123,7 @@ export function Menu({
       >
         {trigger}
       </button>
-      {open && (
+      {(open || closing) && (
         <ul
           ref={list}
           role="menu"
@@ -104,7 +132,10 @@ export function Menu({
           aria-activedescendant={`${id}-${active}`}
           onKeyDown={onKey}
           style={{ top: pos.top, left: pos.left, width: WIDTH }}
-          className="fixed z-50 flex flex-col gap-0.5 rounded-[var(--radius)] border border-border bg-card p-1 text-sm text-card-foreground shadow-lg outline-none motion-safe:animate-menu-in"
+          className={cn(
+            "fixed z-50 flex flex-col gap-0.5 rounded-[var(--radius)] border border-border bg-card p-1 text-sm text-card-foreground shadow-lg outline-none",
+            open ? "motion-safe:animate-menu-in" : "pointer-events-none motion-safe:animate-menu-out",
+          )}
         >
           {items.map((item, i) => {
             const Icon = item.icon;
@@ -112,7 +143,8 @@ export function Menu({
               <li
                 key={item.label}
                 id={`${id}-${i}`}
-                role="menuitem"
+                role={item.checked === undefined ? "menuitem" : "menuitemradio"}
+                aria-checked={item.checked}
                 onPointerEnter={() => setActive(i)}
                 onClick={() => pick(i)}
                 className={cn(
@@ -120,8 +152,9 @@ export function Menu({
                   i === active && "bg-muted",
                 )}
               >
-                {Icon && <Icon className="size-4 text-muted-foreground" />}
-                {item.label}
+                {Icon && <Icon className={cn("size-4", item.checked ? "text-primary" : "text-muted-foreground")} />}
+                <span className={cn("flex-1", item.checked && "font-medium")}>{item.label}</span>
+                {item.checked && <Check className="size-4 text-primary" aria-hidden />}
               </li>
             );
           })}

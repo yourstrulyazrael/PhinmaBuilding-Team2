@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Monitor, Moon, Sun } from "lucide-react";
 import { RevealLabel, revealItem } from "@/components/reveal-label";
+import { Menu } from "@/components/menu";
 import { cn } from "@/lib/utils";
 
 type Theme = "light" | "dark" | "system";
@@ -33,7 +34,7 @@ function readSaved(): Theme {
 }
 
 /**
- * Light / Dark / System, as one button that cycles through them. The
+ * Light / Dark / System, as a dropdown (ticket 65). The
  * choice is remembered on this device only
  * (in the browser's localStorage); System follows the phone or laptop
  * setting, and keeps following it if that changes.
@@ -59,31 +60,47 @@ export function ThemeSwitch({ className }: { className?: string }) {
   }, [theme]);
 
   function choose(next: Theme) {
-    setTheme(next);
     try {
       if (next === "system") localStorage.removeItem("theme");
       else localStorage.setItem("theme", next);
     } catch {
       // Private browsing can block storage: the switch still works for this visit.
     }
+    const swap = () => {
+      apply(next);
+      setTheme(next);
+    };
+    // A soft cross-fade from the old colours to the new (ticket 65): the
+    // browser snapshots the page, swaps the theme, and fades between the
+    // two (timing in globals.css). Without support, or with "reduce
+    // motion", it simply switches.
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if ("startViewTransition" in document && !reduce) document.startViewTransition(swap);
+    else swap();
   }
 
-  // One button that steps Light → Dark → System, showing the current
-  // choice's icon; its name slides out on hover like the other top-bar
-  // buttons.
-  const index = OPTIONS.findIndex((o) => o.value === theme);
-  const { label, icon: Icon } = OPTIONS[index];
-  const next = OPTIONS[(index + 1) % OPTIONS.length];
+  // A dropdown (ticket 65): Light, Dark, System, with a ✓ on the current
+  // one. The button shows the current choice's icon, and its name in a
+  // tooltip like the other top-bar buttons.
+  const { label, icon: Icon } = OPTIONS.find((o) => o.value === theme) ?? OPTIONS[2];
 
   return (
-    <button
-      type="button"
-      onClick={() => choose(next.value)}
-      aria-label={`Theme: ${label}. Switch to ${next.label}`}
-      className={cn(revealItem, "text-muted-foreground hover:bg-muted hover:text-foreground", className)}
-    >
-      <Icon className="size-[18px] shrink-0 md:size-5" aria-hidden />
-      <RevealLabel>Theme: {label}</RevealLabel>
-    </button>
+    <Menu
+      label={`Theme: ${label}. Change theme`}
+      align="end"
+      triggerClassName={cn(revealItem, "text-muted-foreground hover:bg-muted hover:text-foreground", className)}
+      trigger={
+        <>
+          <Icon className="size-[18px] shrink-0 md:size-5" aria-hidden />
+          <RevealLabel>Theme: {label}</RevealLabel>
+        </>
+      }
+      items={OPTIONS.map((o) => ({
+        label: o.label,
+        icon: o.icon,
+        checked: o.value === theme,
+        onSelect: () => choose(o.value),
+      }))}
+    />
   );
 }

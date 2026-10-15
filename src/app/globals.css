@@ -107,6 +107,8 @@
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   /* The status menu fades and drops in. */
   --animate-menu-in: menu-in 120ms ease-out;
+  /* …and fades back out when it closes (ticket 65). */
+  --animate-menu-out: menu-out 120ms ease-in forwards;
 }
 
 body {
@@ -203,6 +205,23 @@ body {
     opacity: 0;
     transform: translateY(-4px) scale(0.98);
   }
+}
+
+@keyframes menu-out {
+  to {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
+/* Switching light/dark (ticket 65): the browser's view transition
+   cross-fades the old colours into the new ones over 0.4 s instead of
+   snapping (components/theme-switch.tsx). Browsers without it, or with
+   "reduce motion", switch instantly. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 400ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Big screens: scale the whole app up a little, so text, buttons and
