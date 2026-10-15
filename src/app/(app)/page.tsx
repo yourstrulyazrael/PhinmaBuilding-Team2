@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatPeso, todayInManila, type Job } from "@/lib/jobs";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { StatusBadge } from "@/components/status-badge";
+import { StatusPicker } from "@/components/status-picker";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -210,14 +210,16 @@ function JobList({ jobs }: { jobs: Job[] }) {
                 <div className="flex items-center gap-3">
                   <DeviceIcon />
                   <div className="min-w-0">
-                    <p className="font-medium text-tertiary">{job.device}</p>
+                    <Link href={`/jobs/${job.id}`} className="font-medium text-tertiary underline-offset-4 hover:underline">
+                    {job.device}
+                  </Link>
                     <p className="line-clamp-1 text-xs text-muted-foreground">{job.problem}</p>
                   </div>
                 </div>
               </td>
               <td className="px-3 py-4">{job.customer_name}</td>
               <td className="px-3 py-4">
-                <StatusBadge status={job.status} />
+                <StatusPicker jobId={job.id} status={job.status} variant="select" />
               </td>
               <td className="px-3 py-4">
                 <Quote job={job} />
@@ -240,10 +242,12 @@ function JobList({ jobs }: { jobs: Job[] }) {
             <div className="flex min-w-0 flex-1 flex-col gap-1.5">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-medium text-tertiary">{job.device}</p>
+                  <Link href={`/jobs/${job.id}`} className="font-medium text-tertiary underline-offset-4 hover:underline">
+                    {job.device}
+                  </Link>
                   <p className="line-clamp-1 text-xs text-muted-foreground">{job.problem}</p>
                 </div>
-                <StatusBadge status={job.status} />
+                <StatusPicker jobId={job.id} status={job.status} variant="select" />
               </div>
               <p className="text-xs text-muted-foreground">{job.customer_name}</p>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
