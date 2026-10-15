@@ -1,29 +1,27 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Bell, Clock, UserCog, UsersRound } from "lucide-react";
+import { ArrowLeft, Clock, UserCog, UsersRound } from "lucide-react";
 import { formatDate, isFinished, todayInManila, type Job } from "@/lib/jobs";
-import { attentionAlerts, isLate, overdueAndAwaiting } from "@/lib/workspace";
+import { isLate, overdueAndAwaiting } from "@/lib/workspace";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { cn } from "@/lib/utils";
-import { lowStock, type Part } from "@/lib/inventory";
 import { StaffTab } from "./staff-tab";
 import { CustomersTab } from "./customers-tab";
-import { NotificationsTab } from "./notifications-tab";
 import { getShop, getSupabase, getUser } from "@/lib/session";
 
 // ownerOnly tabs are left out entirely for staff: not shown, and typing
 // the address falls back to the first tab.
 const TABS = [
   { key: "customers", label: "Customers", icon: UsersRound, ownerOnly: false },
-  { key: "notifications", label: "Notifications", icon: Bell, ownerOnly: false },
   { key: "staff", label: "Staff", icon: UserCog, ownerOnly: true },
 ] as const;
 
 /**
- * The technician's Workspace: customers, notifications and staff
- * (owner only). Settings are on Account. Everything is worked out from their own
+ * The technician's Workspace: customers and staff
+ * (owner only). Settings are on Account, notifications behind the bell
+ * in the top bar (ticket 38). Everything is worked out from their own
  * jobs (src/lib/workspace.ts), so there are no extra tables.
  */
 export default async function WorkspacePage({ searchParams }: PageProps<"/workspace">) {
@@ -32,15 +30,14 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
   const user = await getUser();
   if (!user) redirect("/login");
 
-  // RLS: only ever this shop's jobs, members and parts, and
+  // RLS: only ever this shop's jobs and members, and
   // their shopmates' names.
-  const [{ data, error }, shop, { data: members }, { data: people }, { data: partRows }] =
+  const [{ data, error }, shop, { data: members }, { data: people }] =
     await Promise.all([
     supabase.from("jobs").select("*"),
     getShop(),
     supabase.from("shop_members").select("*").order("joined_at"),
     supabase.from("technicians").select("id, display_name, contact_number"),
-    supabase.from("parts").select("*"),
   ]);
   if (error) throw error;
   const jobs = (data ?? []) as Job[];
@@ -49,6 +46,8 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
   const { tab: tabParam } = await searchParams;
   // Shop settings moved to Account (ticket 34).
   if (tabParam === "settings") redirect("/account");
+  // Notifications moved to the bell in the top bar (ticket 38).
+  if (tabParam === "notifications") redirect("/notifications");
   const tabs = TABS.filter((t) => !t.ownerOnly || shop?.role === "owner");
   const tab = tabs.find((t) => t.key === tabParam)?.key ?? "customers";
   // The owner's Staff tab also shows each person's email and sign-ins
@@ -76,7 +75,6 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
     reason: r.reason as string,
     createdAt: r.created_at as string,
   }));
-  const alertCount = attentionAlerts(jobs, today).length;
   const panel = overdueAndAwaiting(jobs, today);
 
   return (
@@ -92,7 +90,7 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
         </p>
         <h1 className="text-2xl font-semibold tracking-tight text-tertiary md:text-3xl">Workspace tools</h1>
         <p className="text-sm text-muted-foreground">
-          Customers, reminders and staff, all in one place.
+          Customers and staff, all in one place.
         </p>
       </header>
 
@@ -110,9 +108,6 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
             >
               <Icon className="size-4" aria-hidden />
               {label}
-              {key === "notifications" && alertCount > 0 && (
-                <span className="rounded-full bg-primary px-1.5 text-[11px] text-primary-foreground">{alertCount}</span>
-              )}
               {key === "staff" && requests.length > 0 && (
                 <span
                   className="rounded-full bg-highlight px-1.5 text-[11px] text-white dark:text-[#0f1729]"
@@ -127,15 +122,6 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
       </Card>
 
       {tab === "customers" && <CustomersTab jobs={jobs} />}
-      {tab === "notifications" && (
-        <NotificationsTab
-          jobs={jobs}
-          today={today}
-          me={user.id}
-          lowStock={lowStock((partRows ?? []) as Part[])}
-          names={Object.fromEntries((people ?? []).map((p) => [p.id, p.display_name]))}
-        />
-      )}
       {tab === "staff" && (
         <StaffTab
           requests={requests}

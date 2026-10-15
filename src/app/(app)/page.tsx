@@ -106,7 +106,7 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
 
       {(lateCount > 0 || dueTodayCount > 0) && (
         <Link
-          href="/workspace?tab=notifications"
+          href="/notifications"
           className="flex items-center gap-3 rounded-[var(--radius)] border border-amber-300 bg-amber-50 px-4 py-3 text-sm hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/50 dark:hover:bg-amber-950"
         >
           <AlarmClock className="size-5 shrink-0 text-amber-700 dark:text-amber-300" aria-hidden />

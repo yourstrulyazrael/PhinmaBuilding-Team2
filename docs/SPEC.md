@@ -95,8 +95,12 @@ least one real apprentice. Customers never log in; they only view a
    promised date and not ready, it shows a "running late" apology with
    the original date (ticket 21). It updates within a second or two
    of any change, and still re-checks every 15 seconds as a backup.
-8. **Workspace**: the **owner** sees every tab: **Customers**,
-   **Notifications** and **Staff** (a card per person with their sign-in
+8. **Notifications** (ticket 38; was a Workspace tab): a **bell** in the
+   top bar, beside the account, with a badge counting what needs you
+   (reminders on open repairs, low stock once, and for the owner, staff
+   requests to revise estimates). It opens the Notifications page.
+   **Workspace**: the **owner** sees every tab: **Customers**
+   and **Staff** (a card per person with their sign-in
    email, number, joined date, last sign-in and repairs, ticket 36; never
    their password, which nobody can read; **Edit** their name and number;
    **Remove** them, ticket 37; **Add staff**). Staff **ask** to revise
@@ -128,7 +132,7 @@ least one real apprentice. Customers never log in; they only view a
    repairs right now) with smooth line charts beneath, then jobs by
    status, most common devices and payment methods. It
    lists every job received in the period (no customer phone numbers)
-   and exports as Excel (.xlsx) or PDF (ticket 25). An **apprentice** sees only **Notifications**. Both see
+   and exports as Excel (.xlsx) or PDF (ticket 25). An **apprentice** sees only **Customers** in Workspace. Both see
    the **Overdue & awaiting pickup** panel. Owner-only tabs refuse
    apprentices, even if they type the address.
 9. **Not in a shop**: a removed apprentice sees "You're not in a shop"

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Boxes, ChartColumn, LayoutDashboard, Plus, Users } from "lucide-react";
+import { Bell, Boxes, ChartColumn, LayoutDashboard, Plus, Users } from "lucide-react";
 import { RevealLabel, revealItem } from "@/components/reveal-label";
 import { cn } from "@/lib/utils";
 
@@ -42,7 +42,12 @@ export function NavLinks({ isOwner }: { isOwner: boolean }) {
   }, [isOwner, router]);
 
   return (
-    <nav aria-label="Main" className="flex items-center gap-1 sm:gap-1.5 md:gap-2">
+    // On a narrow phone the icons scroll sideways rather than push the
+    // bell, account and sign out off the screen. (No tooltips there to clip.)
+    <nav
+      aria-label="Main"
+      className="flex min-w-0 items-center gap-1 max-sm:overflow-x-auto max-sm:[scrollbar-width:none] sm:gap-1.5 md:gap-2"
+    >
       {links.map(({ href, label, icon: Icon }, i) => {
         const active = pathname === href;
         return (
@@ -69,6 +74,36 @@ function visibleLinks(isOwner: boolean) {
 // The page you are on: the blue accent. Everything else: grey until hovered.
 const activeItem = "bg-highlight/15 text-highlight";
 const idleItem = "text-muted-foreground hover:bg-muted hover:text-foreground";
+
+/**
+ * The bell, beside the account (ticket 38): opens Notifications, with
+ * how many things need you in a badge. The count comes from the layout
+ * (getNotifications in lib/session.ts), so it is fresh on every page.
+ */
+export function NotificationsLink({ count }: { count: number }) {
+  const active = usePathname() === "/notifications";
+  const label = count > 0 ? `Notifications: ${count} need${count === 1 ? "s" : ""} you` : "Notifications";
+
+  return (
+    <Link
+      href="/notifications"
+      aria-current={active ? "page" : undefined}
+      aria-label={label}
+      className={cn(revealItem, active ? activeItem : idleItem)}
+    >
+      <Bell className="size-[18px] shrink-0 md:size-5" aria-hidden />
+      {count > 0 && (
+        <span
+          aria-hidden
+          className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground ring-2 ring-card"
+        >
+          {count > 99 ? "99+" : count}
+        </span>
+      )}
+      <RevealLabel align="end">Notifications</RevealLabel>
+    </Link>
+  );
+}
 
 /**
  * Who is signed in, as their initials, at the right of the top bar.

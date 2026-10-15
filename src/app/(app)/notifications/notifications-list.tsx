@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { Ban, Bell, CalendarClock, CircleCheck, Clock, Hourglass, Package, PackageX, ThumbsDown, TrendingUp } from "lucide-react";
+import { Ban, Bell, CalendarClock, CircleCheck, Clock, Hand, Hourglass, Package, PackageX, ThumbsDown, TrendingUp } from "lucide-react";
 import type { Part } from "@/lib/inventory";
-import type { Job } from "@/lib/jobs";
-import { attentionAlerts, type Alert } from "@/lib/workspace";
+import type { Alert } from "@/lib/workspace";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -17,25 +16,23 @@ const KINDS: Record<Alert["kind"], { icon: typeof Bell; tone: string }> = {
   estimate: { icon: TrendingUp, tone: "bg-indigo-50 text-tertiary dark:bg-indigo-950" },
 };
 
-// Reminders for the technician, worked out from the jobs each time the
-// page opens. Nothing here is sent to customers.
-// Each reminder names who is handling the phone, so it's clear who
-// should act (ticket 13).
-export function NotificationsTab({
-  jobs,
-  today,
+// Reminders for the technician, worked out from the open repairs each
+// time a page opens (lib/session.ts, getNotifications). Nothing here is
+// sent to customers. Each reminder names who is handling the phone, so
+// it's clear who should act (ticket 13).
+export function NotificationsList({
+  alerts,
   me,
   names,
   lowStock,
+  requests,
 }: {
-  jobs: Job[];
-  today: string;
+  alerts: Alert[];
   me: string;
   names: Record<string, string>;
   lowStock: Part[]; // parts at or below their low-stock level (ticket 27)
+  requests: number; // owner: staff requests to revise estimates (ticket 37)
 }) {
-  const alerts = attentionAlerts(jobs, today);
-
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -48,6 +45,20 @@ export function NotificationsTab({
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        {requests > 0 && (
+          <Link
+            href="/workspace?tab=staff"
+            className="flex items-start gap-3 rounded-[var(--radius)] border border-highlight/40 bg-highlight/10 p-3 text-sm hover:bg-highlight/15"
+          >
+            <Hand className="mt-0.5 size-4 shrink-0 text-highlight" aria-hidden />
+            <span className="flex flex-col gap-0.5">
+              <span className="font-medium text-tertiary">
+                {requests} request{requests === 1 ? "" : "s"} to revise estimates
+              </span>
+              <span className="text-muted-foreground">Staff are waiting for you to approve or reject.</span>
+            </span>
+          </Link>
+        )}
         {lowStock.length > 0 && (
           <Link
             href="/inventory"

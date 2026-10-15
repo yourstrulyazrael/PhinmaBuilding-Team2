@@ -5,8 +5,8 @@ import { Logo } from "@/components/logo";
 import { RevealLabel, revealItem } from "@/components/reveal-label";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { signOut } from "../login/actions";
-import { AccountLink, NavLinks } from "./nav-links";
-import { getMe, getShop, getUser } from "@/lib/session";
+import { AccountLink, NavLinks, NotificationsLink } from "./nav-links";
+import { getMe, getNotifications, getShop, getUser } from "@/lib/session";
 
 /**
  * The signed-in technician's shell: one top bar on every screen size,
@@ -18,7 +18,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   // the shop and the person's details load at the same time.
   const user = await getUser();
   if (!user) redirect("/login");
-  const [shop, technician] = await Promise.all([getShop(), getMe()]);
+  // The bell's count (ticket 38) loads alongside; shared with the
+  // Notifications page if that is the page being opened.
+  const [shop, technician, notifications] = await Promise.all([getShop(), getMe(), getNotifications()]);
 
   // Every page in here needs a shop: jobs belong to one.
   if (!shop) redirect("/setup");
@@ -28,8 +30,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex flex-1 flex-col">
       <header className="sticky top-0 z-20 border-b border-border bg-card/90 backdrop-blur print:hidden">
-        {/* Full width: logo and pages hug the left edge, theme and sign
-            out the right edge, at any screen size. */}
+        {/* Full width: logo and pages hug the left edge; theme, bell,
+            account and sign out the right edge, at any screen size. */}
         <div className="flex h-14 w-full items-center gap-2 px-4 md:h-16 md:gap-4 md:px-8 2xl:px-12">
           <Link href="/" aria-label="Zenith Repair: Overview" className="shrink-0 rounded-[var(--radius)]">
             {/* On a narrow phone, just the logo: the buttons need the room. */}
@@ -38,8 +40,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
 
           <NavLinks isOwner={shop.role === "owner"} />
 
-          <div className="ml-auto flex items-center gap-1 md:gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-2">
             <ThemeSwitch />
+            <NotificationsLink count={notifications.count} />
             <AccountLink name={name} contact={technician?.contact_number} />
             <SignOutButton />
           </div>
