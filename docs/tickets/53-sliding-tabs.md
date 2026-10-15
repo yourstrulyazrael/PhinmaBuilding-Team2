@@ -5,7 +5,9 @@ highlight glides ("swooshes") to the option you pick instead of jumping.
 
 **Blocked by:** 48
 
-**Status:** done (check on the live URL)
+**Status:** done (check on the live URL). Smoothed in a follow-up: the
+pill now glides with a transform-only "FLIP" animation (graphics card),
+0.42 s on an iOS-like ease, text colours on the same curve.
 
 - [x] One highlight per switch slides to the picked option (position and
       width), with the text colours cross-fading at the same time

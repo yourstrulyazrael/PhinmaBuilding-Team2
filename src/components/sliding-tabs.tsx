@@ -30,15 +30,27 @@ const LOOKS = {
   },
 } as const;
 
+// The glide: about 0.4 s with a soft, iOS-like ease (fast start, long
+// gentle settle). The text colours change on the same curve, so a label
+// turns white as the pill arrives under it.
+const GLIDE_MS = 420;
+const EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
+
 /**
  * A row of options with ONE highlight that glides to the picked one
- * (ticket 53), instead of the colour jumping. It starts moving the moment
- * you tap, before the page has loaded the new data, so it feels instant.
+ * (tickets 53–54), instead of the colour jumping. It starts moving the
+ * moment you tap, before the page has loaded the new data.
+ *
+ * Smoothness ("FLIP"): the pill is put at its new place and size at
+ * once, then drawn as if it were still at the old one using only a
+ * transform (move + stretch), and that transform is animated away.
+ * Transforms run on the graphics card, separate from the page's work,
+ * so the glide doesn't stutter while React draws the new data. A second
+ * tap mid-glide starts from wherever the pill is, without a jump.
  *
  * Each option is a link (the choice lives in the address, so refresh and
  * Back keep it). Before the page is interactive, the picked option is
- * simply coloured; once measured, the gliding highlight takes over. With
- * "reduce motion" on, it moves without the glide.
+ * simply coloured. With "reduce motion" on, it moves without the glide.
  */
 export function SlidingTabs({
   items,
@@ -57,6 +69,7 @@ export function SlidingTabs({
 }) {
   const style = LOOKS[look];
   const trackRef = useRef<HTMLElement>(null);
+  const pillRef = useRef<HTMLSpanElement>(null);
   const itemRefs = useRef(new Map<string, HTMLAnchorElement>());
   // The option just tapped, shown at once; the address catches up after.
   const [picked, setPicked] = useState(active);
@@ -65,27 +78,66 @@ export function SlidingTabs({
     setShownActive(active);
     setPicked(active);
   }
-  const [box, setBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
-  // No glide for the very first placement, so it doesn't slide in from the edge.
-  const [glide, setGlide] = useState(false);
+  // Has the pill been placed yet? (Until then the option colours itself.)
+  const [placed, setPlaced] = useState(false);
 
+  // Put the pill on `picked`; glide there if it was already showing.
+  useLayoutEffect(() => {
+    const pill = pillRef.current;
+    const el = picked ? itemRefs.current.get(picked) : undefined;
+    if (!pill) return;
+    if (!el) {
+      pill.style.opacity = "0";
+      return;
+    }
+
+    const wasShowing = pill.style.opacity === "1";
+    // Where it is on screen right now, mid-glide included.
+    const from = wasShowing ? pill.getBoundingClientRect() : null;
+    pill.getAnimations().forEach((a) => a.cancel());
+
+    // Final place and size, for real.
+    const x = el.offsetLeft;
+    const y = el.offsetTop;
+    pill.style.width = `${el.offsetWidth}px`;
+    pill.style.height = `${el.offsetHeight}px`;
+    pill.style.transform = `translate(${x}px, ${y}px)`;
+    pill.style.opacity = "1";
+    setPlaced(true);
+
+    if (!from || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const to = pill.getBoundingClientRect();
+    if (Math.abs(from.left - to.left) < 0.5 && Math.abs(from.width - to.width) < 0.5) return;
+
+    // Start drawn at the old place and width, then let it go.
+    const dx = from.left - to.left;
+    const dy = from.top - to.top;
+    const sx = from.width / to.width;
+    const sy = from.height / to.height;
+    pill.animate(
+      [
+        { transform: `translate(${x + dx}px, ${y + dy}px) scale(${sx}, ${sy})` },
+        { transform: `translate(${x}px, ${y}px) scale(1, 1)` },
+      ],
+      { duration: GLIDE_MS, easing: EASE },
+    );
+  }, [picked]);
+
+  // Window resized or the row wrapped: re-place without a glide.
   useLayoutEffect(() => {
     const track = trackRef.current;
     if (!track) return;
-    const measure = () => {
+    const watch = new ResizeObserver(() => {
+      const pill = pillRef.current;
       const el = picked ? itemRefs.current.get(picked) : undefined;
-      setBox(el ? { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight } : null);
-    };
-    measure();
-    const ready = requestAnimationFrame(() => setGlide(true));
-    // Re-measure when the row changes size (window resize, wrapping).
-    const watch = new ResizeObserver(measure);
+      if (!pill || !el || pill.getAnimations().length > 0) return;
+      pill.style.width = `${el.offsetWidth}px`;
+      pill.style.height = `${el.offsetHeight}px`;
+      pill.style.transform = `translate(${el.offsetLeft}px, ${el.offsetTop}px)`;
+    });
     watch.observe(track);
-    return () => {
-      cancelAnimationFrame(ready);
-      watch.disconnect();
-    };
-  }, [picked, items.length]);
+    return () => watch.disconnect();
+  }, [picked]);
 
   return (
     <nav
@@ -98,16 +150,14 @@ export function SlidingTabs({
         className,
       )}
     >
-      {/* The gliding highlight. */}
+      {/* The gliding highlight: placed and animated from the code above. */}
       <span
+        ref={pillRef}
         aria-hidden
         className={cn(
-          "pointer-events-none absolute left-0 top-0 rounded-[calc(var(--radius)-4px)]",
-          glide && "transition-[transform,width,height,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+          "pointer-events-none absolute left-0 top-0 rounded-[calc(var(--radius)-4px)] opacity-0 will-change-transform [transform-origin:0_0]",
           style.pill,
-          box ? "opacity-100" : "opacity-0",
         )}
-        style={box ? { width: box.w, height: box.h, transform: `translate(${box.x}px, ${box.y}px)` } : undefined}
       />
       {items.map(({ key, href, label: text, icon: Icon, extra }) => {
         const on = key === picked;
@@ -125,11 +175,11 @@ export function SlidingTabs({
             aria-current={key === active ? "page" : undefined}
             className={cn(
               "relative z-10 flex items-center justify-center gap-2 rounded-[calc(var(--radius)-4px)] px-3 py-1.5 text-sm font-medium",
-              "transition-colors duration-300 motion-reduce:transition-none",
+              "transition-colors duration-[420ms] ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
               stretch && "flex-1 sm:flex-none",
               on ? style.on : style.off,
               // Until the highlight is measured, colour the picked one itself.
-              on && !box && style.pill,
+              on && !placed && style.pill,
             )}
           >
             {Icon && <Icon className="size-4" aria-hidden />}
