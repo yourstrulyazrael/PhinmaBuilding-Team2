@@ -57,9 +57,12 @@ export async function proxy(request: NextRequest) {
   if (!user && !isPublic) {
     return redirectTo("/login", request, response);
   }
-  if (user && path.startsWith("/login")) {
-    return redirectTo("/", request, response);
-  }
+  // No "signed in, so leave /login" redirect here. getClaims() only
+  // checks the cookie's signature, so a login that has ended on
+  // Supabase's side (signed out elsewhere, account removed) still looks
+  // valid here while getUser() in the pages says "signed out". The page
+  // sends you to /login, this would send you back to /, and the browser
+  // loops forever (ERR_TOO_MANY_REDIRECTS). Signing in already lands on /.
 
   return response;
 }
