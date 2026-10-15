@@ -82,6 +82,13 @@ rating and (owner) person, and a **leaderboard** ranking everyone by CSAT
 then DSAT (3 reviews in the period to be ranked). Everyone sees the
 leaderboard's scores; comments stay private as above.
 
+**Photos** (ticket 64): each repair has up to four "before" and four
+"after" photos of the device, taken on a phone or picked from the
+library, shrunk before upload, kept in a private Supabase Storage bucket.
+Only the shop's own members see them; the owner or the person handling
+the repair adds or deletes them; a cancelled repair's photos are locked.
+Customers don't see them.
+
 **Pickup, warranty and receipts** (tickets 44, 56–58): the owner can
 **Reassign** a repair to anyone current in the shop. When a repair is
 **Ready for pickup**, its page offers a ready-made message (total, address,
@@ -357,6 +364,7 @@ Phase 2 (only shown if finished and tested in time):
 - A full activity history log (phase 2 records only "Quoted by" and
   "Handled by")
 - More than one shop per owner, or one person in several shops
-- Intake photos, suppliers and purchase orders (see `docs/LATER.md`).
+- Suppliers and purchase orders (see `docs/LATER.md`). (Before-and-after
+  photos were moved into scope: ticket 64.)
   (Receipts and warranty were moved into scope by the team: tickets 57–58.)
 - Online payments: payment is recorded by hand at pickup

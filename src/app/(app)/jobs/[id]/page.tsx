@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { AlarmClock, ExternalLink, Lock, Package, PackageCheck, Phone, QrCode, ReceiptText, Smartphone, ThumbsDown, ThumbsUp, TrendingUp } from "lucide-react";
+import { AlarmClock, Camera, ExternalLink, Lock, Package, PackageCheck, Phone, QrCode, ReceiptText, Smartphone, ThumbsDown, ThumbsUp, TrendingUp } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
 import { formatDate, formatPeso, isFinished, paymentLabel, todayInManila, type Job } from "@/lib/jobs";
@@ -18,6 +18,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { CancelRequest } from "./cancel-request";
 import { PartsUsed } from "./parts-used";
 import { ReassignSelect } from "./reassign-select";
+import { JobPhotos, type JobPhoto } from "./job-photos";
 import { Stars } from "@/components/stars";
 import { ProposalDecision, ProposeEstimate } from "./estimate-proposal";
 import { getShop, getSupabase, getUser, getNames } from "@/lib/session";
@@ -55,6 +56,28 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
     supabase.from("reviews").select("rating, comment, created_at").eq("job_id", id).maybeSingle(),
   ]);
   if (!job) notFound();
+
+  // Before-and-after photos (ticket 64): this repair's folder in the
+  // private bucket, shown through links that work for an hour. Storage
+  // RLS only lets the shop's own members list and open them.
+  let photos: JobPhoto[] = [];
+  if (shop) {
+    const folder = `${shop.id}/${job.id}`;
+    const { data: files } = await supabase.storage
+      .from("job-photos")
+      .list(folder, { limit: 100, sortBy: { column: "created_at", order: "asc" } });
+    const named = (files ?? []).filter((f) => /^(before|after)-/.test(f.name));
+    if (named.length) {
+      const { data: signed } = await supabase.storage
+        .from("job-photos")
+        .createSignedUrls(named.map((f) => `${folder}/${f.name}`), 3600);
+      photos = (signed ?? []).flatMap((s, i) =>
+        s.signedUrl
+          ? [{ path: `${folder}/${named[i].name}`, url: s.signedUrl, kind: named[i].name.startsWith("after-") ? "after" : "before" } as JobPhoto]
+          : [],
+      );
+    }
+  }
 
   // Staff can only change the phones they handle; for anyone else's job
   // this page is read-only (the database enforces the same rule).
@@ -440,6 +463,23 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
           )}
         </CardContent>
       </Card>
+
+      {shop && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base text-tertiary">
+              <Camera className="size-4" aria-hidden />
+              Before &amp; after photos
+            </CardTitle>
+            <CardDescription>
+              The device as it came in, and as it goes out. Only your shop sees these.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <JobPhotos shopId={shop.id} jobId={job.id} photos={photos} editable={editable} />
+          </CardContent>
+        </Card>
+      )}
     </main>
   );
 }
