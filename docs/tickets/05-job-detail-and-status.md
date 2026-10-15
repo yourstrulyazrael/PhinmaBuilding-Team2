@@ -7,16 +7,16 @@ tracking page after refreshing.
 
 **Blocked by:** 04
 
-**Status:** todo
+**Status:** done
 
-- [ ] Tapping a job on the Jobs list opens its Job detail screen
-- [ ] All six statuses can be set directly, in any order
-- [ ] The status picker on the Jobs list changes a job's status in one
+- [x] Tapping a job on the Jobs list opens its Job detail screen
+- [x] All six statuses can be set directly, in any order
+- [x] The status picker on the Jobs list changes a job's status in one
       tap
-- [ ] Notes, parts replaced, revised estimate and promised date can be
+- [x] Notes, parts replaced, revised estimate and promised date can be
       edited and saved
-- [ ] The revised estimate cannot be negative and can be left empty
-- [ ] The tracking page shows the new status, notes, parts replaced and
+- [x] The revised estimate cannot be negative and can be left empty
+- [x] The tracking page shows the new status, notes, parts replaced and
       the revised estimate next to the initial quote
-- [ ] Job detail has a link back to the claim slip
-- [ ] Works on the live URL
+- [x] Job detail has a link back to the claim slip
+- [x] Works on the live URL

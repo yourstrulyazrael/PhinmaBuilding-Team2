@@ -1,7 +1,7 @@
 "use client";
 
 import { useOptimistic, useState, useTransition } from "react";
-import { Check } from "lucide-react";
+import { Check, ChevronDown, LoaderCircle } from "lucide-react";
 import { setStatus } from "@/app/(app)/jobs/[id]/actions";
 import { STATUSES, STATUS_STYLES, type Status } from "@/lib/jobs";
 import { cn } from "@/lib/utils";
@@ -41,22 +41,45 @@ export function StatusPicker({
   if (variant === "select") {
     return (
       <div className="flex flex-col gap-1">
-        <select
-          aria-label="Status"
-          value={optimistic}
-          disabled={pending}
-          onChange={(e) => change(e.target.value as Status)}
+        {/* The browser draws its own arrow differently on every phone, so
+            we hide it (appearance-none) and draw our own dot and arrow. */}
+        <span
           className={cn(
-            "h-8 w-fit cursor-pointer rounded-full border-0 py-0 pl-3 pr-7 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60",
+            "relative inline-flex w-44 items-center rounded-full ring-1 ring-inset ring-black/5 transition-colors focus-within:ring-2 focus-within:ring-ring",
             STATUS_STYLES[optimistic],
+            pending && "opacity-70",
           )}
         >
-          {STATUSES.map((s) => (
-            <option key={s.value} value={s.value} className="bg-card text-foreground">
-              {s.label}
-            </option>
-          ))}
-        </select>
+          <span
+            aria-hidden
+            className="pointer-events-none absolute left-3 size-1.5 rounded-full bg-current opacity-70"
+          />
+          <select
+            aria-label="Status"
+            value={optimistic}
+            disabled={pending}
+            onChange={(e) => change(e.target.value as Status)}
+            className="h-8 w-full cursor-pointer appearance-none truncate rounded-full bg-transparent pl-7 pr-8 text-xs font-medium text-inherit focus:outline-none disabled:cursor-wait"
+          >
+            {STATUSES.map((s) => (
+              // Options open in the phone's own menu: keep them plain.
+              <option key={s.value} value={s.value} className="bg-card text-foreground">
+                {s.label}
+              </option>
+            ))}
+          </select>
+          {pending ? (
+            <LoaderCircle
+              aria-hidden
+              className="pointer-events-none absolute right-2.5 size-3.5 animate-spin"
+            />
+          ) : (
+            <ChevronDown
+              aria-hidden
+              className="pointer-events-none absolute right-2.5 size-3.5 opacity-70"
+            />
+          )}
+        </span>
         {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
       </div>
     );
