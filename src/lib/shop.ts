@@ -17,6 +17,10 @@ export type MyShop = {
   slipNote: string;
   // The shop's currency, e.g. "PHP" (ticket 54); "PHP" before 026.
   currency: string;
+  // Opening hours ("" if not set) and warranty days (30 by default; 0 =
+  // none), set on Account (tickets 56–57); defaults before 027.
+  hours: string;
+  warrantyDays: number;
   // The number customers should call: the shop phone, or the owner's.
   contact: string;
 };
@@ -31,6 +35,8 @@ type Membership = {
     phone?: string;
     slip_note?: string;
     currency?: string;
+    hours?: string;
+    warranty_days?: number;
     owner: { display_name: string; contact_number: string } | null;
   } | null;
 };
@@ -70,6 +76,8 @@ export async function getMyShop(supabase: SupabaseClient, userId: string): Promi
     phone,
     slipNote: shop.slip_note ?? "",
     currency: shop.currency ?? "PHP",
+    hours: shop.hours ?? "",
+    warrantyDays: shop.warranty_days ?? 30,
     contact: phone || ownerContact,
   };
 }

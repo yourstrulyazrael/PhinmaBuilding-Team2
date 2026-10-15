@@ -221,3 +221,14 @@ export async function cancelRepair(jobId: string): Promise<ActionResult> {
   revalidatePath("/", "layout");
   redirect(`/?cancelled=${encodeURIComponent(data[0].device as string)}`);
 }
+
+// The owner hands a repair to someone else in the shop (ticket 44). The
+// database checks it's the owner and that the person is current staff
+// (or the owner) of the same shop.
+export async function reassignJob(jobId: string, staffId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("reassign_job", { job_id: jobId, staff_id: staffId });
+  if (error) return { error: error.code === "PGRST202" ? "Run 027 in Supabase first." : error.message };
+  revalidatePath("/", "layout");
+  return { saved: true };
+}

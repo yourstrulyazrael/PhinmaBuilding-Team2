@@ -17,6 +17,7 @@ import { HandledBy } from "@/components/handled-by";
 import { StatusBadge } from "@/components/status-badge";
 import { CancelRequest } from "./cancel-request";
 import { PartsUsed } from "./parts-used";
+import { ReassignSelect } from "./reassign-select";
 import { ProposalDecision, ProposeEstimate } from "./estimate-proposal";
 import { getShop, getSupabase, getUser, getNames } from "@/lib/session";
 
@@ -30,7 +31,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
   if (!user) redirect("/login");
 
   // RLS: a job from another shop returns nothing -> "not found".
-  const [{ data: job }, shop, names, { data: usedRows }, { data: partRows }, { data: proposal }] = await Promise.all([
+  const [{ data: job }, shop, names, { data: usedRows }, { data: partRows }, { data: proposal }, { data: memberRows }] = await Promise.all([
     supabase.from("jobs").select("*").eq("id", id).maybeSingle<Job>(),
     getShop(),
     getNames(),
@@ -46,6 +47,8 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    // Who the owner can hand it to (ticket 44): the shop's current members.
+    supabase.from("shop_members").select("*").order("joined_at"),
   ]);
   if (!job) notFound();
 
@@ -170,7 +173,24 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
           <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm">
             <dt className="text-muted-foreground">Handled by</dt>
             <dd>
-              <HandledBy id={job.handled_by} viewer={viewer} />
+              {/* The owner can hand it to someone else (ticket 44);
+                  everyone else just sees who has it. */}
+              {viewer.isOwner && !cancelled ? (
+                <ReassignSelect
+                  jobId={job.id}
+                  handledBy={job.handled_by}
+                  people={(memberRows ?? [])
+                    .filter((m) => !m.removed_at)
+                    .map((m) => ({
+                      id: m.technician_id as string,
+                      name:
+                        (m.technician_id === user.id ? "You" : nameOf(m.technician_id, viewer)) +
+                        (m.role === "owner" ? " (owner)" : ""),
+                    }))}
+                />
+              ) : (
+                <HandledBy id={job.handled_by} viewer={viewer} />
+              )}
             </dd>
             <dt className="text-muted-foreground">Quoted by</dt>
             <dd>{job.quoted_by === user.id ? "You" : nameOf(job.quoted_by, viewer)}</dd>

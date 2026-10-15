@@ -54,6 +54,12 @@ export async function saveShopDetails(shopId: string, _prev: FormState, formData
   if (phone.length > 40) return { error: "Keep the phone number to 40 characters." };
   const currency = String(formData.get("currency") ?? "PHP");
   if (!isCurrency(currency)) return { error: "Pick a currency from the list." };
+  const hours = String(formData.get("hours") ?? "").trim();
+  if (hours.length > 120) return { error: "Keep the opening hours to 120 characters." };
+  const warrantyDays = Number(formData.get("warranty_days") ?? 30);
+  if (!Number.isInteger(warrantyDays) || warrantyDays < 0 || warrantyDays > 365) {
+    return { error: "Enter the warranty in days: 0 to 365 (0 for none)." };
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase.from("shops").update({ name, address, phone }).eq("id", shopId).select("id");
@@ -62,9 +68,14 @@ export async function saveShopDetails(shopId: string, _prev: FormState, formData
 
   revalidatePath("/", "layout");
 
-  // Saved on its own, so the rest still saves before 026 is run.
+  // Saved on their own, so the rest still saves before 026/027 are run.
   const { error: currencyError } = await supabase.from("shops").update({ currency }).eq("id", shopId);
   if (currencyError) return { error: "Saved, except the currency. Run 026 in Supabase first." };
+  const { error: moreError } = await supabase
+    .from("shops")
+    .update({ hours, warranty_days: warrantyDays })
+    .eq("id", shopId);
+  if (moreError) return { error: "Saved, except the opening hours and warranty. Run 027 in Supabase first." };
 
   return { saved: true };
 }

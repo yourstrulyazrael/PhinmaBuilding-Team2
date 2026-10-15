@@ -51,6 +51,8 @@ export default async function AccountPage() {
             address={shop.address}
             phone={shop.phone}
             currency={shop.currency}
+            hours={shop.hours}
+            warrantyDays={shop.warrantyDays}
           />
         </Section>
       )}

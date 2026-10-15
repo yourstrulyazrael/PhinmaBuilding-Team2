@@ -27,12 +27,16 @@ export function ShopDetailsForm({
   address,
   phone,
   currency,
+  hours,
+  warrantyDays,
 }: {
   shopId: string;
   name: string;
   address: string;
   phone: string;
   currency: string;
+  hours: string;
+  warrantyDays: number;
 }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(saveShopDetails.bind(null, shopId), {});
   return (
@@ -45,6 +49,27 @@ export function ShopDetailsForm({
       </Field>
       <Field id="phone" label="Shop phone" hint="Optional. Customers call this; if empty, they call your own number.">
         <Input id="phone" name="phone" type="tel" defaultValue={phone} maxLength={40} placeholder="e.g. (033) 123 4567" />
+      </Field>
+      <Field id="hours" label="Opening hours" hint={"Optional. Goes in the \"ready for pickup\" message."}>
+        <Input id="hours" name="hours" defaultValue={hours} maxLength={120} placeholder="e.g. Mon–Sat, 9 AM–6 PM" />
+      </Field>
+      <Field
+        id="warranty_days"
+        label="Warranty (days)"
+        hint="On every repair from the day it's picked up; shown on claim slips, receipts and the tracking page. 0 for none."
+      >
+        <Input
+          id="warranty_days"
+          name="warranty_days"
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={365}
+          step={1}
+          defaultValue={warrantyDays}
+          required
+          className="w-32"
+        />
       </Field>
       <Field
         id="currency"
