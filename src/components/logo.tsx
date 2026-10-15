@@ -29,16 +29,18 @@ export function Logo({
   size = 36,
   alwaysLight = false,
   className,
+  nameClassName,
 }: {
   name?: string;
   size?: number;
   alwaysLight?: boolean;
   className?: string;
+  nameClassName?: string; // e.g. hide the name on narrow phones
 }) {
   return (
     <span className={cn("flex items-center gap-2.5", className)}>
       <LogoMark size={size} alwaysLight={alwaysLight} />
-      <span className="text-lg font-semibold tracking-tight text-tertiary">{name}</span>
+      <span className={cn("text-lg font-semibold tracking-tight text-tertiary", nameClassName)}>{name}</span>
     </span>
   );
 }

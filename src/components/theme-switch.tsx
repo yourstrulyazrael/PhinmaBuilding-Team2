@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Monitor, Moon, Sun } from "lucide-react";
+import { RevealLabel, revealItem } from "@/components/reveal-label";
 import { cn } from "@/lib/utils";
 
 type Theme = "light" | "dark" | "system";
@@ -30,7 +31,8 @@ function readSaved(): Theme {
 }
 
 /**
- * Light / Dark / System. The choice is remembered on this device only
+ * Light / Dark / System, as one button that cycles through them. The
+ * choice is remembered on this device only
  * (in the browser's localStorage); System follows the phone or laptop
  * setting, and keeps following it if that changes.
  */
@@ -64,29 +66,22 @@ export function ThemeSwitch({ className }: { className?: string }) {
     }
   }
 
+  // One button that steps Light → Dark → System, showing the current
+  // choice's icon; its name slides out on hover like the other top-bar
+  // buttons.
+  const index = OPTIONS.findIndex((o) => o.value === theme);
+  const { label, icon: Icon } = OPTIONS[index];
+  const next = OPTIONS[(index + 1) % OPTIONS.length];
+
   return (
-    <div
-      role="radiogroup"
-      aria-label="Colour theme"
-      className={cn("inline-flex rounded-full border border-border bg-background p-0.5", className)}
+    <button
+      type="button"
+      onClick={() => choose(next.value)}
+      aria-label={`Theme: ${label}. Switch to ${next.label}`}
+      className={cn(revealItem, "text-muted-foreground hover:bg-muted hover:text-foreground", className)}
     >
-      {OPTIONS.map(({ value, label, icon: Icon }) => (
-        <button
-          key={value}
-          type="button"
-          role="radio"
-          aria-checked={theme === value}
-          title={label}
-          onClick={() => choose(value)}
-          className={cn(
-            "flex size-7 items-center justify-center rounded-full transition-colors",
-            theme === value ? "bg-muted text-primary" : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          <Icon className="size-3.5" aria-hidden />
-          <span className="sr-only">{label}</span>
-        </button>
-      ))}
-    </div>
+      <Icon className="size-4 shrink-0" aria-hidden />
+      <RevealLabel>Theme: {label}</RevealLabel>
+    </button>
   );
 }

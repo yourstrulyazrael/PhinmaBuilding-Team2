@@ -1,16 +1,18 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getMyShop } from "@/lib/shop";
 import { Logo } from "@/components/logo";
+import { RevealLabel, revealItem } from "@/components/reveal-label";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { signOut } from "../login/actions";
 import { NavLinks } from "./nav-links";
 
 /**
- * The signed-in technician's shell: a sidebar on tablet and laptop, a
- * compact top bar on a phone. Every page inside the (app) folder sits
- * in here.
+ * The signed-in technician's shell: one top bar on every screen size,
+ * with icon-only buttons whose names slide out on hover. Every page
+ * inside the (app) folder sits under it.
  */
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const supabase = await createClient();
@@ -32,49 +34,21 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   const name = technician?.display_name ?? "Technician";
 
   return (
-    <div className="flex flex-1 flex-col md:flex-row">
-      {/* Sidebar: tablet and laptop */}
-      <aside className="hidden print:hidden! w-60 shrink-0 flex-col border-r border-border bg-card md:flex md:sticky md:top-0 md:h-screen">
-        <div className="px-5 py-5">
-          <Logo />
-        </div>
-        <p className="px-5 pb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-          Workspace
-        </p>
-        <div className="px-3">
-          <NavLinks layout="sidebar" />
-        </div>
-        <div className="mt-auto flex items-center justify-between gap-2 px-5 pb-3">
-          <span className="text-xs text-muted-foreground">Theme</span>
-          <ThemeSwitch />
-        </div>
-        <div className="border-t border-border p-4">
-          <div className="flex items-center gap-3">
-            <Avatar name={name} />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{name}</p>
-              <p className="truncate text-xs text-muted-foreground">
-                {technician?.contact_number ?? "Add your details"}
-              </p>
-            </div>
-            <SignOutButton />
-          </div>
-        </div>
-      </aside>
+    <div className="flex flex-1 flex-col">
+      <header className="sticky top-0 z-20 border-b border-border bg-card/90 backdrop-blur print:hidden">
+        <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-2 px-4 md:gap-4 md:px-8">
+          <Link href="/" aria-label="Zenith Repair: Overview" className="shrink-0 rounded-[var(--radius)]">
+            {/* On a narrow phone, just the logo: the buttons need the room. */}
+            <Logo size={32} nameClassName="hidden sm:inline" />
+          </Link>
 
-      {/* Top bar: phone */}
-      <header className="sticky top-0 z-10 border-b border-border bg-card md:hidden print:hidden">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <Logo />
-          {/* No avatar here: a phone has little room, and the theme switch
-              matters more. */}
+          <NavLinks />
+
           <div className="ml-auto flex items-center gap-1">
             <ThemeSwitch />
+            <Avatar name={name} contact={technician?.contact_number} />
             <SignOutButton />
           </div>
-        </div>
-        <div className="px-2 pb-2">
-          <NavLinks layout="topbar" />
         </div>
       </header>
 
@@ -83,7 +57,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   );
 }
 
-function Avatar({ name }: { name: string }) {
+// Who is signed in: initials, with name and number sliding out on
+// hover. Hidden on narrow phones to leave room for the buttons.
+function Avatar({ name, contact }: { name: string; contact?: string }) {
   const initials = name
     .split(/\s+/)
     .filter(Boolean)
@@ -91,11 +67,17 @@ function Avatar({ name }: { name: string }) {
     .map((word) => word[0]!.toUpperCase())
     .join("");
   return (
-    <span
-      aria-hidden
-      className="flex size-9 shrink-0 items-center justify-center rounded-full bg-tertiary text-xs font-semibold text-tertiary-foreground"
-    >
-      {initials || "T"}
+    <span className="group/reveal hidden h-9 items-center px-1 sm:flex" title={name}>
+      <span
+        aria-hidden
+        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-tertiary text-xs font-semibold text-tertiary-foreground"
+      >
+        {initials || "T"}
+      </span>
+      <RevealLabel className="flex flex-col leading-tight">
+        <span className="text-sm font-medium">{name}</span>
+        {contact && <span className="text-xs text-muted-foreground">{contact}</span>}
+      </RevealLabel>
     </span>
   );
 }
@@ -103,13 +85,9 @@ function Avatar({ name }: { name: string }) {
 function SignOutButton() {
   return (
     <form action={signOut}>
-      <button
-        type="submit"
-        title="Sign out"
-        className="flex size-9 items-center justify-center rounded-[var(--radius)] text-muted-foreground hover:bg-muted hover:text-foreground"
-      >
-        <LogOut className="size-4" aria-hidden />
-        <span className="sr-only">Sign out</span>
+      <button type="submit" className={`${revealItem} text-muted-foreground hover:bg-muted hover:text-foreground`}>
+        <LogOut className="size-4 shrink-0" aria-hidden />
+        <RevealLabel>Sign out</RevealLabel>
       </button>
     </form>
   );

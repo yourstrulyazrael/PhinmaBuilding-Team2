@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Briefcase, LayoutGrid, Plus, UserRound } from "lucide-react";
+import { RevealLabel, revealItem } from "@/components/reveal-label";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
@@ -12,17 +13,14 @@ const LINKS = [
   { href: "/details", label: "My details", icon: UserRound },
 ];
 
-// The technician's navigation. "use client" because it reads the
-// current address to highlight the page you are on.
-export function NavLinks({ layout }: { layout: "sidebar" | "topbar" }) {
+// The technician's navigation, in the top bar: icons only, and each
+// name slides out on hover. "use client" because it reads the current
+// address to highlight the page you are on.
+export function NavLinks() {
   const pathname = usePathname();
 
   return (
-    <nav
-      className={cn(
-        layout === "sidebar" ? "flex flex-col gap-1" : "flex gap-1 overflow-x-auto",
-      )}
-    >
+    <nav aria-label="Main" className="flex items-center gap-1">
       {LINKS.map(({ href, label, icon: Icon }) => {
         const active = pathname === href;
         return (
@@ -31,14 +29,12 @@ export function NavLinks({ layout }: { layout: "sidebar" | "topbar" }) {
             href={href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex shrink-0 items-center gap-2.5 rounded-[var(--radius)] px-3 py-2 text-sm font-medium transition-colors",
-              active
-                ? "bg-muted text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              revealItem,
+              active ? "bg-muted text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
-            <Icon className="size-4" aria-hidden />
-            {label}
+            <Icon className="size-4 shrink-0" aria-hidden />
+            <RevealLabel>{label}</RevealLabel>
           </Link>
         );
       })}
