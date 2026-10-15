@@ -23,7 +23,7 @@ export async function setStatus(jobId: string, status: string): Promise<ActionRe
     .eq("id", jobId)
     .select("id");
   if (error) return { error: error.message };
-  if (!data?.length) return { error: "Repair job not found." };
+  if (!data?.length) return { error: "You can only change repairs you are handling." };
 
   revalidatePath("/");
   revalidatePath(`/jobs/${jobId}`);
@@ -60,13 +60,15 @@ export async function updateJobDetails(
     .update({
       notes,
       parts_replaced: partsReplaced,
-      revised_estimate: revisedEstimate,
       promised_date: promisedDate,
+      // Only the owner's form has this box; the database refuses an
+      // apprentice changing it anyway.
+      ...(formData.has("revised_estimate") ? { revised_estimate: revisedEstimate } : {}),
     })
     .eq("id", jobId)
     .select("id");
   if (error) return { error: error.message };
-  if (!data?.length) return { error: "Repair job not found." };
+  if (!data?.length) return { error: "You can only change repairs you are handling." };
 
   revalidatePath("/");
   revalidatePath(`/jobs/${jobId}`);

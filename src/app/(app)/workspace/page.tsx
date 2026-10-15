@@ -5,10 +5,11 @@ import { createClient } from "@/lib/supabase/server";
 import { formatDate, todayInManila, type Job } from "@/lib/jobs";
 import { attentionAlerts, isLate, overdueAndAwaiting } from "@/lib/workspace";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { cn } from "@/lib/utils";
-import { DetailsForm } from "../details/details-form";
+import { getMyShop } from "@/lib/shop";
+import { ShopSettings } from "./shop-settings";
 import { CustomersTab } from "./customers-tab";
 import { NotificationsTab } from "./notifications-tab";
 import { AnalyticsTab } from "./analytics-tab";
@@ -32,10 +33,13 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // RLS: only ever this shop's jobs, and this person's own details.
-  const [{ data, error }, { data: technician }] = await Promise.all([
+  // RLS: only ever this shop's jobs, and this person's own details. The
+  // invite code comes back only for the owner.
+  const [{ data, error }, { data: technician }, shop, { data: invite }] = await Promise.all([
     supabase.from("jobs").select("*"),
     supabase.from("technicians").select("display_name, contact_number").eq("id", user.id).maybeSingle(),
+    getMyShop(supabase, user.id),
+    supabase.from("shop_invites").select("code").maybeSingle(),
   ]);
   if (error) throw error;
   const jobs = (data ?? []) as Job[];
@@ -88,24 +92,13 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
       {tab === "customers" && <CustomersTab jobs={jobs} />}
       {tab === "notifications" && <NotificationsTab jobs={jobs} today={today} />}
       {tab === "analytics" && <AnalyticsTab jobs={jobs} today={today} />}
-      {tab === "settings" && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base text-tertiary">
-              <Settings2 className="size-4" aria-hidden />
-              Shop settings
-            </CardTitle>
-            <CardDescription>
-              Your name and contact number, shown on every claim slip and tracking page.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="max-w-md">
-            <DetailsForm
-              displayName={technician?.display_name ?? ""}
-              contactNumber={technician?.contact_number ?? ""}
-            />
-          </CardContent>
-        </Card>
+      {tab === "settings" && shop && (
+        <ShopSettings
+          shop={shop}
+          displayName={technician?.display_name ?? ""}
+          contactNumber={technician?.contact_number ?? ""}
+          inviteCode={invite?.code ?? null}
+        />
       )}
 
       <Card>
