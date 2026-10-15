@@ -73,6 +73,13 @@ are the only user who logs in. Customers only view a **tracking page**.
    repair found". While open, it updates within a second or two of any
    change (Supabase Realtime, ticket 09), and still re-checks every 15
    seconds as a backup, so the customer never has to refresh.
+8. **Workspace** (technician only, ticket 10): everything else the
+   technician needs in one place, built from their own jobs. Tabs:
+   **Customers** (grouped by phone number, with each one's repairs),
+   **Notifications** (an in-app list of jobs that need attention;
+   nothing is sent to customers), **Analytics** (this month's counts,
+   money and most common devices) and **Shop settings** (the My details
+   form). Below the tabs, an **Overdue & awaiting pickup** panel.
 
 ## Data
 

@@ -7,6 +7,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StatusPicker } from "@/components/status-picker";
 import { cn } from "@/lib/utils";
+import { isLate } from "@/lib/workspace";
 import { JobSearch } from "./job-search";
 
 const TABS = [
@@ -314,7 +315,7 @@ function Quote({ job }: { job: Job }) {
 }
 
 function PromisedDate({ job, today }: { job: Job; today: string }) {
-  const late = job.status !== "picked_up" && job.status !== "ready_for_pickup" && job.promised_date < today;
+  const late = isLate(job, today);
   return (
     <span className={cn("flex items-center gap-1.5", late ? "text-destructive" : "text-muted-foreground")}>
       <CalendarDays className="size-3.5" aria-hidden />

@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Plus, UserRound } from "lucide-react";
+import { Briefcase, LayoutGrid, Plus, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
   { href: "/", label: "Overview", icon: LayoutGrid },
   { href: "/jobs/new", label: "Add a repair", icon: Plus },
+  { href: "/workspace", label: "Workspace", icon: Briefcase },
   { href: "/details", label: "My details", icon: UserRound },
 ];
 

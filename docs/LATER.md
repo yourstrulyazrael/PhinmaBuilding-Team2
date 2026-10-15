@@ -25,8 +25,12 @@ Potential next steps:
 
 The landing page follows the reference design, minus these pieces:
 
-- **Workspace tools** links: customers, inventory, team, reports, shop
-  settings.
+- **Workspace tools**: customers, notifications, analytics and shop
+  settings were built in ticket 10. Still parked:
+  - **Inventory** (parts in stock): needs a new table with RLS and its
+    own add/edit forms, so it gets its own ticket.
+  - **Technicians / team**: staff accounts break the spec's "one
+    independent technician working alone".
 - **Notification bell** and **workspace switcher** in the top bar.
 - **"Preview workspace" banner**: not needed, jobs are saved in Supabase.
 - **"Need a hand?"** help box in the sidebar.
