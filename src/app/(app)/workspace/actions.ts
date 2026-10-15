@@ -74,12 +74,62 @@ export async function addStaff(_prev: AddStaffState, formData: FormData): Promis
   return { added: displayName };
 }
 
-// The owner allows (or stops) a staff member setting revised estimates
-// (ticket 23). The database function refuses anyone but the owner.
-export async function setEstimatePermission(staffId: string, allowed: boolean): Promise<{ error?: string }> {
+// The owner takes back a staff member's permission to revise estimates.
+// Granting it happens only by approving their request (ticket 37).
+export async function revokeEstimatePermission(staffId: string): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const { error } = await supabase.rpc("set_estimate_permission", { staff_id: staffId, allowed });
+  const { error } = await supabase.rpc("set_estimate_permission", { staff_id: staffId, allowed: false });
   if (error) return { error: error.message };
   revalidatePath("/workspace");
   return {};
+}
+
+// The owner approves or rejects a request to revise estimates, with an
+// optional note the staff member sees. Approving grants the permission.
+export async function decideEstimateRequest(
+  requestId: string,
+  approve: boolean,
+  note: string,
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("decide_estimate_request", {
+    request_id: requestId,
+    approve,
+    note: note.trim().slice(0, 300),
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/workspace");
+  return {};
+}
+
+export type EditStaffState = { error?: string; saved?: boolean };
+
+// The owner fixes a staff member's name and number (ticket 37). Same
+// limits as the database; the function refuses anyone but the owner.
+export async function updateStaff(staffId: string, _prev: EditStaffState, formData: FormData): Promise<EditStaffState> {
+  const displayName = String(formData.get("display_name") ?? "").trim();
+  const contactNumber = String(formData.get("contact_number") ?? "").trim();
+  if (!displayName || displayName.length > 80) return { error: "Enter a name (up to 80 characters)." };
+  if (!contactNumber || contactNumber.length > 40) return { error: "Enter a contact number (up to 40 characters)." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("update_staff_details", {
+    staff_id: staffId,
+    display_name: displayName,
+    contact_number: contactNumber,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
+  return { saved: true };
+}
+
+// The owner removes someone from the shop (ticket 37). They lose all
+// access straight away; their open repairs move to the owner; their name
+// stays on past repairs. Their login itself is not deleted (see 019).
+export async function removeStaff(staffId: string): Promise<{ error?: string; moved?: number }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("remove_staff", { staff_id: staffId });
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
+  return { moved: Number(data ?? 0) };
 }

@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SetupForm } from "./setup-form";
+import { signOut } from "../login/actions";
+import { Button } from "@/components/ui/button";
 import { getShop, getSupabase, getUser } from "@/lib/session";
 
 /**
@@ -19,6 +21,32 @@ export default async function SetupPage() {
 
   // Already in a shop: nothing to set up.
   if (await getShop()) redirect("/");
+
+  // Removed from their shop by its owner (ticket 37): say so, rather
+  // than offer to start a shop they can't.
+  const { data: removed } = await supabase.rpc("i_was_removed");
+  if (removed === true) {
+    return (
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-12">
+        <Logo />
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-tertiary">You no longer have access</CardTitle>
+            <CardDescription>
+              The shop owner removed this account from their shop. If you think this is a mistake, contact them.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form action={signOut}>
+              <Button type="submit" variant="secondary">
+                Sign out
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </main>
+    );
+  }
 
   const { data: technician } = await supabase
     .from("technicians")

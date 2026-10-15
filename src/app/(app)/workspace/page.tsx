@@ -60,6 +60,22 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
       (a) => [a.id, a],
     ),
   );
+  // Requests to revise estimates waiting for the owner (ticket 37), for
+  // the Staff tab and its badge. RLS only shows the owner their shop's.
+  const { data: requestRows } =
+    shop?.role === "owner"
+      ? await supabase
+          .from("estimate_requests")
+          .select("id, staff_id, reason, created_at")
+          .eq("status", "pending")
+          .order("created_at")
+      : { data: null };
+  const requests = (requestRows ?? []).map((r) => ({
+    id: r.id as string,
+    staffName: people?.find((p) => p.id === r.staff_id)?.display_name ?? "Someone",
+    reason: r.reason as string,
+    createdAt: r.created_at as string,
+  }));
   const alertCount = attentionAlerts(jobs, today).length;
   const panel = overdueAndAwaiting(jobs, today);
 
@@ -97,6 +113,14 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
               {key === "notifications" && alertCount > 0 && (
                 <span className="rounded-full bg-primary px-1.5 text-[11px] text-primary-foreground">{alertCount}</span>
               )}
+              {key === "staff" && requests.length > 0 && (
+                <span
+                  className="rounded-full bg-highlight px-1.5 text-[11px] text-white dark:text-[#0f1729]"
+                  title="Requests to revise estimates"
+                >
+                  {requests.length}
+                </span>
+              )}
             </Link>
           ))}
         </nav>
@@ -114,7 +138,9 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
       )}
       {tab === "staff" && (
         <StaffTab
-          staff={(members ?? []).map((m) => {
+          requests={requests}
+          // Removed people (ticket 37) are no longer listed.
+          staff={(members ?? []).filter((m) => !m.removed_at).map((m) => {
             const person = people?.find((p) => p.id === m.technician_id);
             const account = accountOf.get(m.technician_id);
             const theirs = jobs.filter((j) => j.handled_by === m.technician_id);

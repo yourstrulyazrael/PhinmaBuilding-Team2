@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import {
   changeEmail,
   changePassword,
+  requestEstimatePermission,
   saveDetails,
   saveShopDetails,
   saveSlipNote,
@@ -112,6 +113,29 @@ export function PasswordForm({ isOwner }: { isOwner: boolean }) {
       </Field>
       <Result state={state} pending={pending} saved="Password changed." />
       <Submit pending={pending}>Change password</Submit>
+    </form>
+  );
+}
+
+// Staff ask to revise estimates (ticket 37). Once sent, the page shows
+// the waiting request instead of this form.
+export function EstimateRequestForm() {
+  const [state, formAction, pending] = useActionState<FormState, FormData>(requestEstimatePermission, {});
+  return (
+    <form action={formAction} className="flex flex-col gap-4">
+      <Field id="reason" label="Why do you need it?" hint="10 to 500 characters. Your owner reads this before deciding.">
+        <Textarea
+          id="reason"
+          name="reason"
+          minLength={10}
+          maxLength={500}
+          rows={3}
+          required
+          placeholder="e.g. I handle most screen repairs and often find extra damage once the phone is open."
+        />
+      </Field>
+      <Result state={state} pending={pending} />
+      <Submit pending={pending}>Send request</Submit>
     </form>
   );
 }

@@ -98,8 +98,15 @@ least one real apprentice. Customers never log in; they only view a
 8. **Workspace**: the **owner** sees every tab: **Customers**,
    **Notifications** and **Staff** (a card per person with their sign-in
    email, number, joined date, last sign-in and repairs, ticket 36; never
-   their password, which nobody can read; each one's "Can revise
-   estimates" switch, **Add staff** and **Remove**). Settings live on
+   their password, which nobody can read; **Edit** their name and number;
+   **Remove** them, ticket 37; **Add staff**). Staff **ask** to revise
+   estimates from their Account page, with a reason; the request waits
+   at the top of the Staff tab (with a count on the tab) until the owner
+   **Approves** (which grants it) or **Rejects** it, with an optional
+   note. The owner can **Take back** the permission at any time.
+   Removing someone keeps their login and their name on past repairs,
+   but they lose all access at once and their open repairs move to the
+   owner (deleting the login would need the `service_role` key). Settings live on
    **Account** (ticket 34; was My details), opened from the avatar in the
    top bar: everyone edits their name, contact number, sign-in email and
    password; the owner also edits the store details (name, address, shop
@@ -172,7 +179,7 @@ least one real apprentice. Customers never log in; they only view a
   clearing a cancellation request. (Ticket 17–19 additions.) The database itself
   rejects an apprentice changing prices (except the revised estimate,
   for staff the owner has allowed: `shop_members.can_revise_estimate`,
-  ticket 23), `handled_by`, `quoted_by` or
+  ticket 23, granted by approving their request, ticket 37), `handled_by`, `quoted_by` or
   `shop_id`, so a hand-crafted request from a browser cannot get round
   it.
 - **Status** also allows **Cancelled** (a 7th status; like Picked up,

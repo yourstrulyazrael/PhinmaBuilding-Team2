@@ -115,3 +115,19 @@ export async function changePassword(_prev: FormState, formData: FormData): Prom
   if (error) return { error: "Couldn't change your password. Please try again." };
   return { saved: true };
 }
+
+// Staff ask the owner to let them revise estimates, with a reason
+// (ticket 37). The database checks they are staff without the
+// permission and have no request already waiting.
+export async function requestEstimatePermission(_prev: FormState, formData: FormData): Promise<FormState> {
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (reason.length < 10 || reason.length > 500) return { error: "Give a reason of 10 to 500 characters." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("request_estimate_permission", { reason });
+  if (error) return { error: error.message };
+
+  revalidatePath("/account");
+  revalidatePath("/workspace");
+  return { saved: true, message: "Sent. Your owner will approve or reject it." };
+}
