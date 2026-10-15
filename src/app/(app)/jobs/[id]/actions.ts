@@ -162,3 +162,42 @@ export async function removeJobPart(jobPartId: string, jobId: string): Promise<A
   revalidatePath("/inventory");
   return { saved: true };
 }
+
+// Staff propose a revised estimate on a repair they handle (ticket 39).
+// The database checks they handle it, can't set it themselves, and that
+// no other proposal is waiting on this repair.
+export async function proposeRevisedEstimate(jobId: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  const amount = Number(String(formData.get("amount") ?? "").trim());
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!Number.isFinite(amount) || amount < 0) return { error: "Enter the new amount in pesos." };
+  if (reason.length < 10 || reason.length > 500) return { error: "Give a reason of 10 to 500 characters." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("propose_revised_estimate", { job_id: jobId, amount, reason });
+  if (error) return { error: error.message };
+
+  revalidatePath(`/jobs/${jobId}`);
+  revalidatePath("/", "layout"); // the owner's bell
+  return { saved: true };
+}
+
+// The owner approves (the amount becomes the revised estimate and the
+// customer is asked to accept it) or rejects a proposal, with a note.
+export async function decideRevisedEstimate(
+  proposalId: string,
+  jobId: string,
+  approve: boolean,
+  note: string,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("decide_revised_estimate", {
+    proposal_id: proposalId,
+    approve,
+    note: note.trim().slice(0, 300),
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath(`/jobs/${jobId}`);
+  revalidatePath("/", "layout");
+  return { saved: true };
+}

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Ban, Bell, CalendarClock, CircleCheck, Clock, Hand, Hourglass, Package, PackageX, ThumbsDown, TrendingUp } from "lucide-react";
 import type { Part } from "@/lib/inventory";
-import type { Alert } from "@/lib/workspace";
+import { currentPrice, type Alert } from "@/lib/workspace";
+import { formatPeso, type Job } from "@/lib/jobs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -20,18 +21,23 @@ const KINDS: Record<Alert["kind"], { icon: typeof Bell; tone: string }> = {
 // time a page opens (lib/session.ts, getNotifications). Nothing here is
 // sent to customers. Each reminder names who is handling the phone, so
 // it's clear who should act (ticket 13).
+// A revised estimate a staff member proposed on an open repair.
+export type Proposal = { id: string; job: Job; staffId: string; amount: number };
+
 export function NotificationsList({
   alerts,
   me,
   names,
   lowStock,
   requests,
+  proposals,
 }: {
   alerts: Alert[];
   me: string;
   names: Record<string, string>;
   lowStock: Part[]; // parts at or below their low-stock level (ticket 27)
   requests: number; // owner: staff requests to revise estimates (ticket 37)
+  proposals: Proposal[]; // owner: revised estimates proposed on a repair (ticket 39)
 }) {
   return (
     <Card>
@@ -58,6 +64,28 @@ export function NotificationsList({
               <span className="text-muted-foreground">Staff are waiting for you to approve or reject.</span>
             </span>
           </Link>
+        )}
+        {proposals.length > 0 && (
+          <ul className="flex flex-col gap-2">
+            {proposals.map((p) => (
+              <li key={p.id}>
+                <Link
+                  href={`/jobs/${p.job.id}`}
+                  className="flex items-start gap-3 rounded-[var(--radius)] border border-highlight/40 bg-highlight/10 p-3 text-sm hover:bg-highlight/15"
+                >
+                  <TrendingUp className="mt-0.5 size-4 shrink-0 text-highlight" aria-hidden />
+                  <span className="flex flex-col gap-0.5">
+                    <span className="font-medium text-tertiary">
+                      {names[p.staffId] ?? "Someone"} proposes {formatPeso(p.amount)} for {p.job.device}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {p.job.customer_name} · now {formatPeso(currentPrice(p.job))}. Open it to approve or reject.
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         )}
         {lowStock.length > 0 && (
           <Link

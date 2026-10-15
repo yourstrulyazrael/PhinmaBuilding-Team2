@@ -48,29 +48,42 @@ export const getMe = cache(async () => {
  * What the bell in the top bar counts, and the Notifications page lists
  * (ticket 38): reminders worked out from the OPEN repairs only (finished
  * ones never need attention, so this stays small), low-stock parts, and
- * for the owner, staff requests to revise estimates. Fetched once per
+ * for the owner, staff requests to revise estimates and revised
+ * estimates staff proposed on a repair (ticket 39). Fetched once per
  * page load and shared by the bell and the page. RLS: this shop only.
  */
 export const getNotifications = cache(async () => {
   const supabase = await getSupabase();
   const shop = await getShop();
-  if (!shop) return { alerts: [], lowStock: [], requests: 0, count: 0 };
+  if (!shop) return { alerts: [], lowStock: [], requests: 0, proposals: [], count: 0 };
 
-  const [{ data: jobRows }, { data: partRows }, { count: requests }] = await Promise.all([
+  const owner = shop.role === "owner";
+  const [{ data: jobRows }, { data: partRows }, { count: requests }, { data: proposalRows }] = await Promise.all([
     supabase.from("jobs").select("*").not("status", "in", "(picked_up,cancelled)"),
     supabase.from("parts").select("*"),
-    shop.role === "owner"
+    owner
       ? supabase.from("estimate_requests").select("id", { count: "exact", head: true }).eq("status", "pending")
       : Promise.resolve({ count: 0 }),
+    // Owner: revised estimates staff proposed on a repair (ticket 39).
+    owner
+      ? supabase.from("estimate_proposals").select("id, job_id, staff_id, amount").eq("status", "pending")
+      : Promise.resolve({ data: [] }),
   ]);
   const alerts = attentionAlerts((jobRows ?? []) as Job[], todayInManila());
   const low = lowStock((partRows ?? []) as Part[]);
   const waiting = requests ?? 0;
+  // Only proposals on repairs that are still open need an answer.
+  const openJobs = new Map(((jobRows ?? []) as Job[]).map((j) => [j.id, j]));
+  const proposals = (proposalRows ?? []).flatMap((p) => {
+    const job = openJobs.get(p.job_id as string);
+    return job ? [{ id: p.id as string, job, staffId: p.staff_id as string, amount: Number(p.amount) }] : [];
+  });
   return {
     alerts,
     lowStock: low,
     requests: waiting,
+    proposals,
     // Low stock counts once, however many parts are low.
-    count: alerts.length + (low.length > 0 ? 1 : 0) + waiting,
+    count: alerts.length + (low.length > 0 ? 1 : 0) + waiting + proposals.length,
   };
 });

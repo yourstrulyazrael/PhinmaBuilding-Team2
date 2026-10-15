@@ -108,6 +108,11 @@ least one real apprentice. Customers never log in; they only view a
    at the top of the Staff tab (with a count on the tab) until the owner
    **Approves** (which grants it) or **Rejects** it, with an optional
    note. The owner can **Take back** the permission at any time.
+   Staff without it can instead **propose a revised estimate** on a
+   repair they handle (ticket 39): the new amount and why. The owner
+   sees it on that repair and in Notifications (counted by the bell) and
+   **Approves** (it becomes the revised estimate, and the customer is
+   asked to accept it as usual) or **Rejects** it, with an optional note.
    Removing someone keeps their login and their name on past repairs,
    but they lose all access at once and their open repairs move to the
    owner (deleting the login would need the `service_role` key). Settings live on

@@ -11,7 +11,7 @@ import { getNames, getNotifications, getUser } from "@/lib/session";
 export default async function NotificationsPage() {
   const user = await getUser();
   if (!user) redirect("/login");
-  const [{ alerts, lowStock, requests }, names] = await Promise.all([getNotifications(), getNames()]);
+  const [{ alerts, lowStock, requests, proposals }, names] = await Promise.all([getNotifications(), getNames()]);
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 md:py-10">
@@ -19,7 +19,14 @@ export default async function NotificationsPage() {
         <h1 className="text-2xl font-semibold tracking-tight text-tertiary md:text-3xl">Notifications</h1>
         <p className="text-sm text-muted-foreground">What needs you right now, in your shop.</p>
       </header>
-      <NotificationsList alerts={alerts} me={user.id} names={names} lowStock={lowStock} requests={requests} />
+      <NotificationsList
+        alerts={alerts}
+        me={user.id}
+        names={names}
+        lowStock={lowStock}
+        requests={requests}
+        proposals={proposals}
+      />
     </main>
   );
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { AlarmClock, ArrowLeft, ExternalLink, Lock, Package, Phone, QrCode } from "lucide-react";
+import { AlarmClock, ArrowLeft, ExternalLink, Lock, Package, Phone, QrCode, TrendingUp } from "lucide-react";
 import { formatDate, formatPeso, isFinished, paymentLabel, todayInManila, type Job } from "@/lib/jobs";
 import { currentPrice, isLate } from "@/lib/workspace";
 import { buttonVariants } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { HandledBy } from "@/components/handled-by";
 import { StatusBadge } from "@/components/status-badge";
 import { CancelRequest } from "./cancel-request";
 import { PartsUsed } from "./parts-used";
+import { ProposalDecision, ProposeEstimateForm } from "./estimate-proposal";
 import { getShop, getSupabase, getUser, getNames } from "@/lib/session";
 
 // The technician's view of one repair job. Unlike the claim slip and
@@ -27,13 +28,22 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
   if (!user) redirect("/login");
 
   // RLS: a job from another shop returns nothing -> "not found".
-  const [{ data: job }, shop, names, { data: usedRows }, { data: partRows }] = await Promise.all([
+  const [{ data: job }, shop, names, { data: usedRows }, { data: partRows }, { data: proposal }] = await Promise.all([
     supabase.from("jobs").select("*").eq("id", id).maybeSingle<Job>(),
     getShop(),
     getNames(),
     // Parts used on this repair, and the catalog to pick from (ticket 28).
     supabase.from("job_parts").select("*").eq("job_id", id).order("created_at"),
     supabase.from("parts").select("*").order("name"),
+    // The latest revised-estimate proposal on this repair (ticket 39). RLS:
+    // staff see only their own, the owner sees the shop's.
+    supabase
+      .from("estimate_proposals")
+      .select("id, staff_id, amount, reason, status, owner_note, created_at, decided_at")
+      .eq("job_id", id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
   if (!job) notFound();
 
@@ -201,6 +211,71 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
           )}
         </CardContent>
       </Card>
+
+      {/* Revised-estimate proposals (ticket 39). The owner answers one
+          that is waiting; staff who handle this repair, and can't set the
+          estimate themselves, propose one. */}
+      {viewer.isOwner && proposal?.status === "pending" && (
+        <Card className="border-highlight/40">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base text-tertiary">
+              <TrendingUp className="size-4" aria-hidden />
+              Revised estimate proposed
+            </CardTitle>
+            <CardDescription>
+              By {nameOf(proposal.staff_id, viewer)}, {formatDateTime(proposal.created_at)}. Approving sets it as the
+              revised estimate, and the customer is asked to accept it.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4 text-sm">
+            <p>
+              <span className="text-lg font-semibold tabular-nums text-tertiary">{formatPeso(proposal.amount)}</span>{" "}
+              <span className="text-muted-foreground">(now {formatPeso(currentPrice(job))})</span>
+            </p>
+            <p className="whitespace-pre-line">{proposal.reason}</p>
+            <ProposalDecision proposalId={proposal.id} jobId={job.id} />
+          </CardContent>
+        </Card>
+      )}
+      {!viewer.isOwner && editable && !(shop?.canReviseEstimate ?? false) && !isFinished(job.status) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base text-tertiary">
+              <TrendingUp className="size-4" aria-hidden />
+              Propose a revised estimate
+            </CardTitle>
+            <CardDescription>
+              Found more to fix? Send the new amount and why to your owner. If they approve, the customer is asked to
+              accept it.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4 text-sm">
+            {proposal?.status === "pending" ? (
+              <div className="flex flex-col gap-2">
+                <p>
+                  <span className="rounded-full bg-highlight/15 px-2 py-0.5 text-xs font-medium text-highlight">Waiting</span>{" "}
+                  You proposed <span className="font-medium tabular-nums">{formatPeso(proposal.amount)}</span> on{" "}
+                  {formatDateTime(proposal.created_at)}.
+                </p>
+                <p className="whitespace-pre-line text-muted-foreground">&ldquo;{proposal.reason}&rdquo;</p>
+              </div>
+            ) : (
+              <>
+                {proposal && (
+                  <div className="flex flex-col gap-1 rounded-[var(--radius)] bg-muted p-3">
+                    <p>
+                      Your last proposal, {formatPeso(proposal.amount)}, was{" "}
+                      <span className="font-medium">{proposal.status === "approved" ? "approved" : "not approved"}</span>.
+                    </p>
+                    {proposal.owner_note && <p className="text-muted-foreground">Owner&apos;s note: {proposal.owner_note}</p>}
+                  </div>
+                )}
+                <ProposeEstimateForm jobId={job.id} current={currentPrice(job)} />
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

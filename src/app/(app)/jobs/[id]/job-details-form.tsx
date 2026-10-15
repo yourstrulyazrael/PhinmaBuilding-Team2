@@ -60,11 +60,11 @@ export function JobDetailsForm({ job, canReviseEstimate }: { job: Job; canRevise
         )}
         {!canReviseEstimate && (
           <p className="self-end text-xs text-muted-foreground sm:col-span-2">
-            Need to revise the estimate?{" "}
+            Need to revise the estimate? Propose one to your owner below, or{" "}
             <Link href="/account" className="underline underline-offset-4">
-              Ask your owner
-            </Link>{" "}
-            from your Account page.
+              ask to set them yourself
+            </Link>
+            .
           </p>
         )}
         <div className="flex flex-col gap-2">
