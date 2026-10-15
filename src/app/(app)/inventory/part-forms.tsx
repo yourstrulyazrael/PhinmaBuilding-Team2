@@ -3,12 +3,11 @@
 import { useMoney } from "@/components/currency";
 
 import { useActionState, useEffect, useState, useTransition } from "react";
-import { Archive, ArchiveRestore, EllipsisVertical, PackagePlus, Pencil, Plus, SlidersHorizontal, Trash2, TriangleAlert } from "lucide-react";
-import { addPart, deletePart, editPart, recordMovement, setPartActive, type FormState } from "./actions";
+import { Archive, ArchiveRestore, PackagePlus, Pencil, Plus, Trash2, TriangleAlert } from "lucide-react";
+import { addPart, deletePart, editPart, setPartActive, type FormState } from "./actions";
 import type { Part } from "@/lib/inventory";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Menu } from "@/components/menu";
 import { Modal } from "@/components/modal";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -38,7 +37,9 @@ export function CategoryList({ categories }: { categories: string[] }) {
   );
 }
 
-// SKU, name, category, prices and low-stock level: shared by Add and Edit.
+// Name, SKU, category, stock and prices: shared by Add and Edit. Stock is
+// the count on the shelf; changing it here records an adjustment, so the
+// stock history stays complete (ticket 55).
 function PartFields({ part, cost }: { part?: Part; cost?: number }) {
   const { symbol } = useMoney();
   return (
@@ -52,13 +53,13 @@ function PartFields({ part, cost }: { part?: Part; cost?: number }) {
       <Field label="Category">
         <Input name="category" list="part-categories" defaultValue={part?.category ?? ""} maxLength={50} placeholder="e.g. Screens" />
       </Field>
-      <Field label="Low-stock level">
-        <Input name="low_stock_at" type="number" inputMode="numeric" min={0} step={1} defaultValue={part?.low_stock_at ?? 2} required />
+      <Field label="Stock">
+        <Input name="stock" type="number" inputMode="numeric" min={0} step={1} defaultValue={part?.quantity ?? 0} required />
       </Field>
-      <Field label={`Cost (${symbol}): what the shop pays`}>
+      <Field label={`Cost (${symbol})`}>
         <Input name="cost" type="number" inputMode="decimal" min={0} step="0.01" defaultValue={cost ?? ""} required />
       </Field>
-      <Field label={`Retail price (${symbol}): what the customer pays`}>
+      <Field label={`Retail price (${symbol})`}>
         <Input name="retail_price" type="number" inputMode="decimal" min={0} step="0.01" defaultValue={part?.retail_price ?? ""} required />
       </Field>
     </div>
@@ -89,9 +90,6 @@ function AddPartForm({ onDone }: { onDone: () => void }) {
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <PartFields />
-      <Field label="Starting stock">
-        <Input name="starting" type="number" inputMode="numeric" min={0} step={1} defaultValue={0} required className="w-32" />
-      </Field>
       <Message state={state} pending={pending} />
       <div className="flex justify-end gap-2">
         <Button type="button" variant="ghost" onClick={onDone}>Cancel</Button>
@@ -104,9 +102,10 @@ function AddPartForm({ onDone }: { onDone: () => void }) {
   );
 }
 
-type Mode = "restock" | "adjust" | "edit" | "delete";
+type Mode = "edit" | "delete";
 
-// The ⋮ menu (Restock, Adjust, Edit) and Archive on a table row (owner).
+// Edit, Archive and Delete on a table row (owner). Edit covers the stock
+// too (ticket 55): no separate Restock or Adjust.
 export function PartRowActions({ part, cost }: { part: Part; cost: number }) {
   const [mode, setMode] = useState<Mode | null>(null);
   const [pending, startTransition] = useTransition();
@@ -116,16 +115,15 @@ export function PartRowActions({ part, cost }: { part: Part; cost: number }) {
   return (
     <div className="flex items-center justify-end gap-1">
       {part.active && (
-        <Menu
-          label={`Actions for ${part.name}`}
-          triggerClassName={icon}
-          trigger={<EllipsisVertical className="size-4" aria-hidden />}
-          items={[
-            { label: "Restock", icon: PackagePlus, onSelect: () => setMode("restock") },
-            { label: "Adjust stock", icon: SlidersHorizontal, onSelect: () => setMode("adjust") },
-            { label: "Edit details", icon: Pencil, onSelect: () => setMode("edit") },
-          ]}
-        />
+        <button
+          type="button"
+          onClick={() => setMode("edit")}
+          aria-label={`Edit ${part.name}`}
+          title="Edit details and stock"
+          className={icon}
+        >
+          <Pencil className="size-4" aria-hidden />
+        </button>
       )}
       <button
         type="button"
@@ -151,20 +149,12 @@ export function PartRowActions({ part, cost }: { part: Part; cost: number }) {
       <ConfirmDelete part={part} open={mode === "delete"} onClose={close} />
 
       <Modal
-        open={mode !== null && mode !== "delete"}
+        open={mode === "edit"}
         onClose={close}
-        title={mode === "edit" ? `Edit ${part.name}` : mode === "restock" ? `Restock ${part.name}` : `Adjust ${part.name}`}
-        description={
-          mode === "edit"
-            ? undefined
-            : mode === "restock"
-              ? `In stock now: ${part.quantity}. How many arrived?`
-              : `In stock now: ${part.quantity}. Use a minus for losses or breakage (e.g. -1), a plus to correct a miscount.`
-        }
+        title={`Edit ${part.name}`}
+        description="Change the stock to the count on the shelf; it's saved in the stock history."
       >
         {mode === "edit" && <EditForm part={part} cost={cost} onDone={close} />}
-        {mode === "restock" && <MovementForm part={part} reason="restock" onDone={close} />}
-        {mode === "adjust" && <MovementForm part={part} reason="adjustment" onDone={close} />}
       </Modal>
     </div>
   );
@@ -272,25 +262,3 @@ function EditForm({ part, cost, onDone }: { part: Part; cost: number; onDone: ()
   );
 }
 
-function MovementForm({ part, reason, onDone }: { part: Part; reason: "restock" | "adjustment"; onDone: () => void }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(recordMovement.bind(null, part.id, reason), {});
-  useEffect(() => {
-    if (state.done) onDone();
-  }, [state, onDone]);
-  const restock = reason === "restock";
-  return (
-    <form action={formAction} className="flex flex-col gap-4">
-      <Field label={restock ? "Quantity added" : "Change (+ or −)"}>
-        <Input name="amount" type="number" inputMode="numeric" step={1} min={restock ? 1 : undefined} required autoFocus className="w-40" />
-      </Field>
-      <Field label="Note (optional)">
-        <Input name="note" maxLength={200} placeholder={restock ? "e.g. From supplier, receipt #123" : "e.g. Cracked during install"} />
-      </Field>
-      <Message state={state} pending={pending} />
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={onDone}>Cancel</Button>
-        <Button type="submit" disabled={pending}>{pending ? "Saving…" : restock ? "Add stock" : "Save adjustment"}</Button>
-      </div>
-    </form>
-  );
-}

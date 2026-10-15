@@ -19,16 +19,18 @@ function readPart(formData: FormData) {
   const category = text(formData, "category");
   const cost = readNumber(text(formData, "cost"));
   const retail = readNumber(text(formData, "retail_price"));
-  const lowStockAt = readNumber(text(formData, "low_stock_at"));
+  // The count on the shelf (ticket 55). The low-stock level is no longer
+  // on the form: it keeps its value (2 by default), and imports can set it.
+  const stock = readNumber(text(formData, "stock"));
   if (!sku || sku.length > 40) return { error: "Enter a SKU (up to 40 characters)." };
   if (!name || name.length > 100) return { error: "Enter the part name (up to 100 characters)." };
   if (category.length > 50) return { error: "Keep the category under 50 characters." };
   if (!Number.isFinite(cost) || cost < 0 || cost > 99_999_999.99) return { error: "Enter a cost of 0 or more." };
   if (!Number.isFinite(retail) || retail < 0 || retail > 99_999_999.99) return { error: "Enter a retail price of 0 or more." };
-  if (!Number.isInteger(lowStockAt) || lowStockAt < 0 || lowStockAt > 9999) {
-    return { error: "Enter a low-stock level: a whole number, 0 or more." };
+  if (!Number.isInteger(stock) || stock < 0 || stock > 9999) {
+    return { error: "Enter the stock: a whole number, 0 or more." };
   }
-  return { sku, name, category, cost, retail, lowStockAt };
+  return { sku, name, category, cost, retail, stock };
 }
 
 function friendly(message: string) {
@@ -42,15 +44,11 @@ function friendly(message: string) {
 export async function addPart(_prev: FormState, formData: FormData): Promise<FormState> {
   const part = readPart(formData);
   if ("error" in part) return { error: part.error };
-  const starting = readNumber(text(formData, "starting"));
-  if (!Number.isInteger(starting) || starting < 0 || starting > 9999) {
-    return { error: "Enter the starting stock: a whole number, 0 or more." };
-  }
 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("parts")
-    .insert({ sku: part.sku, name: part.name, category: part.category, retail_price: part.retail, low_stock_at: part.lowStockAt })
+    .insert({ sku: part.sku, name: part.name, category: part.category, retail_price: part.retail })
     .select("id")
     .single();
   if (error) return { error: friendly(error.message) };
@@ -58,11 +56,11 @@ export async function addPart(_prev: FormState, formData: FormData): Promise<For
   const { error: costError } = await supabase.from("part_costs").insert({ part_id: data.id, cost: part.cost });
   if (costError) return { error: "The part was added, but saving its cost failed. Edit it to try again." };
 
-  if (starting > 0) {
+  if (part.stock > 0) {
     const { error: stockError } = await supabase
       .from("stock_movements")
-      .insert({ part_id: data.id, change: starting, reason: "restock", note: "Starting stock" });
-    if (stockError) return { error: "The part was added, but its starting stock wasn't. Use Restock." };
+      .insert({ part_id: data.id, change: part.stock, reason: "restock", note: "Starting stock" });
+    if (stockError) return { error: "The part was added, but its stock wasn't. Edit it to set the stock." };
   }
 
   revalidatePath("/inventory");
@@ -77,42 +75,28 @@ export async function editPart(partId: string, _prev: FormState, formData: FormD
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("parts")
-    .update({ sku: part.sku, name: part.name, category: part.category, retail_price: part.retail, low_stock_at: part.lowStockAt })
+    .update({ sku: part.sku, name: part.name, category: part.category, retail_price: part.retail })
     .eq("id", partId)
-    .select("id");
+    .select("id, quantity");
   if (error) return { error: friendly(error.message) };
   if (!data?.length) return { error: "Only the shop owner can do that." };
 
   const { error: costError } = await supabase.from("part_costs").upsert({ part_id: partId, cost: part.cost });
   if (costError) return { error: friendly(costError.message) };
 
+  // A changed count is saved as an adjustment, so the stock history shows
+  // it (stock itself only ever moves through these records).
+  const change = part.stock - Number(data[0].quantity);
+  if (change !== 0) {
+    const { error: stockError } = await supabase
+      .from("stock_movements")
+      .insert({ part_id: partId, change, reason: "adjustment", note: `Stock set to ${part.stock} in Edit` });
+    if (stockError) return { error: "Details saved, but the stock wasn't. Please try again." };
+    revalidatePath("/workspace");
+  }
+
   revalidatePath("/inventory");
   return { done: "Saved." };
-}
-
-// Restock (+) or adjustment (+ or −). Stock itself is only ever moved
-// by these records; the database refuses anything else.
-export async function recordMovement(
-  partId: string,
-  reason: "restock" | "adjustment",
-  _prev: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  const amount = readNumber(text(formData, "amount"));
-  const note = text(formData, "note");
-  if (!Number.isInteger(amount) || amount === 0 || Math.abs(amount) > 9999) {
-    return { error: "Enter a whole number (not 0)." };
-  }
-  if (reason === "restock" && amount < 0) return { error: "A restock adds stock: enter a positive number." };
-  if (note.length > 200) return { error: "Keep the note under 200 characters." };
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("stock_movements").insert({ part_id: partId, change: amount, reason, note });
-  if (error) return { error: friendly(error.message) };
-
-  revalidatePath("/inventory");
-  revalidatePath("/workspace");
-  return { done: reason === "restock" ? `Added ${amount}.` : `Adjusted by ${amount > 0 ? "+" : ""}${amount}.` };
 }
 
 // Archive (hide from pickers, keep history) or bring back a part.
