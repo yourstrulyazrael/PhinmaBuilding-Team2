@@ -55,10 +55,13 @@ export const getMe = cache(async () => {
 export const getNotifications = cache(async () => {
   const supabase = await getSupabase();
   const shop = await getShop();
-  if (!shop) return { alerts: [], lowStock: [], requests: 0, proposals: [], keys: [] as string[] };
+  if (!shop) return { alerts: [], lowStock: [], requests: 0, proposals: [], answers: [] as OwnerAnswer[], keys: [] as string[] };
 
   const owner = shop.role === "owner";
-  const [{ data: jobRows }, { data: partRows }, { data: requestRows }, { data: proposalRows }] = await Promise.all([
+  // Staff: the owner's answers to their proposals and requests from the
+  // last two days (ticket 42). RLS only returns their own.
+  const since = new Date(Date.now() - 2 * 86_400_000).toISOString();
+  const [{ data: jobRows }, { data: partRows }, { data: requestRows }, { data: proposalRows }, { data: answeredProposals }, { data: answeredRequests }] = await Promise.all([
     supabase.from("jobs").select("*").not("status", "in", "(picked_up,cancelled)"),
     supabase.from("parts").select("*"),
     owner
@@ -67,6 +70,20 @@ export const getNotifications = cache(async () => {
     // Owner: revised estimates staff proposed on a repair (ticket 39).
     owner
       ? supabase.from("estimate_proposals").select("id, job_id, staff_id, amount").eq("status", "pending")
+      : Promise.resolve({ data: [] }),
+    !owner
+      ? supabase
+          .from("estimate_proposals")
+          .select("id, job_id, amount, status, owner_note, decided_at, jobs (device)")
+          .neq("status", "pending")
+          .gte("decided_at", since)
+      : Promise.resolve({ data: [] }),
+    !owner
+      ? supabase
+          .from("estimate_requests")
+          .select("id, status, owner_note, decided_at")
+          .neq("status", "pending")
+          .gte("decided_at", since)
       : Promise.resolve({ data: [] }),
   ]);
   // Some reminders (a customer approving a revised estimate, ticket 40)
@@ -88,15 +105,56 @@ export const getNotifications = cache(async () => {
   // cancel request, another answer, another estimate), the name includes
   // that, so it counts as new. Low-stock names start "low:": the bell
   // counts them as one.
+  // The owner's answers, newest first (ticket 42).
+  const answers: OwnerAnswer[] = [
+    ...(answeredProposals ?? []).map((p) => {
+      const job = p.jobs as unknown as { device: string } | null;
+      return {
+        id: p.id as string,
+        kind: "proposal" as const,
+        approved: p.status === "approved",
+        note: (p.owner_note as string) ?? "",
+        decidedAt: p.decided_at as string,
+        jobId: p.job_id as string,
+        device: job?.device ?? "a repair",
+        amount: Number(p.amount),
+      };
+    }),
+    ...(answeredRequests ?? []).map((r) => ({
+      id: r.id as string,
+      kind: "request" as const,
+      approved: r.status === "approved",
+      note: (r.owner_note as string) ?? "",
+      decidedAt: r.decided_at as string,
+    })),
+  ].sort((a, b) => b.decidedAt.localeCompare(a.decidedAt));
+
   const keys = [
     ...alerts.map(({ job, kind }) => `${kind}:${job.id}:${alertStamp(job, kind)}`),
     ...low.map((p) => `low:${p.id}`),
     ...requestIds.map((id) => `request:${id}`),
     ...proposals.map((p) => `proposal:${p.id}`),
+    ...answers.map((a) => `answer:${a.kind}:${a.id}`),
   ];
 
-  return { alerts, lowStock: low, requests: requestIds.length, proposals, keys };
+  return { alerts, lowStock: low, requests: requestIds.length, proposals, answers, keys };
 });
+
+// The owner approving or rejecting something a staff member sent: a
+// revised estimate they proposed on a repair, or their request to set
+// revised estimates themselves. `note` is the owner's note ('' if none).
+export type OwnerAnswer =
+  | {
+      id: string;
+      kind: "proposal";
+      approved: boolean;
+      note: string;
+      decidedAt: string;
+      jobId: string;
+      device: string;
+      amount: number;
+    }
+  | { id: string; kind: "request"; approved: boolean; note: string; decidedAt: string };
 
 function alertStamp(job: Job, kind: Alert["kind"]) {
   if (kind === "cancel") return job.cancel_requested_at ?? "";

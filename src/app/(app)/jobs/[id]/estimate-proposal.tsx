@@ -29,8 +29,8 @@ const FORM_ID = "propose-estimate";
  *
  * Parts used has its own form, and forms can't sit inside each other, so
  * the button lives outside this one and points at it with form="…".
- * While a proposal waits for the owner, that shows instead of the form;
- * after an answer, one line above the form says how it went.
+ * While a proposal waits for the owner, that shows instead of the form.
+ * The owner's answer shows in its own box at the top of the card.
  */
 export function ProposeEstimate({
   jobId,
@@ -67,13 +67,6 @@ export function ProposeEstimate({
   return (
     <>
       <form id={FORM_ID} action={formAction} className="flex flex-col gap-4 text-sm">
-        {last && (
-          <p className="text-xs text-muted-foreground">
-            Your last proposal, <span className="tabular-nums">{formatPeso(last.amount)}</span>, was{" "}
-            {last.status === "approved" ? "approved" : "not approved"}.
-            {last.ownerNote && <> Owner&apos;s note: {last.ownerNote}</>}
-          </p>
-        )}
         <div className="flex flex-col gap-2">
           <Label htmlFor="amount">Revised estimate (₱)</Label>
           <Input

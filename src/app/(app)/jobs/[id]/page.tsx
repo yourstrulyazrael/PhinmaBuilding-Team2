@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { AlarmClock, ArrowLeft, ExternalLink, Lock, Package, Phone, QrCode, TrendingUp } from "lucide-react";
+import { AlarmClock, ArrowLeft, ExternalLink, Lock, Package, Phone, QrCode, ThumbsDown, ThumbsUp, TrendingUp } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { formatDate, formatPeso, isFinished, paymentLabel, todayInManila, type Job } from "@/lib/jobs";
 import { currentPrice, isLate } from "@/lib/workspace";
 import { buttonVariants } from "@/components/ui/button";
@@ -217,6 +218,72 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
           <CardDescription>Shown on the customer&apos;s tracking page, with the names of the parts used.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
+          {/* The customer declined the revised estimate: what, when and
+              why, in their own words (tickets 41–42). Everyone in the
+              shop sees it, so whoever picks up the phone knows. */}
+          {job.estimate_status === "declined" && job.revised_estimate !== null && (
+            <div className="flex flex-col gap-1 rounded-[var(--radius)] border border-red-300 bg-red-50 p-4 text-sm dark:border-red-900 dark:bg-red-950/50">
+              <p className="flex items-center gap-2 font-medium text-red-800 dark:text-red-200">
+                <ThumbsDown className="size-4" aria-hidden />
+                The customer declined the revised estimate of{" "}
+                <span className="tabular-nums">{formatPeso(job.revised_estimate)}</span>
+              </p>
+              {job.estimate_answered_at && (
+                <p className="text-xs text-muted-foreground">{formatDateTime(job.estimate_answered_at)}</p>
+              )}
+              <p className="mt-1 whitespace-pre-line">
+                {job.estimate_decline_reason ? (
+                  <>
+                    <span className="text-muted-foreground">Their reason: </span>&ldquo;{job.estimate_decline_reason}&rdquo;
+                  </>
+                ) : (
+                  <span className="text-muted-foreground">No reason given.</span>
+                )}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Contact them to agree what to do next, or set a new revised estimate.
+              </p>
+            </div>
+          )}
+
+          {/* The owner answered this staff member's proposal (ticket 42):
+              the answer and the owner's note, whatever else has changed. */}
+          {!viewer.isOwner && proposal && proposal.status !== "pending" && proposal.staff_id === user.id && (
+            <div
+              className={cn(
+                "flex flex-col gap-1 rounded-[var(--radius)] border p-4 text-sm",
+                proposal.status === "approved"
+                  ? "border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/50"
+                  : "border-red-300 bg-red-50 dark:border-red-900 dark:bg-red-950/50",
+              )}
+            >
+              <p className="flex items-center gap-2 font-medium text-tertiary">
+                {proposal.status === "approved" ? (
+                  <ThumbsUp className="size-4 text-emerald-700 dark:text-emerald-300" aria-hidden />
+                ) : (
+                  <ThumbsDown className="size-4 text-destructive" aria-hidden />
+                )}
+                Your owner {proposal.status === "approved" ? "approved" : "rejected"} your proposed estimate of{" "}
+                <span className="tabular-nums">{formatPeso(proposal.amount)}</span>
+              </p>
+              {proposal.decided_at && (
+                <p className="text-xs text-muted-foreground">{formatDateTime(proposal.decided_at)}</p>
+              )}
+              <p className="mt-1 whitespace-pre-line">
+                {proposal.owner_note ? (
+                  <>
+                    <span className="text-muted-foreground">Owner&apos;s note: </span>&ldquo;{proposal.owner_note}&rdquo;
+                  </>
+                ) : (
+                  <span className="text-muted-foreground">No note from the owner.</span>
+                )}
+              </p>
+              {proposal.status === "approved" && (
+                <p className="mt-1 text-xs text-muted-foreground">The customer is asked to accept the new price.</p>
+              )}
+            </div>
+          )}
+
           {viewer.isOwner && proposal?.status === "pending" && (
             <div className="flex flex-col gap-3 rounded-[var(--radius)] border border-highlight/40 bg-highlight/5 p-4 text-sm">
               <div className="flex flex-col gap-0.5">
@@ -290,15 +357,9 @@ function EstimateAnswer({ job }: { job: Job }) {
     declined: "Customer declined",
   };
   return (
-    <>
-      <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[job.estimate_status]}`}>
-        {labels[job.estimate_status]}
-      </span>
-      {/* Why they declined, in their words (ticket 41). */}
-      {job.estimate_status === "declined" && job.estimate_decline_reason && (
-        <span className="basis-full text-xs text-muted-foreground">&ldquo;{job.estimate_decline_reason}&rdquo;</span>
-      )}
-    </>
+    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[job.estimate_status]}`}>
+      {labels[job.estimate_status]}
+    </span>
   );
 }
 
