@@ -6,7 +6,7 @@ automatically, and the customer sees the parts by name.
 
 **Blocked by:** 27
 
-**Status:** todo
+**Status:** done
 
 - [ ] Job detail has a "Parts used" section: pick a part and quantity,
       Add; each line can be removed (stock goes back)

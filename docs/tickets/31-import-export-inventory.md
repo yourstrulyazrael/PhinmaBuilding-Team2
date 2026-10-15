@@ -6,7 +6,7 @@ export the current inventory in the same three formats.
 
 **Blocked by:** 30
 
-**Status:** todo
+**Status:** done
 
 - [ ] Templates to download as CSV, Excel (.xlsx) and JSON, with the
       columns sku, name, cost, retail_price, quantity, low_stock_at and

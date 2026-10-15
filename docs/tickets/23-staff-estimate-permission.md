@@ -7,7 +7,7 @@ permission still cannot. The customer still approves every new estimate
 
 **Blocked by:** 22
 
-**Status:** todo
+**Status:** done
 
 - [ ] Each staff member in Shop settings → Staff has a "Can revise
       estimates" switch, off by default, that only the owner sees

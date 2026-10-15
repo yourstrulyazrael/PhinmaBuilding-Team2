@@ -7,7 +7,7 @@ smooth line charts just below the statistics.
 
 **Blocked by:** 25
 
-**Status:** todo
+**Status:** done
 
 - [ ] Analytics and Reports are icons in the top bar for the owner, and
       not shown to staff; staff who type the address go to the Overview

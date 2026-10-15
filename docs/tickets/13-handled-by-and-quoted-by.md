@@ -6,7 +6,7 @@ offer what each person is allowed to do.
 
 **Blocked by:** 12
 
-**Status:** todo
+**Status:** done
 
 - [ ] The Jobs list has a "My jobs" tab, which is the default, next to
       All jobs, Ready and Waiting on parts

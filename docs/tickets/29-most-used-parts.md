@@ -6,7 +6,7 @@ stock.
 
 **Blocked by:** 28
 
-**Status:** todo
+**Status:** done
 
 - [ ] A "Most used parts" list on Inventory with the Today · 7 days · 30
       days picker: part, quantity used, number of repairs

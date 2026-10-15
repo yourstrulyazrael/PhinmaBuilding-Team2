@@ -6,7 +6,7 @@ Analytics counts what was actually paid.
 
 **Blocked by:** None
 
-**Status:** todo
+**Status:** done
 
 - [ ] Choosing "Picked up" (Jobs list or Job detail) opens a payment
       box: amount (starting at the current price) and method

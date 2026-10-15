@@ -5,7 +5,7 @@ parts get a category.
 
 **Blocked by:** 31
 
-**Status:** todo
+**Status:** done
 
 - [ ] Breadcrumb, title and subtitle; Import parts, Export (CSV / Excel /
       JSON) and Add part buttons in the header (owner); Import and Add

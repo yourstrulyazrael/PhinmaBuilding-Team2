@@ -5,7 +5,7 @@ a month, and exports that month's report as an Excel workbook or a PDF.
 
 **Blocked by:** 10
 
-**Status:** todo
+**Status:** done
 
 - [ ] Analytics has a "Reports" button, for the owner only; staff who
       type the address go back to the Workspace

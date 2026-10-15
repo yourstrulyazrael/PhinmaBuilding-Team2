@@ -7,7 +7,7 @@ parts cost and parts profit for the chosen period.
 
 **Blocked by:** 28
 
-**Status:** todo
+**Status:** done
 
 - [ ] Parts have a retail price, visible to everyone in the shop; cost
       stays owner-only

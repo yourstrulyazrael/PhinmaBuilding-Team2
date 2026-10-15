@@ -6,7 +6,7 @@ shop sees what's in stock; low stock is flagged.
 
 **Blocked by:** 11
 
-**Status:** todo
+**Status:** done
 
 - [ ] An Inventory page in the top bar, for owner and staff
 - [ ] The owner adds a part: SKU (unique in the shop), name, cost,

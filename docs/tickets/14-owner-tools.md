@@ -6,7 +6,8 @@ closed to apprentices.
 
 **Blocked by:** 13
 
-**Status:** todo
+**Status:** replaced — Remove staff was built in ticket 37; Reassign is
+ticket 44
 
 - [ ] The owner sees a "Reassign to" dropdown on Job detail, listing the
       shop's members; apprentices do not

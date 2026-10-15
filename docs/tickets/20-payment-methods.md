@@ -6,7 +6,7 @@ number, which shows on Job detail for the shop only.
 
 **Blocked by:** 19
 
-**Status:** todo
+**Status:** done
 
 - [ ] The payment box offers Cash, E-wallet and Card
 - [ ] Choosing E-wallet or Card shows a "Last 4 digits of reference"

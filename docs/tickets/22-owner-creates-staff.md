@@ -8,7 +8,7 @@ invite code from ticket 12 is removed.
 
 **Blocked by:** 12
 
-**Status:** todo
+**Status:** done
 
 - [ ] Shop settings (owner only) has "Add staff": name, contact number,
       email, temporary password (at least 8 characters)

@@ -6,7 +6,7 @@ no change to data or security.
 
 **Blocked by:** None
 
-**Status:** todo
+**Status:** done
 
 - [ ] A Light / Dark / System switch in the sidebar and phone top bar;
       System (the default) follows the device setting; the choice is

@@ -6,7 +6,7 @@ shop sees the answer on the job, so nobody works on an unapproved price.
 
 **Blocked by:** None
 
-**Status:** todo
+**Status:** done
 
 - [ ] Setting or changing a revised estimate shows "Waiting for the
       customer" on Job detail

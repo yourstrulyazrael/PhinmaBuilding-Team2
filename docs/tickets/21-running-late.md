@@ -8,7 +8,7 @@ those need a paid service.
 
 **Blocked by:** None
 
-**Status:** todo
+**Status:** done
 
 - [ ] Notifications shows "Due today" and "Due tomorrow" for repairs not
       yet ready, as well as late ones

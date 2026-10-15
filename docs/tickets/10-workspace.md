@@ -7,7 +7,7 @@ technician's own jobs: no new tables. Added after the MVP.
 
 **Blocked by:** 03
 
-**Status:** todo
+**Status:** done
 
 - [ ] "Workspace" is in the sidebar and phone top bar, and the page has
       a "Repair desk" link back to the Jobs list

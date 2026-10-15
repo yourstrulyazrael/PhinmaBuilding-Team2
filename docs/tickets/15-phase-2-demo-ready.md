@@ -5,7 +5,7 @@ two phones, and the shop has used it for real.
 
 **Blocked by:** 14
 
-**Status:** todo
+**Status:** replaced by ticket 45 (Phase 3 demo-ready)
 
 - [ ] The owner shares the invite code and an apprentice joins with it
 - [ ] The apprentice adds a job; it shows "Quoted by" and "Handled by"

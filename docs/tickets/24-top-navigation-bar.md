@@ -7,7 +7,7 @@ change to data or security.
 
 **Blocked by:** 16
 
-**Status:** todo
+**Status:** done
 
 - [ ] One sticky top bar on phone, tablet and laptop; no sidebar
 - [ ] Overview, Add a repair, Workspace and My details show as icons;

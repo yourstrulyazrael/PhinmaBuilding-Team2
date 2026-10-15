@@ -6,7 +6,7 @@ repair, or keep repairing.
 
 **Blocked by:** None
 
-**Status:** todo
+**Status:** done
 
 - [ ] Cancelled can be set like any other status, and cancelled jobs sit
       in the Done section, out of open counts and alerts
