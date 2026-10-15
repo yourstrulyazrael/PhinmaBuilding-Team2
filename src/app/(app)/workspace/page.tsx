@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
+import { SlidingTabs } from "@/components/sliding-tabs";
 import { StaffTab } from "./staff-tab";
 import { CustomersTab } from "./customers-tab";
 import { getShop, getSupabase, getUser } from "@/lib/session";
@@ -87,35 +88,33 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
         description="Customers and staff, all in one place."
       />
 
-      {/* A segmented switch (ticket 48): a recessed track, the open tab
-          raised on a white tile. */}
-      <nav
-        className="inline-flex w-full flex-wrap gap-1 rounded-[var(--radius)] border border-border/70 bg-muted/70 p-1 sm:w-fit"
-        aria-label="Workspace tools"
-      >
-        {tabs.map(({ key, label, icon: Icon }) => (
-          <Link
-            key={key}
-            href={key === "customers" ? "/workspace" : `/workspace?tab=${key}`}
-            aria-current={tab === key ? "page" : undefined}
-            className={cn(
-              "flex flex-1 items-center justify-center gap-2 rounded-[calc(var(--radius)-4px)] px-4 py-2 text-sm font-medium transition-all sm:flex-none",
-              tab === key ? "bg-card text-primary shadow-card" : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <Icon className="size-4" aria-hidden />
-            {label}
-            {key === "staff" && requests.length > 0 && (
+      {/* A segmented switch whose white tile glides to the open tab
+          (tickets 48 and 53). */}
+      <SlidingTabs
+        label="Workspace tools"
+        look="raised"
+        stretch
+        active={tab}
+        items={tabs.map(({ key, label, icon: Icon }) => ({
+          key,
+          href: key === "customers" ? "/workspace" : `/workspace?tab=${key}`,
+          label: (
+            <>
+              <Icon className="size-4" aria-hidden />
+              {label}
+            </>
+          ),
+          extra:
+            key === "staff" && requests.length > 0 ? (
               <span
                 className="rounded-full bg-highlight px-1.5 text-[11px] text-white dark:text-[#0f1729]"
                 title="Requests to revise quotes"
               >
                 {requests.length}
               </span>
-            )}
-          </Link>
-        ))}
-      </nav>
+            ) : undefined,
+        }))}
+      />
 
       {tab === "customers" && <CustomersTab jobs={jobs} />}
       {tab === "staff" && (

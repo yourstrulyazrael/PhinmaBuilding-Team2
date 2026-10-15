@@ -1,7 +1,7 @@
 "use client";
 
 import Form from "next/form";
-import Link from "next/link";
+import { SlidingTabs } from "./sliding-tabs";
 import { CalendarRange } from "lucide-react";
 import { PRESETS, isMonthKey } from "@/lib/periods";
 import { cn } from "@/lib/utils";
@@ -14,21 +14,12 @@ import { cn } from "@/lib/utils";
 export function PeriodPicker({ path, current, allowMonth = false }: { path: string; current: string; allowMonth?: boolean }) {
   return (
     <div className="flex flex-wrap items-center gap-2 print:hidden">
-      <nav aria-label="Period" className="inline-flex rounded-[var(--radius)] border border-border bg-card p-1">
-        {PRESETS.map((p) => (
-          <Link
-            key={p.key}
-            href={`${path}?period=${p.key}`}
-            aria-current={current === p.key ? "page" : undefined}
-            className={cn(
-              "rounded-[calc(var(--radius)-4px)] px-3 py-1.5 text-sm font-medium transition-colors",
-              current === p.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            {p.label}
-          </Link>
-        ))}
-      </nav>
+      {/* The green pill glides to the picked period (ticket 53). */}
+      <SlidingTabs
+        label="Period"
+        items={PRESETS.map((p) => ({ key: p.key, href: `${path}?period=${p.key}`, label: p.label }))}
+        active={PRESETS.some((p) => p.key === current) ? current : null}
+      />
 
       {allowMonth && (
         // Picking a month reloads the page with ?period=YYYY-MM.
