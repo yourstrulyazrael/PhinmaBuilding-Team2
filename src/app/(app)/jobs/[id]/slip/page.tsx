@@ -58,18 +58,18 @@ export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/sl
               rows: [
                 ["Device", job.device],
                 ["Problem", job.problem],
-                ["Labour quote", formatPeso(job.initial_quote)],
+                ["Initial quote", formatPeso(job.initial_quote)],
                 ...(job.revised_estimate !== null
-                  ? [["Revised labour", formatPeso(job.revised_estimate)] as [string, string]]
+                  ? [["Revised quote", formatPeso(job.revised_estimate)] as [string, string]]
                   : []),
                 ...(partsTotal(job) > 0
                   ? ([
                       ["Parts", formatPeso(partsTotal(job))],
                       ["Total so far", formatPeso(currentPrice(job))],
                     ] as [string, string][])
-                  : [["Parts", "Added on top when used"] as [string, string]]),
-                ["Received", formatDate(receivedOn)],
-                ["Promised by", formatDate(job.promised_date)],
+                  : [["Parts", "(None used, no additional charges.)"] as [string, string]]),
+                ["Drop-off date", formatDate(receivedOn)],
+                ["Estimated completion date", formatDate(job.promised_date)],
                 ...(technician ? [["Your technician", technician] as [string, string]] : []),
               ],
               url,
@@ -102,20 +102,20 @@ export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/sl
           <dd className="font-medium text-tertiary">{job.device}</dd>
           <dt className="text-muted-foreground">Problem</dt>
           <dd>{job.problem}</dd>
-          <dt className="text-muted-foreground">Labour quote</dt>
+          <dt className="text-muted-foreground">Initial quote</dt>
           <dd className="font-medium tabular-nums">{formatPeso(job.initial_quote)}</dd>
           {job.revised_estimate !== null && (
             <>
-              <dt className="text-muted-foreground">Revised labour</dt>
+              <dt className="text-muted-foreground">Revised quote</dt>
               <dd className="font-medium tabular-nums">{formatPeso(job.revised_estimate)}</dd>
             </>
           )}
-          {/* Parts are charged on top of labour (ticket 47). */}
+          {/* Parts are charged on top of the quote (ticket 47). */}
           <dt className="text-muted-foreground">Parts</dt>
           {partsTotal(job) > 0 ? (
             <dd className="font-medium tabular-nums">{formatPeso(partsTotal(job))}</dd>
           ) : (
-            <dd className="text-muted-foreground">Added on top when used</dd>
+            <dd className="text-muted-foreground">(None used, no additional charges.)</dd>
           )}
           {partsTotal(job) > 0 && (
             <>
@@ -123,9 +123,9 @@ export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/sl
               <dd className="font-semibold tabular-nums text-tertiary">{formatPeso(currentPrice(job))}</dd>
             </>
           )}
-          <dt className="text-muted-foreground">Received</dt>
+          <dt className="text-muted-foreground">Drop-off date</dt>
           <dd>{formatDate(receivedOn)}</dd>
-          <dt className="text-muted-foreground">Promised by</dt>
+          <dt className="text-muted-foreground">Estimated completion date</dt>
           <dd className="font-medium">{formatDate(job.promised_date)}</dd>
           {technician && (
             <>

@@ -35,13 +35,13 @@ export function StaffTab({ staff, requests }: { staff: StaffMember[]; requests: 
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base text-tertiary">
               <Hand className="size-4" aria-hidden />
-              Requests to revise estimates
+              Requests to revise quotes
               <span className="rounded-full bg-highlight px-2 py-0.5 text-xs font-medium text-white dark:text-[#0f1729]">
                 {requests.length}
               </span>
             </CardTitle>
             <CardDescription>
-              Approve if the reason is fair: they can then set revised estimates on the repairs they handle. You can
+              Approve if the reason is fair: they can then set revised quotes on the repairs they handle. You can
               take it back any time.
             </CardDescription>
           </CardHeader>

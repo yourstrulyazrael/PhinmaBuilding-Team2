@@ -38,9 +38,9 @@ export function EstimateQuestion({
   return (
     <div className="flex flex-col gap-3 rounded-[var(--radius)] border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/50">
       <div>
-        <p className="font-medium text-tertiary">Please approve the new estimate</p>
+        <p className="font-medium text-tertiary">Please approve the revised quote</p>
         <p className="text-sm text-muted-foreground">
-          After checking your phone, the labour changed from {formatPeso(initial)} to{" "}
+          After checking your phone, the quote changed from {formatPeso(initial)} to{" "}
           <span className="font-semibold text-foreground">{formatPeso(revised)}</span>
           {Number(parts) > 0 ? (
             <>
@@ -61,7 +61,7 @@ export function EstimateQuestion({
           className="flex flex-col gap-3 rounded-[var(--radius)] border border-border bg-card p-3"
         >
           <div>
-            <p className="font-medium text-tertiary">Decline the new estimate?</p>
+            <p className="font-medium text-tertiary">Decline the revised quote?</p>
             <p className="text-sm text-muted-foreground">
               The shop won&apos;t continue at {formatPeso(revised)} and will contact you about what to do next.
             </p>

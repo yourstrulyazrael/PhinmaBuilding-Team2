@@ -163,9 +163,9 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
           <table className="mt-2 w-full min-w-[900px] text-sm print:min-w-0 print:text-[11px]">
             <thead>
               <tr className="border-b border-border text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                {["Received", "Device", "Problem", "Customer", "Status", "Labour", "Revised", "Parts", "Paid", "Method", "Handled by"].map(
+                {["Drop-off date", "Device", "Problem", "Customer", "Status", "Initial quote", "Revised quote", "Parts", "Paid", "Method", "Handled by"].map(
                   (h) => (
-                    <th key={h} className={`px-3 py-2 font-medium ${["Labour", "Revised", "Parts", "Paid"].includes(h) ? "text-right" : ""}`}>
+                    <th key={h} className={`px-3 py-2 font-medium ${["Initial quote", "Revised quote", "Parts", "Paid"].includes(h) ? "text-right" : ""}`}>
                       {h}
                     </th>
                   ),

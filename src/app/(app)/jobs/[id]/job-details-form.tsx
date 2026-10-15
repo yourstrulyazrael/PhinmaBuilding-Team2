@@ -44,7 +44,7 @@ export function JobDetailsForm({ job, canReviseEstimate }: { job: Job; canRevise
       <div className="grid gap-4 sm:grid-cols-2">
         {canReviseEstimate && (
         <div className="flex flex-col gap-2">
-          <Label htmlFor="revised_estimate">Revised estimate, labour (₱)</Label>
+          <Label htmlFor="revised_estimate">Revised quote (₱)</Label>
           <Input
             id="revised_estimate"
             name="revised_estimate"
@@ -58,7 +58,7 @@ export function JobDetailsForm({ job, canReviseEstimate }: { job: Job; canRevise
         </div>
         )}
         <div className="flex flex-col gap-2">
-          <Label htmlFor="promised_date">Promised date</Label>
+          <Label htmlFor="promised_date">Estimated completion date</Label>
           <Input
             id="promised_date"
             name="promised_date"

@@ -73,13 +73,13 @@ export default async function AccountPage() {
       {!owner && (
         <Section
           icon={Calculator}
-          title="Revised estimates"
-          description="Setting a revised estimate changes what the customer is asked to pay, so it needs your owner's OK."
+          title="Revised quotes"
+          description="Setting a revised quote changes what the customer is asked to pay, so it needs your owner's OK."
         >
           {shop.canReviseEstimate ? (
             <p className="text-sm">
               <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">Approved</span>{" "}
-              You can set revised estimates on the repairs you handle.
+              You can set revised quotes on the repairs you handle.
               {lastRequest?.status === "approved" && lastRequest.owner_note && (
                 <span className="mt-1 block text-muted-foreground">Owner&apos;s note: {lastRequest.owner_note}</span>
               )}

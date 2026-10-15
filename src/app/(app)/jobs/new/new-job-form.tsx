@@ -30,7 +30,7 @@ export function NewJobForm({ today }: { today: string }) {
         <legend className="mb-3 text-sm font-semibold text-tertiary">Repair</legend>
         <Field label="Device" name="device" maxLength={100} placeholder="e.g. iPhone 12" />
         <Field
-          label="Initial quote, labour (₱)"
+          label="Initial quote (₱)"
           name="initial_quote"
           type="number"
           inputMode="decimal"
@@ -49,7 +49,7 @@ export function NewJobForm({ today }: { today: string }) {
             required
           />
         </div>
-        <Field label="Promised date" name="promised_date" type="date" min={today} />
+        <Field label="Estimated completion date" name="promised_date" type="date" min={today} />
       </fieldset>
 
       {state.error && (

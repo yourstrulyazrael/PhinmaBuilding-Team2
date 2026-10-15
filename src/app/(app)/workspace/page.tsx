@@ -111,7 +111,7 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
               {key === "staff" && requests.length > 0 && (
                 <span
                   className="rounded-full bg-highlight px-1.5 text-[11px] text-white dark:text-[#0f1729]"
-                  title="Requests to revise estimates"
+                  title="Requests to revise quotes"
                 >
                   {requests.length}
                 </span>
@@ -166,7 +166,7 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
                   <span className="flex items-center gap-3 text-xs text-muted-foreground">
                     <StatusBadge status={job.status} />
                     <span className={cn(isLate(job, today) && "font-medium text-destructive")}>
-                      {isLate(job, today) ? "Late · promised " : "Promised "}
+                      {isLate(job, today) ? "Late · est. completion " : "Est. completion "}
                       {formatDate(job.promised_date)}
                     </span>
                   </span>

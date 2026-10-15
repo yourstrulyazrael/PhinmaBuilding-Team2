@@ -65,7 +65,7 @@ export function ReportToolbar({
         ...points.map((p) => [p.label, p.received, p.pickedUp, peso(p.earned)]),
       ];
 
-      const headers = ["Received", "Device", "Problem", "Customer", "Status", "Labour quote", "Revised labour", "Parts", "Paid", "Method", "Ref", "Handled by"];
+      const headers = ["Drop-off date", "Device", "Problem", "Customer", "Status", "Initial quote", "Revised quote", "Parts", "Paid", "Method", "Ref", "Handled by"];
       const jobs = [
         headers.map(bold),
         ...report.rows.map((r) => [

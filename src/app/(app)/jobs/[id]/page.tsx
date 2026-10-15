@@ -138,7 +138,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
               <p className="font-medium text-amber-800 dark:text-amber-200">This repair is late</p>
               <p className="text-sm text-muted-foreground">
                 It was promised for {formatDate(job.promised_date)}. The customer&apos;s tracking page now shows an
-                apology. Let them know, and set a new promised date below.
+                apology. Let them know, and set a new estimated completion date below.
               </p>
             </div>
           </div>
@@ -182,14 +182,14 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
                 (ticket 47). */}
             <dt className="text-muted-foreground">Initial quote</dt>
             <dd className="font-medium tabular-nums">
-              {formatPeso(job.initial_quote)} <span className="text-xs font-normal text-muted-foreground">labour</span>
+              {formatPeso(job.initial_quote)}
             </dd>
             {job.revised_estimate !== null && (
               <>
-                <dt className="text-muted-foreground">Revised estimate</dt>
+                <dt className="text-muted-foreground">Revised quote</dt>
                 <dd className="flex flex-wrap items-center gap-2">
                   <span className="font-medium tabular-nums">
-                    {formatPeso(job.revised_estimate)} <span className="text-xs font-normal text-muted-foreground">labour</span>
+                    {formatPeso(job.revised_estimate)}
                   </span>
                   <EstimateAnswer job={job} />
                 </dd>
@@ -197,7 +197,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
             )}
             <dt className="text-muted-foreground">Parts</dt>
             <dd className="tabular-nums">
-              {partsTotal(job) > 0 ? formatPeso(partsTotal(job)) : <span className="text-muted-foreground">None yet</span>}
+              {partsTotal(job) > 0 ? formatPeso(partsTotal(job)) : <span className="text-muted-foreground">(None used, no additional charges.)</span>}
             </dd>
             <dt className="font-medium text-tertiary">Total</dt>
             <dd className="font-semibold tabular-nums text-tertiary">{formatPeso(currentPrice(job))}</dd>
@@ -211,7 +211,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
                 </dd>
               </>
             )}
-            <dt className="text-muted-foreground">Promised by</dt>
+            <dt className="text-muted-foreground">Estimated completion date</dt>
             <dd>{formatDate(job.promised_date)}</dd>
           </dl>
           <p className="mt-4 text-xs text-muted-foreground">
@@ -237,7 +237,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
             <div className="flex flex-col gap-1 rounded-[var(--radius)] border border-red-300 bg-red-50 p-4 text-sm dark:border-red-900 dark:bg-red-950/50">
               <p className="flex items-center gap-2 font-medium text-red-800 dark:text-red-200">
                 <ThumbsDown className="size-4" aria-hidden />
-                The customer declined the revised estimate of{" "}
+                The customer declined the revised quote of{" "}
                 <span className="tabular-nums">{formatPeso(job.revised_estimate)}</span>
               </p>
               {job.estimate_answered_at && (
@@ -253,7 +253,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
                 )}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Contact them to agree what to do next, or set a new revised estimate.
+                Contact them to agree what to do next, or set a new revised quote.
               </p>
             </div>
           )}
@@ -275,7 +275,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
                 ) : (
                   <ThumbsDown className="size-4 text-destructive" aria-hidden />
                 )}
-                Your owner {proposal.status === "approved" ? "approved" : "rejected"} your proposed estimate of{" "}
+                Your owner {proposal.status === "approved" ? "approved" : "rejected"} your proposed quote of{" "}
                 <span className="tabular-nums">{formatPeso(proposal.amount)}</span>
               </p>
               {proposal.decided_at && (
@@ -291,7 +291,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
                 )}
               </p>
               {proposal.status === "approved" && (
-                <p className="mt-1 text-xs text-muted-foreground">The customer is asked to accept the new price.</p>
+                <p className="mt-1 text-xs text-muted-foreground">The customer is asked to accept the new quote.</p>
               )}
             </div>
           )}
@@ -301,11 +301,11 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
               <div className="flex flex-col gap-0.5">
                 <p className="flex items-center gap-2 font-medium text-tertiary">
                   <TrendingUp className="size-4 text-highlight" aria-hidden />
-                  {nameOf(proposal.staff_id, viewer)} proposes a labour estimate of{" "}
+                  {nameOf(proposal.staff_id, viewer)} proposes a revised quote of{" "}
                   <span className="tabular-nums">{formatPeso(proposal.amount)}</span>
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Labour now {formatPeso(labourPrice(job))} · {formatDateTime(proposal.created_at)} · approving asks the
+                  Quote now {formatPeso(labourPrice(job))} · {formatDateTime(proposal.created_at)} · approving asks the
                   customer to accept it
                 </p>
               </div>

@@ -132,7 +132,7 @@ export function todayInManila() {
 
 // Ways the Jobs list can be ordered. The first one is the default.
 export const SORTS = [
-  { value: "promised", label: "Promised date" },
+  { value: "promised", label: "Estimated completion" },
   { value: "newest", label: "Newest added" },
   { value: "oldest", label: "Oldest added" },
   { value: "customer", label: "Customer name" },

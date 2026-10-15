@@ -25,11 +25,11 @@ export function EstimateAccess({ staffId, allowed }: { staffId: string; allowed:
   const [error, setError] = useState<string>();
 
   if (!allowed) {
-    return <p className="text-xs text-muted-foreground">Can&apos;t revise estimates. They can ask you from their Account page.</p>;
+    return <p className="text-xs text-muted-foreground">Can&apos;t revise quotes. They can ask you from their Account page.</p>;
   }
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">Can revise estimates</span>
+      <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">Can revise quotes</span>
       <Button
         type="button"
         variant="ghost"

@@ -14,19 +14,19 @@ export function updateMessage(
     `Hi! Here's an update on your ${job.device} repair.`,
     "",
     `Status: ${statusLabel(job.status)}`,
-    `Labour quote: ${formatPeso(job.initial_quote)}`,
+    `Initial quote: ${formatPeso(job.initial_quote)}`,
   ];
   if (job.revised_estimate !== null) {
-    lines.push(`Revised labour: ${formatPeso(job.revised_estimate)}`);
+    lines.push(`Revised quote: ${formatPeso(job.revised_estimate)}`);
   }
-  // Parts are charged on top of labour (ticket 47).
+  // Parts are charged on top of the quote (ticket 47).
   const parts = Number(job.parts_total ?? 0);
   if (parts > 0) {
     lines.push(`Parts: ${formatPeso(parts)}`);
     lines.push(`Total: ${formatPeso(Number(job.revised_estimate ?? job.initial_quote) + parts)}`);
   }
   if (job.revised_estimate !== null && job.estimate_status === "pending") {
-    lines.push("Please approve the new estimate on your tracking page so we can continue.");
+    lines.push("Please approve the revised quote on your tracking page so we can continue.");
   }
   lines.push("", `Track your repair anytime: ${trackingUrl}`);
   return lines.join("\n");
@@ -39,7 +39,7 @@ export function updateMessage(
  */
 export function delayMessage(job: Pick<Job, "device" | "status" | "promised_date">, trackingUrl: string) {
   return [
-    `Hi! Sorry, your ${job.device} repair is taking longer than we promised (${formatDate(job.promised_date)}).`,
+    `Hi! Sorry, your ${job.device} repair is taking longer than our estimated completion date (${formatDate(job.promised_date)}).`,
     `It's currently at: ${statusLabel(job.status)}. We'll let you know as soon as it's ready.`,
     "",
     `Track your repair anytime: ${trackingUrl}`,

@@ -58,6 +58,14 @@ least one real apprentice. Customers never log in; they only view a
    work continues when an apprentice is away.
 
 ## Screens
+
+**Words on screen** (the same everywhere, for shop and customer):
+**Initial quote** (labour, when the phone comes in), **Revised quote**
+(a changed quote the customer approves), **Parts** (charged on top;
+"(None used, no additional charges.)" when there are none), **Total**,
+**Drop-off date** (when it came in), **Estimated completion date** (what
+the shop expects; "Est. completion" where space is short). The database
+keeps its older names (`revised_estimate`, `promised_date`).
 1. **Sign in / Set up your store**: email and password. Nobody can create
    an account on their own (ticket 35): "Have a store code? Set up your
    store" also asks for a **store code** the developer gave the owner.

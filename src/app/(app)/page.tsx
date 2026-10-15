@@ -264,7 +264,7 @@ function JobList({ jobs, viewer }: { jobs: Job[]; viewer: Viewer }) {
             <th className="px-3 py-3 font-medium">Handled by</th>
             <th className="px-3 py-3 font-medium">Status</th>
             <th className="px-3 py-3 font-medium">Quote / estimate</th>
-            <th className="px-3 py-3 font-medium">Promised by</th>
+            <th className="px-3 py-3 font-medium">Est. completion</th>
             <th className="px-6 py-3 font-medium"><span className="sr-only">Actions</span></th>
           </tr>
         </thead>

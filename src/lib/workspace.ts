@@ -119,8 +119,8 @@ export function attentionAlerts(jobs: Job[], today: string, viewer?: AlertViewer
         job,
         kind: "declined",
         message: job.estimate_decline_reason
-          ? `Customer declined the revised estimate: “${job.estimate_decline_reason}”`
-          : "Customer declined the revised estimate",
+          ? `Customer declined the revised quote: “${job.estimate_decline_reason}”`
+          : "Customer declined the revised quote",
       });
     }
     // The customer said yes (ticket 40): tell the owner and whoever is
@@ -138,20 +138,20 @@ export function attentionAlerts(jobs: Job[], today: string, viewer?: AlertViewer
       alerts.push({
         job,
         kind: "approved",
-        message: `Customer approved the revised estimate${amount}: you can carry on with the repair`,
+        message: `Customer approved the revised quote${amount}: you can carry on with the repair`,
       });
     }
     if (isLate(job, today)) {
       const days = daysBetween(job.promised_date, today);
-      alerts.push({ job, kind: "overdue", message: `${days} day${days === 1 ? "" : "s"} past the promised date` });
+      alerts.push({ job, kind: "overdue", message: `${days} day${days === 1 ? "" : "s"} past the estimated completion date` });
     }
     // A heads-up before it is late: promised today or tomorrow, and the
     // phone is not ready yet.
     if (job.status !== "ready_for_pickup") {
       if (job.promised_date === today) {
-        alerts.push({ job, kind: "due_today", message: "Promised for today, and not ready yet" });
+        alerts.push({ job, kind: "due_today", message: "Estimated completion is today, and not ready yet" });
       } else if (job.promised_date === addDays(today, 1)) {
-        alerts.push({ job, kind: "due_tomorrow", message: "Promised for tomorrow, and not ready yet" });
+        alerts.push({ job, kind: "due_tomorrow", message: "Estimated completion is tomorrow, and not ready yet" });
       }
     }
     if (job.status === "ready_for_pickup") {
@@ -169,7 +169,7 @@ export function attentionAlerts(jobs: Job[], today: string, viewer?: AlertViewer
       }
     }
     if (job.estimate_status === "pending") {
-      alerts.push({ job, kind: "estimate", message: "Waiting for the customer to approve the revised estimate" });
+      alerts.push({ job, kind: "estimate", message: "Waiting for the customer to approve the revised quote" });
     }
   }
   const order: Alert["kind"][] = ["cancel", "declined", "approved", "overdue", "due_today", "due_tomorrow", "ready", "parts", "estimate"];

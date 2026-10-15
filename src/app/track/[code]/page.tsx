@@ -160,7 +160,7 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
           <div className="flex flex-col gap-1">
             <p className="font-medium text-amber-900 dark:text-amber-100">Sorry, your repair is running late</p>
             <p className="text-sm text-muted-foreground">
-              We promised it for {formatDate(job.promised_date)} and it isn&apos;t ready yet. We&apos;re still working
+              We estimated it would be done by {formatDate(job.promised_date)} and it isn&apos;t ready yet. We&apos;re still working
               on it and will update the date here. You can call the shop below anytime.
             </p>
           </div>
@@ -169,14 +169,16 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
 
       <Card className="p-6">
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3 text-sm">
-          {/* The price, itemised (ticket 47): labour, each part used at
-              its price, and the total. Never the shop's cost. */}
-          <dt className="text-muted-foreground">Labour</dt>
-          <dd className="flex flex-wrap items-center gap-2">
-            <span className="font-medium tabular-nums">{formatPeso(job.revised_estimate ?? job.initial_quote)}</span>
-            {job.revised_estimate !== null && (
-              <>
-                <span className="text-xs text-muted-foreground">revised from {formatPeso(job.initial_quote)}</span>
+          {/* The price, itemised (ticket 47): the quote (and any revised
+              quote), each part used at its price, and the total. Never
+              the shop's cost. */}
+          <dt className="text-muted-foreground">Initial quote</dt>
+          <dd className="font-medium tabular-nums">{formatPeso(job.initial_quote)}</dd>
+          {job.revised_estimate !== null && (
+            <>
+              <dt className="text-muted-foreground">Revised quote</dt>
+              <dd className="flex flex-wrap items-center gap-2">
+                <span className="font-medium tabular-nums">{formatPeso(job.revised_estimate)}</span>
                 {job.estimate_status === "approved" && (
                   <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-primary">You approved</span>
                 )}
@@ -185,12 +187,17 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
                     You declined: the shop will contact you
                   </span>
                 )}
-              </>
-            )}
-          </dd>
-          {lines.length > 0 && (
+              </dd>
+            </>
+          )}
+          <dt className="text-muted-foreground">Parts</dt>
+          {lines.length === 0 ? (
+            // Before 023 there are no prices, only the names.
+            <dd className={job.parts_used ? "whitespace-pre-line" : "text-muted-foreground"}>
+              {job.parts_used || "(None used, no additional charges.)"}
+            </dd>
+          ) : (
             <>
-              <dt className="text-muted-foreground">Parts</dt>
               <dd>
                 <ul className="flex flex-col gap-1">
                   {lines.map((l, i) => (
@@ -210,7 +217,7 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
           <dd className="border-t border-border pt-3 text-base font-semibold tabular-nums text-tertiary">
             {formatPeso(total)}
           </dd>
-          <dt className="text-muted-foreground">Promised by</dt>
+          <dt className="text-muted-foreground">Estimated completion date</dt>
           <dd className="flex items-center gap-1.5 font-medium">
             <CalendarDays className="size-3.5 text-muted-foreground" aria-hidden />
             {formatDate(job.promised_date)}
@@ -221,13 +228,12 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
               <dd className="whitespace-pre-line">{job.notes}</dd>
             </>
           )}
-          {/* Parts with prices are listed above; this is the shop's own
-              note on parts, and the plain list before 023 is run. */}
-          {((lines.length === 0 && job.parts_used) || job.parts_replaced) && (
+          {/* The shop's own note on parts (part names are in Parts above). */}
+          {job.parts_replaced && (
             <>
               <dt className="text-muted-foreground">Parts replaced</dt>
               <dd className="whitespace-pre-line">
-                {[lines.length === 0 ? job.parts_used : null, job.parts_replaced].filter(Boolean).join("\n")}
+                {job.parts_replaced}
               </dd>
             </>
           )}

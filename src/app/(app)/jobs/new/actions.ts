@@ -31,7 +31,7 @@ export async function createJob(
     return { error: "Enter an initial quote of ₱0 or more." };
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(job.promised_date)) {
-    return { error: "Pick a promised date." };
+    return { error: "Pick an estimated completion date." };
   }
 
   const supabase = await createClient();

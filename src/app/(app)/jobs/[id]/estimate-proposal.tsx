@@ -52,7 +52,7 @@ export function ProposeEstimate({
     return (
       <>
         <div className="flex flex-col gap-1 text-sm">
-          <p className="font-medium">Revised estimate</p>
+          <p className="font-medium">Revised quote</p>
           <p className="text-muted-foreground">
             <span className="font-medium text-highlight">Waiting for your owner:</span> you proposed{" "}
             <span className="tabular-nums">{formatPeso(last.amount)}</span> on {last.sentOn}.
@@ -68,7 +68,7 @@ export function ProposeEstimate({
     <>
       <form id={FORM_ID} action={formAction} className="flex flex-col gap-4 text-sm">
         <div className="flex flex-col gap-2">
-          <Label htmlFor="amount">Revised estimate, labour (₱)</Label>
+          <Label htmlFor="amount">Revised quote (₱)</Label>
           <Input
             id="amount"
             name="amount"
@@ -82,7 +82,7 @@ export function ProposeEstimate({
           />
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor="reason">Why the new amount?</Label>
+          <Label htmlFor="reason">Why the new quote?</Label>
           <Textarea
             id="reason"
             name="reason"

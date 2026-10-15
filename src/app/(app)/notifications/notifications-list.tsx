@@ -76,8 +76,8 @@ export function NotificationsList({
                   <span className="flex min-w-0 flex-col gap-0.5">
                     <span className="font-medium text-tertiary">
                       {a.kind === "proposal"
-                        ? `Your owner ${a.approved ? "approved" : "rejected"} your ${formatPeso(a.amount)} estimate for ${a.device}`
-                        : `Your owner ${a.approved ? "approved" : "rejected"} your request to revise estimates`}
+                        ? `Your owner ${a.approved ? "approved" : "rejected"} your ${formatPeso(a.amount)} revised quote for ${a.device}`
+                        : `Your owner ${a.approved ? "approved" : "rejected"} your request to revise quotes`}
                     </span>
                     {a.note ? (
                       <span className="whitespace-pre-line">Owner&apos;s note: &ldquo;{a.note}&rdquo;</span>
@@ -101,7 +101,7 @@ export function NotificationsList({
             <Hand className="mt-0.5 size-4 shrink-0 text-highlight" aria-hidden />
             <span className="flex flex-col gap-0.5">
               <span className="font-medium text-tertiary">
-                {requests} request{requests === 1 ? "" : "s"} to revise estimates
+                {requests} request{requests === 1 ? "" : "s"} to revise quotes
               </span>
               <span className="text-muted-foreground">Staff are waiting for you to approve or reject.</span>
             </span>
@@ -118,10 +118,10 @@ export function NotificationsList({
                   <TrendingUp className="mt-0.5 size-4 shrink-0 text-highlight" aria-hidden />
                   <span className="flex flex-col gap-0.5">
                     <span className="font-medium text-tertiary">
-                      {names[p.staffId] ?? "Someone"} proposes {formatPeso(p.amount)} labour for {p.job.device}
+                      {names[p.staffId] ?? "Someone"} proposes a {formatPeso(p.amount)} revised quote for {p.job.device}
                     </span>
                     <span className="text-muted-foreground">
-                      {p.job.customer_name} · labour now {formatPeso(labourPrice(p.job))}. Open it to approve or reject.
+                      {p.job.customer_name} · quote now {formatPeso(labourPrice(p.job))}. Open it to approve or reject.
                     </span>
                   </span>
                 </Link>
