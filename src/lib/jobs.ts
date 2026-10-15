@@ -28,6 +28,7 @@ export type Job = {
   parts_replaced: string;
   status: Status;
   promised_date: string; // "YYYY-MM-DD"
+  tracking_code: string;
   created_at: string;
   updated_at: string;
 };
@@ -71,4 +72,10 @@ export function formatDate(date: string) {
 // on UTC, which is 8 hours behind Manila.
 export function todayInManila() {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
+}
+
+// Tracking codes are 32 lowercase letters and digits (see
+// supabase/sql/004-tracking-page.sql).
+export function isTrackingCode(code: string) {
+  return /^[0-9a-f]{32}$/.test(code);
 }

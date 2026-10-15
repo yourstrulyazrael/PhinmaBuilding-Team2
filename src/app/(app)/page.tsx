@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CalendarDays, CircleCheck, Clock, Plus, Smartphone, Wrench } from "lucide-react";
+import { CalendarDays, CircleCheck, Clock, Plus, QrCode, Smartphone, Wrench } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatPeso, todayInManila, type Job } from "@/lib/jobs";
 import { buttonVariants } from "@/components/ui/button";
@@ -199,7 +199,8 @@ function JobList({ jobs }: { jobs: Job[] }) {
             <th className="px-3 py-3 font-medium">Customer</th>
             <th className="px-3 py-3 font-medium">Status</th>
             <th className="px-3 py-3 font-medium">Quote / estimate</th>
-            <th className="px-6 py-3 font-medium">Promised by</th>
+            <th className="px-3 py-3 font-medium">Promised by</th>
+            <th className="px-6 py-3 font-medium"><span className="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody>
@@ -221,8 +222,11 @@ function JobList({ jobs }: { jobs: Job[] }) {
               <td className="px-3 py-4">
                 <Quote job={job} />
               </td>
-              <td className="px-6 py-4">
+              <td className="px-3 py-4">
                 <PromisedDate job={job} today={today} />
+              </td>
+              <td className="px-6 py-4 text-right">
+                <SlipLink job={job} />
               </td>
             </tr>
           ))}
@@ -245,6 +249,7 @@ function JobList({ jobs }: { jobs: Job[] }) {
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
                 <Quote job={job} />
                 <PromisedDate job={job} today={today} />
+                <SlipLink job={job} />
               </div>
             </div>
           </li>
@@ -283,5 +288,17 @@ function PromisedDate({ job, today }: { job: Job; today: string }) {
       {formatDate(job.promised_date)}
       {late && <span className="font-medium">· late</span>}
     </span>
+  );
+}
+
+function SlipLink({ job }: { job: Job }) {
+  return (
+    <Link
+      href={`/jobs/${job.id}/slip`}
+      className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-8 gap-1.5 text-xs")}
+    >
+      <QrCode className="size-3.5" aria-hidden />
+      Claim slip
+    </Link>
   );
 }

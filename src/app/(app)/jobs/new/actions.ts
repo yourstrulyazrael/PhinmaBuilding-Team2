@@ -37,10 +37,13 @@ export async function createJob(
   const supabase = await createClient();
   // technician_id and status are filled in by the database: the signed-
   // in technician, and "received".
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("jobs")
-    .insert({ ...job, initial_quote: initialQuote });
+    .insert({ ...job, initial_quote: initialQuote })
+    .select("id")
+    .single();
   if (error) return { error: error.message };
 
-  redirect("/");
+  // Straight to the claim slip, ready to hand to the customer.
+  redirect(`/jobs/${data.id}/slip`);
 }

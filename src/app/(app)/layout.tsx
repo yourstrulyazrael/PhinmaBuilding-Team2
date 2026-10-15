@@ -27,7 +27,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex flex-1 flex-col md:flex-row">
       {/* Sidebar: tablet and laptop */}
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-card md:flex md:sticky md:top-0 md:h-screen">
+      <aside className="hidden print:hidden! w-60 shrink-0 flex-col border-r border-border bg-card md:flex md:sticky md:top-0 md:h-screen">
         <div className="px-5 py-5">
           <Logo />
         </div>
@@ -52,7 +52,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       </aside>
 
       {/* Top bar: phone */}
-      <header className="sticky top-0 z-10 border-b border-border bg-card md:hidden">
+      <header className="sticky top-0 z-10 border-b border-border bg-card md:hidden print:hidden">
         <div className="flex items-center gap-3 px-4 py-3">
           <Logo />
           <div className="ml-auto flex items-center gap-2">
