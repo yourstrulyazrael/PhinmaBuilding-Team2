@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CalendarDays, Check, Phone, Wrench } from "lucide-react";
+import { CalendarDays, Phone, Wrench } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { STATUSES, formatDate, formatPeso, isTrackingCode, type Status } from "@/lib/jobs";
 import { Card } from "@/components/ui/card";
@@ -99,25 +99,23 @@ function JobStatus({ job }: { job: TrackedJob }) {
           <AutoRefresh />
         </div>
 
-        {/* Progress through the six statuses */}
+        {/* The six statuses, with only the current one marked. The
+            technician can set statuses in any order, so earlier steps
+            are not ticked: they may never have happened. */}
         <ol className="flex flex-col gap-2 border-t border-border pt-4">
           {STATUSES.map((s, i) => {
-            const done = i < current;
             const now = i === current;
             return (
-              <li key={s.value} className="flex items-center gap-3 text-sm">
+              <li key={s.value} className="flex items-center gap-3 text-sm" aria-current={now ? "step" : undefined}>
                 <span
                   className={cn(
                     "flex size-5 shrink-0 items-center justify-center rounded-full border",
-                    done && "border-primary bg-primary text-primary-foreground",
-                    now && "border-primary text-primary ring-4 ring-muted",
-                    !done && !now && "border-border",
+                    now ? "border-primary text-primary ring-4 ring-muted" : "border-border",
                   )}
                 >
-                  {done && <Check className="size-3" aria-hidden />}
                   {now && <span className="size-2 rounded-full bg-primary" />}
                 </span>
-                <span className={cn(now ? "font-semibold text-tertiary" : done ? "text-foreground" : "text-muted-foreground")}>
+                <span className={cn(now ? "font-semibold text-tertiary" : "text-muted-foreground")}>
                   {s.label}
                 </span>
               </li>
