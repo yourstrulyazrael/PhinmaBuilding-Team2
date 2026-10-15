@@ -6,12 +6,12 @@ send later.
 
 **Blocked by:** 04
 
-**Status:** todo
+**Status:** done
 
-- [ ] Copy update message copies the device, current status, initial
+- [x] Copy update message copies the device, current status, initial
       quote, revised estimate (if any) and the tracking link
-- [ ] The technician sees a short "Copied" confirmation
-- [ ] The copied message never includes the customer's phone number
-- [ ] Save as image downloads the claim slip as a picture with a
+- [x] The technician sees a short "Copied" confirmation
+- [x] The copied message never includes the customer's phone number
+- [x] Save as image downloads the claim slip as a picture with a
       readable, scannable QR code
-- [ ] Works on the live URL
+- [x] Works on the live URL
