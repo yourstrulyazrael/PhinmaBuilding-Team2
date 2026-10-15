@@ -33,7 +33,8 @@ type TrackedJob = {
   updated_at: string;
   cancel_requested: boolean;
   shop_name: string;
-  shop_contact: string; // the owner's number
+  shop_contact: string; // the shop phone, or the owner's number
+  shop_address?: string; // after 016; "" when the shop has none
   technician_name: string; // who is handling the phone
 };
 
@@ -201,6 +202,7 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
         <div className="min-w-0">
           <p className="text-xs text-muted-foreground">Your repair shop</p>
           <p className="truncate text-sm font-medium text-tertiary">{job.shop_name}</p>
+          {job.shop_address && <p className="text-xs text-muted-foreground">{job.shop_address}</p>}
           {job.technician_name && (
             <p className="truncate text-xs text-muted-foreground">Your technician: {job.technician_name}</p>
           )}

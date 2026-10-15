@@ -5,23 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 import { createTemporaryClient } from "@/lib/supabase/temporary";
 import { getMyShop } from "@/lib/shop";
 
-export type ShopNameState = { error?: string; saved?: boolean };
-
-// Renames the shop. RLS only lets the owner do this, so for anyone else
-// no row changes and we say so.
-export async function renameShop(shopId: string, _prev: ShopNameState, formData: FormData): Promise<ShopNameState> {
-  const name = String(formData.get("shop_name") ?? "").trim();
-  if (!name || name.length > 80) return { error: "Enter a shop name (up to 80 characters)." };
-
-  const supabase = await createClient();
-  const { data, error } = await supabase.from("shops").update({ name }).eq("id", shopId).select("id");
-  if (error) return { error: "Couldn't save the shop name. Please try again." };
-  if (!data?.length) return { error: "Only the shop owner can rename the shop." };
-
-  revalidatePath("/", "layout");
-  return { saved: true };
-}
-
 export type AddStaffState = { error?: string; added?: string };
 
 /**
@@ -81,22 +64,6 @@ export async function addStaff(_prev: AddStaffState, formData: FormData): Promis
 
   revalidatePath("/workspace");
   return { added: displayName };
-}
-
-export type PasswordState = { error?: string; saved?: boolean };
-
-// Anyone can change their own password, e.g. to replace the temporary
-// one the owner set.
-export async function changePassword(_prev: PasswordState, formData: FormData): Promise<PasswordState> {
-  const password = String(formData.get("new_password") ?? "");
-  const confirm = String(formData.get("confirm_password") ?? "");
-  if (password.length < 8) return { error: "Use at least 8 characters." };
-  if (password !== confirm) return { error: "The two passwords don't match." };
-
-  const supabase = await createClient();
-  const { error } = await supabase.auth.updateUser({ password });
-  if (error) return { error: "Couldn't change your password. Please try again." };
-  return { saved: true };
 }
 
 // The owner allows (or stops) a staff member setting revised estimates

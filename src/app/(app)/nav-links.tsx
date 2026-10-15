@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Boxes, ChartColumn, LayoutDashboard, Plus, UserRound, Users } from "lucide-react";
+import { Boxes, ChartColumn, LayoutDashboard, Plus, Users } from "lucide-react";
 import { RevealLabel, revealItem } from "@/components/reveal-label";
 import { cn } from "@/lib/utils";
 
@@ -15,9 +15,6 @@ const LINKS = [
   { href: "/reports", label: "Reports & analytics", icon: ChartColumn, ownerOnly: true },
   { href: "/inventory", label: "Inventory", icon: Boxes, ownerOnly: false },
   { href: "/workspace", label: "Workspace", icon: Users, ownerOnly: false },
-  // On a phone the bar is full: My details is also in Workspace → Shop
-  // settings, so it hides there.
-  { href: "/details", label: "My details", icon: UserRound, ownerOnly: false, phoneHidden: true },
 ];
 
 // The technician's navigation, in the top bar: square icon buttons, each
@@ -46,7 +43,7 @@ export function NavLinks({ isOwner }: { isOwner: boolean }) {
 
   return (
     <nav aria-label="Main" className="flex items-center gap-1 sm:gap-1.5 md:gap-2">
-      {links.map(({ href, label, icon: Icon, ...link }, i) => {
+      {links.map(({ href, label, icon: Icon }, i) => {
         const active = pathname === href;
         return (
           <Link
@@ -54,13 +51,7 @@ export function NavLinks({ isOwner }: { isOwner: boolean }) {
             href={href}
             aria-current={active ? "page" : undefined}
             aria-keyshortcuts={`Alt+${i + 1}`}
-            className={cn(
-              revealItem,
-              "phoneHidden" in link && "hidden sm:flex",
-              active
-                ? "bg-primary/15 text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
+            className={cn(revealItem, active ? activeItem : idleItem)}
           >
             <Icon className="size-[18px] shrink-0 md:size-5" aria-hidden />
             <RevealLabel shortcut={`Alt+${i + 1}`}>{label}</RevealLabel>
@@ -73,4 +64,49 @@ export function NavLinks({ isOwner }: { isOwner: boolean }) {
 
 function visibleLinks(isOwner: boolean) {
   return LINKS.filter((l) => isOwner || !l.ownerOnly);
+}
+
+// The page you are on: the blue accent. Everything else: grey until hovered.
+const activeItem = "bg-highlight/15 text-highlight";
+const idleItem = "text-muted-foreground hover:bg-muted hover:text-foreground";
+
+/**
+ * Who is signed in, as their initials, at the right of the top bar.
+ * Clicking it opens Account (ticket 34); the tooltip shows their name
+ * and number. Lit up in blue on the Account page, like the other links.
+ */
+export function AccountLink({ name, contact }: { name: string; contact?: string }) {
+  const active = usePathname() === "/account";
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]!.toUpperCase())
+    .join("");
+
+  return (
+    <Link
+      href="/account"
+      aria-current={active ? "page" : undefined}
+      aria-label={`Account: ${name}`}
+      className={cn(revealItem, active ? activeItem : idleItem)}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          "flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold md:size-8 md:text-xs",
+          active ? "bg-highlight text-white dark:text-[#0f1729]" : "bg-tertiary text-tertiary-foreground",
+        )}
+      >
+        {initials || "T"}
+      </span>
+      <RevealLabel align="end" className="flex-col items-start gap-0.5 leading-tight">
+        <span>Account</span>
+        <span className="font-medium text-muted-foreground">
+          {name}
+          {contact && ` · ${contact}`}
+        </span>
+      </RevealLabel>
+    </Link>
+  );
 }

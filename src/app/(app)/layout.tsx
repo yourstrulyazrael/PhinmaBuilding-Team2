@@ -5,7 +5,7 @@ import { Logo } from "@/components/logo";
 import { RevealLabel, revealItem } from "@/components/reveal-label";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { signOut } from "../login/actions";
-import { NavLinks } from "./nav-links";
+import { AccountLink, NavLinks } from "./nav-links";
 import { getMe, getShop, getUser } from "@/lib/session";
 
 /**
@@ -40,7 +40,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
 
           <div className="ml-auto flex items-center gap-1 md:gap-2">
             <ThemeSwitch />
-            <Avatar name={name} contact={technician?.contact_number} />
+            <AccountLink name={name} contact={technician?.contact_number} />
             <SignOutButton />
           </div>
         </div>
@@ -48,31 +48,6 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
 
       <div className="flex min-w-0 flex-1 flex-col">{children}</div>
     </div>
-  );
-}
-
-// Who is signed in: initials, with name and number in a tooltip on
-// hover. Hidden on narrow phones to leave room for the buttons.
-function Avatar({ name, contact }: { name: string; contact?: string }) {
-  const initials = name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0]!.toUpperCase())
-    .join("");
-  return (
-    <span className="group/reveal relative hidden h-9 items-center px-1 sm:flex">
-      <span
-        aria-hidden
-        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-tertiary text-xs font-semibold text-tertiary-foreground md:size-9 md:text-sm"
-      >
-        {initials || "T"}
-      </span>
-      <RevealLabel align="end" className="flex-col items-start gap-0.5 leading-tight">
-        <span>{name}</span>
-        {contact && <span className="font-medium text-muted-foreground">{contact}</span>}
-      </RevealLabel>
-    </span>
   );
 }
 

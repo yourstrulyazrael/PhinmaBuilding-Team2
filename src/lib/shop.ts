@@ -11,6 +11,12 @@ export type MyShop = {
   canReviseEstimate: boolean;
   ownerName: string;
   ownerContact: string;
+  // Set by the owner on the Account page (ticket 34); "" when not set.
+  address: string;
+  phone: string;
+  slipNote: string;
+  // The number customers should call: the shop phone, or the owner's.
+  contact: string;
 };
 
 type Membership = {
@@ -19,6 +25,9 @@ type Membership = {
   shops: {
     id: string;
     name: string;
+    address?: string;
+    phone?: string;
+    slip_note?: string;
     owner: { display_name: string; contact_number: string } | null;
   } | null;
 };
@@ -36,19 +45,27 @@ type Membership = {
 export async function getMyShop(supabase: SupabaseClient, userId: string): Promise<MyShop | null> {
   const { data: membership } = await supabase
     .from("shop_members")
-    // "*" rather than naming member columns, so a column added later can
-    // never break this query (which every signed-in page depends on).
-    .select("*, shops (id, name, owner:technicians!shops_owner_id_fkey (display_name, contact_number))")
+    // "*" rather than naming columns, so a column added later (or not yet
+    // added, before its SQL file is run) can never break this query,
+    // which every signed-in page depends on.
+    .select("*, shops (*, owner:technicians!shops_owner_id_fkey (display_name, contact_number))")
     .eq("technician_id", userId)
     .maybeSingle<Membership>();
   if (!membership?.shops) return null;
 
+  const shop = membership.shops;
+  const ownerContact = shop.owner?.contact_number ?? "";
+  const phone = shop.phone?.trim() ?? "";
   return {
-    id: membership.shops.id,
-    name: membership.shops.name,
+    id: shop.id,
+    name: shop.name,
     role: membership.role,
     canReviseEstimate: membership.role === "owner" || membership.can_revise_estimate === true,
-    ownerName: membership.shops.owner?.display_name ?? "",
-    ownerContact: membership.shops.owner?.contact_number ?? "",
+    ownerName: shop.owner?.display_name ?? "",
+    ownerContact,
+    address: shop.address ?? "",
+    phone,
+    slipNote: shop.slip_note ?? "",
+    contact: phone || ownerContact,
   };
 }

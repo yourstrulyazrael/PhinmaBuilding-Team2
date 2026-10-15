@@ -95,9 +95,14 @@ least one real apprentice. Customers never log in; they only view a
    the original date (ticket 21). It updates within a second or two
    of any change, and still re-checks every 15 seconds as a backup.
 8. **Workspace**: the **owner** sees every tab: **Customers**,
-   **Notifications**, **Analytics**, **Staff** (the staff list, each one's "Can revise
-   estimates" switch, **Add staff** and **Remove**) and **Shop settings**
-   (the shop name, their own name and contact, and their password).
+   **Notifications** and **Staff** (the staff list, each one's "Can revise
+   estimates" switch, **Add staff** and **Remove**). Settings live on
+   **Account** (ticket 34; was My details), opened from the avatar in the
+   top bar: everyone edits their name, contact number, sign-in email and
+   password; the owner also edits the store details (name, address, shop
+   phone) and a note printed at the bottom of every claim slip. The slip
+   and tracking page show the address and the shop phone (or the owner's
+   number if the shop has none).
 11. **Inventory** (tickets 27–29; top bar, owner and staff): the parts
    catalog (SKU, name, stock, low-stock level; cost for the owner only),
    low-stock flags, restocks and adjustments (owner), the stock history,
@@ -228,7 +233,7 @@ shop's totals (earnings, Analytics) are owner-only screens.
 ## Login
 Yes, for the owner and apprentices. Supabase Auth with email and
 password, with "Confirm email" turned off so that no emails are sent.
-The owner creates apprentices' accounts in Shop settings (email and a
+The owner creates apprentices' accounts in Workspace → Staff (email and a
 temporary password); apprentices can then change their password. This
 uses the normal sign-up, not the `service_role` key.
 Customers never need an account.

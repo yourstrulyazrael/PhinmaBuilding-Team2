@@ -25,6 +25,8 @@
   --border: #dfe6e1;
   --input: #d5ddd8;
   --ring: #1f5f3f;
+  /* Blue accent: the page you are on, in the top bar. */
+  --highlight: #2563c9;
   --radius: 0.625rem;
   /* Chart lines (validated colour-blind safe on the white card, ticket 26). */
   --chart-1: #2a78d6;
@@ -56,6 +58,7 @@
     --border: #2a3632;
     --input: #36443f;
     --ring: #5cbf8a;
+    --highlight: #7aa9f7;
     /* Chart lines, stepped for the dark card (validated). */
     --chart-1: #3987e5;
     --chart-2: #008300;
@@ -90,6 +93,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-highlight: var(--highlight);
   --radius-base: var(--radius);
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;

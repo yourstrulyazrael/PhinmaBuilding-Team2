@@ -51,7 +51,9 @@ export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/sl
           <SaveImageButton
             slip={{
               shopName: shop?.name ?? "Zenith Repair",
-              shopContact: shop?.ownerContact ?? "",
+              shopContact: shop?.contact ?? "",
+              shopAddress: shop?.address ?? "",
+              note: shop?.slipNote ?? "",
               rows: [
                 ["Device", job.device],
                 ["Problem", job.problem],
@@ -79,7 +81,8 @@ export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/sl
               <p className="font-semibold leading-tight text-tertiary">
                 {shop?.name ?? "Zenith Repair"}
               </p>
-              <p className="text-xs text-muted-foreground">{shop?.ownerContact}</p>
+              <p className="text-xs text-muted-foreground">{shop?.contact}</p>
+              {shop?.address && <p className="text-xs text-muted-foreground">{shop.address}</p>}
             </div>
           </div>
           <p className="text-right text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -123,6 +126,13 @@ export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/sl
           <p className="text-sm font-medium text-tertiary">Scan to check your repair status</p>
           <p className="break-all text-center text-[11px] text-muted-foreground">{url}</p>
         </div>
+
+        {/* The owner's note, set on the Account page (ticket 34). */}
+        {shop?.slipNote && (
+          <p className="whitespace-pre-line border-t border-dashed border-border pt-4 text-xs text-muted-foreground">
+            {shop.slipNote}
+          </p>
+        )}
       </Card>
     </main>
   );

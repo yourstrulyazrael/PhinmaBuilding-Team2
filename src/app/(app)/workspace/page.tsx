@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Bell, Clock, Settings2, UserCog, UsersRound } from "lucide-react";
+import { ArrowLeft, Bell, Clock, UserCog, UsersRound } from "lucide-react";
 import { formatDate, todayInManila, type Job } from "@/lib/jobs";
 import { attentionAlerts, isLate, overdueAndAwaiting } from "@/lib/workspace";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { cn } from "@/lib/utils";
-import { ShopSettings } from "./shop-settings";
 import { lowStock, type Part } from "@/lib/inventory";
 import { StaffTab } from "./staff-tab";
 import { CustomersTab } from "./customers-tab";
@@ -20,12 +19,11 @@ const TABS = [
   { key: "customers", label: "Customers", icon: UsersRound, ownerOnly: false },
   { key: "notifications", label: "Notifications", icon: Bell, ownerOnly: false },
   { key: "staff", label: "Staff", icon: UserCog, ownerOnly: true },
-  { key: "settings", label: "Shop settings", icon: Settings2, ownerOnly: false },
 ] as const;
 
 /**
- * The technician's Workspace: customers, notifications,
- * staff (owner only) and shop settings in one place. Everything is worked out from their own
+ * The technician's Workspace: customers, notifications and staff
+ * (owner only). Settings are on Account. Everything is worked out from their own
  * jobs (src/lib/workspace.ts), so there are no extra tables.
  */
 export default async function WorkspacePage({ searchParams }: PageProps<"/workspace">) {
@@ -34,12 +32,11 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
   const user = await getUser();
   if (!user) redirect("/login");
 
-  // RLS: only ever this shop's jobs and members, and this person's own
-  // details plus their shopmates' names.
-  const [{ data, error }, { data: technician }, shop, { data: members }, { data: people }, { data: partRows }] =
+  // RLS: only ever this shop's jobs, members and parts, and
+  // their shopmates' names.
+  const [{ data, error }, shop, { data: members }, { data: people }, { data: partRows }] =
     await Promise.all([
     supabase.from("jobs").select("*"),
-    supabase.from("technicians").select("display_name, contact_number").eq("id", user.id).maybeSingle(),
     getShop(),
     supabase.from("shop_members").select("*").order("joined_at"),
     supabase.from("technicians").select("id, display_name, contact_number"),
@@ -50,6 +47,8 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
   const today = todayInManila();
 
   const { tab: tabParam } = await searchParams;
+  // Shop settings moved to Account (ticket 34).
+  if (tabParam === "settings") redirect("/account");
   const tabs = TABS.filter((t) => !t.ownerOnly || shop?.role === "owner");
   const tab = tabs.find((t) => t.key === tabParam)?.key ?? "customers";
   const alertCount = attentionAlerts(jobs, today).length;
@@ -68,7 +67,7 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
         </p>
         <h1 className="text-2xl font-semibold tracking-tight text-tertiary md:text-3xl">Workspace tools</h1>
         <p className="text-sm text-muted-foreground">
-          Customers, reminders, staff and settings, all in one place.
+          Customers, reminders and staff, all in one place.
         </p>
       </header>
 
@@ -102,13 +101,6 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
           me={user.id}
           lowStock={lowStock((partRows ?? []) as Part[])}
           names={Object.fromEntries((people ?? []).map((p) => [p.id, p.display_name]))}
-        />
-      )}
-      {tab === "settings" && shop && (
-        <ShopSettings
-          shop={shop}
-          displayName={technician?.display_name ?? ""}
-          contactNumber={technician?.contact_number ?? ""}
         />
       )}
       {tab === "staff" && (

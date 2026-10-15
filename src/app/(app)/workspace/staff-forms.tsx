@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { addStaff, changePassword, type AddStaffState, type PasswordState } from "./actions";
+import { addStaff, type AddStaffState } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -62,33 +62,3 @@ export function AddStaffForm() {
   );
 }
 
-// Everyone can change their own password.
-export function ChangePasswordForm() {
-  const [state, formAction, pending] = useActionState<PasswordState, FormData>(changePassword, {});
-
-  return (
-    <form key={state.saved ? "saved" : "form"} action={formAction} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="new_password">New password</Label>
-        <Input id="new_password" name="new_password" type="password" autoComplete="new-password" minLength={8} required />
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="confirm_password">Type it again</Label>
-        <Input id="confirm_password" name="confirm_password" type="password" autoComplete="new-password" minLength={8} required />
-      </div>
-      {state.error && (
-        <p role="alert" className="text-sm text-destructive">
-          {state.error}
-        </p>
-      )}
-      {state.saved && !pending && (
-        <p role="status" className="text-sm text-muted-foreground">
-          Password changed.
-        </p>
-      )}
-      <Button type="submit" variant="secondary" disabled={pending} className="w-fit">
-        {pending ? "Saving…" : "Change password"}
-      </Button>
-    </form>
-  );
-}

@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 export type SlipImageData = {
   shopName: string;
   shopContact: string;
+  shopAddress: string; // "" when the shop has none
+  note: string; // the owner's slip note (ticket 34); "" for none
   rows: [label: string, value: string][];
   url: string;
   fileName: string;
@@ -77,11 +79,15 @@ async function drawSlip(slip: SlipImageData): Promise<Blob> {
   }));
   scratch.font = `11px ${FONT}`;
   const urlLines = wrap(scratch, slip.url, WIDTH - PAD * 2, true);
+  scratch.font = `12px ${FONT}`;
+  const addressLines = slip.shopAddress ? wrap(scratch, slip.shopAddress, WIDTH - PAD * 2 - 48 - 80) : [];
+  const noteLines = slip.note ? slip.note.split("\n").flatMap((p) => wrap(scratch, p, WIDTH - PAD * 2)) : [];
 
-  const headerHeight = 76;
+  const headerHeight = 76 + addressLines.length * 16;
   const rowsHeight = rows.reduce((h, r) => h + r.lines.length * 21 + 8, 0);
   const qrBlock = 24 + qrSize + 34 + urlLines.length * 15;
-  const height = PAD + headerHeight + 16 + rowsHeight + 8 + qrBlock + PAD;
+  const noteBlock = noteLines.length ? 20 + 16 + noteLines.length * 16 : 0;
+  const height = PAD + headerHeight + 16 + rowsHeight + 8 + qrBlock + noteBlock + PAD;
 
   const canvas = document.createElement("canvas");
   canvas.width = WIDTH * SCALE;
@@ -103,6 +109,7 @@ async function drawSlip(slip: SlipImageData): Promise<Blob> {
   ctx.fillStyle = GREY;
   ctx.font = `12px ${FONT}`;
   ctx.fillText(slip.shopContact, PAD + 48, y + 21);
+  addressLines.forEach((line, i) => ctx.fillText(line, PAD + 48, y + 37 + i * 16));
   ctx.font = `600 10px ${FONT}`;
   ctx.textAlign = "right";
   ctx.fillText("CLAIM SLIP", WIDTH - PAD, y + 4);
@@ -136,6 +143,17 @@ async function drawSlip(slip: SlipImageData): Promise<Blob> {
   ctx.fillStyle = GREY;
   ctx.font = `11px ${FONT}`;
   urlLines.forEach((line, i) => ctx.fillText(line, WIDTH / 2, y + i * 15));
+  ctx.textAlign = "left";
+
+  // The owner's note (ticket 34), under a last dashed line.
+  if (noteLines.length) {
+    y += urlLines.length * 15 + 20;
+    dashedLine(ctx, y);
+    y += 16;
+    ctx.fillStyle = GREY;
+    ctx.font = `12px ${FONT}`;
+    noteLines.forEach((line, i) => ctx.fillText(line, PAD, y + i * 16));
+  }
 
   return new Promise((resolve, reject) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Could not make image"))), "image/png"),
