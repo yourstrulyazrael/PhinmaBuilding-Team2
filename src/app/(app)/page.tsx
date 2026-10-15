@@ -34,11 +34,13 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
   // RLS means this only ever returns jobs from the signed-in person's shop,
   // and only their shopmates' names. All at once; the shop and the
   // person's details are shared with the layout (no extra trip).
-  const [{ data, error }, shop, names, technician] = await Promise.all([
+  const [{ data, error }, shop, names, technician, { data: memberRows }] = await Promise.all([
     supabase.from("jobs").select("*"),
     getShop(),
     getNames(),
     getMe(),
+    // The people to filter by (ticket 61): the shop's current members.
+    supabase.from("shop_members").select("*").order("joined_at"),
   ]);
   // The layout already sends anyone without a shop to Set up; this is a
   // safety net in case that ever changes.
@@ -51,6 +53,16 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
   const tab = TABS.find((t) => t.key === params.tab)?.key ?? "mine";
   const q = typeof params.q === "string" ? params.q.trim().slice(0, 100) : "";
   const sort = parseSort(params.sort);
+  // Only one person's repairs (ticket 61); ignored on My jobs, which is
+  // already just yours. Anything not in the list counts as "all staff".
+  const staffOptions = (memberRows ?? [])
+    .filter((m) => !m.removed_at)
+    .map((m) => ({
+      id: m.technician_id as string,
+      name: m.technician_id === user.id ? `${names[m.technician_id] ?? "You"} (you)` : (names[m.technician_id] ?? "Someone"),
+    }));
+  const staff =
+    typeof params.staff === "string" && staffOptions.some((p) => p.id === params.staff) ? params.staff : "";
   // Set by cancelRepair after a repair is cancelled (ticket 51).
   const justCancelled = typeof params.cancelled === "string" ? params.cancelled.slice(0, 100) : "";
 
@@ -72,7 +84,11 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
     [...lateJobs, ...dueTodayJobs].map((j) => j.customer_phone.replace(/\D/g, "") || j.id),
   ).size;
 
-  const matches = sortJobs(searchJobs(jobs, q), sort, names);
+  const matches = sortJobs(
+    searchJobs(jobs, q).filter((j) => !staff || tab === "mine" || j.handled_by === staff),
+    sort,
+    names,
+  );
   const listed = {
     mine: matches.filter((j) => !isFinished(j.status) && j.handled_by === user.id),
     all: matches.filter((j) => !isFinished(j.status)),
@@ -83,12 +99,13 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
   // Picked up and cancelled jobs (only yours, on My jobs).
   const done = matches.filter((j) => isFinished(j.status) && (tab !== "mine" || j.handled_by === user.id));
 
-  // Keeps the search and sort when switching tabs.
+  // Keeps the search, sort and staff filter when switching tabs.
   function tabHref(key: (typeof TABS)[number]["key"], keepSearch = true) {
     const query = new URLSearchParams();
     if (key !== "mine") query.set("tab", key);
     if (q && keepSearch) query.set("q", q);
     if (sort !== "promised") query.set("sort", sort);
+    if (staff) query.set("staff", staff);
     const s = query.toString();
     return s ? `/?${s}` : "/";
   }
@@ -148,7 +165,7 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
           </p>
         </div>
 
-        <JobSearch q={q} sort={sort} tab={tab} />
+        <JobSearch q={q} sort={sort} tab={tab} staff={staff} staffOptions={staffOptions} />
 
         <nav className="flex gap-1 overflow-x-auto border-b border-border px-4 pt-4 md:px-6" aria-label="Filter repair jobs">
           {TABS.map((t) => (

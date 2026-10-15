@@ -3,15 +3,17 @@
 import Form from "next/form";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowUpDown, Search, X } from "lucide-react";
+import { ArrowUpDown, Search, UserRound, X } from "lucide-react";
 import { SORTS, type Sort } from "@/lib/jobs";
 import { Input } from "@/components/ui/input";
 
 /**
- * Search box and sort menu for the Jobs list. The search runs as you
- * type, from the first letter: a moment after you stop typing, ?q=… is
- * put in the page address and the server filters the list. Back and
- * refresh keep the search. The sort menu applies straight away too.
+ * Search box, staff filter and sort menu for the Jobs list. The search
+ * runs as you type, from the first letter: a moment after you stop
+ * typing, ?q=… is put in the page address and the server filters the
+ * list. Back and refresh keep the search. The staff filter (ticket 61)
+ * and the sort apply straight away too. My jobs has no staff filter: it
+ * is already just yours.
  */
 const TYPING_PAUSE_MS = 250;
 
@@ -19,10 +21,14 @@ export function JobSearch({
   q,
   sort,
   tab,
+  staff,
+  staffOptions,
 }: {
   q: string;
   sort: Sort;
   tab: string;
+  staff: string; // a technician id, or "" for everyone
+  staffOptions: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const [value, setValue] = useState(q);
@@ -39,13 +45,15 @@ export function JobSearch({
   useEffect(() => {
     const next = value.trim();
     if (next === q) return;
-    const timer = window.setTimeout(() => router.replace(href(tab, sort, next), { scroll: false }), TYPING_PAUSE_MS);
+    const timer = window.setTimeout(() => router.replace(href(tab, sort, next, staff), { scroll: false }), TYPING_PAUSE_MS);
     return () => window.clearTimeout(timer);
-  }, [value, q, tab, sort, router]);
+  }, [value, q, tab, sort, staff, router]);
 
   return (
     <Form action="/" scroll={false} className="flex flex-col gap-2 px-4 pt-4 sm:flex-row md:px-6" role="search">
       {tab !== "mine" && <input type="hidden" name="tab" value={tab} />}
+      {/* Kept when on My jobs, so it's still there on the other tabs. */}
+      {tab === "mine" && staff && <input type="hidden" name="staff" value={staff} />}
 
       <div className="relative flex-1">
         <Search
@@ -74,6 +82,28 @@ export function JobSearch({
           </button>
         )}
       </div>
+
+      {tab !== "mine" && staffOptions.length > 1 && (
+        <label className="relative flex items-center sm:w-48">
+          <span className="sr-only">Handled by</span>
+          <UserRound className="pointer-events-none absolute left-3 size-4 text-muted-foreground" aria-hidden />
+          {/* Picking someone shows only their repairs, straight away. */}
+          <select
+            name="staff"
+            defaultValue={staff}
+            key={staff}
+            onChange={(e) => e.currentTarget.form?.requestSubmit()}
+            className="h-10 w-full appearance-none rounded-[var(--radius)] border border-input bg-card pl-9 pr-3 text-base shadow-xs transition-[border-color,box-shadow] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/15 md:text-sm"
+          >
+            <option value="">All staff</option>
+            {staffOptions.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <label className="relative flex items-center sm:w-48">
         <span className="sr-only">Sort by</span>
@@ -106,12 +136,14 @@ export function JobSearch({
   );
 }
 
-// The Jobs list address for a tab, sort and search; defaults are left out.
-function href(tab: string, sort: Sort, q: string) {
+// The Jobs list address for a tab, sort, search and staff filter;
+// defaults are left out.
+function href(tab: string, sort: Sort, q: string, staff: string) {
   const params = new URLSearchParams();
   if (tab !== "mine") params.set("tab", tab);
   if (sort !== SORTS[0].value) params.set("sort", sort);
   if (q) params.set("q", q);
+  if (staff) params.set("staff", staff);
   const query = params.toString();
   return query ? `/?${query}` : "/";
 }
