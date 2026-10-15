@@ -171,7 +171,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
             <dd>{job.quoted_by === user.id ? "You" : nameOf(job.quoted_by, viewer)}</dd>
             <dt className="text-muted-foreground">Customer</dt>
             <dd className="font-medium">{job.customer_name}</dd>
-            <dt className="text-muted-foreground">Phone</dt>
+            <dt className="text-muted-foreground">Contact No.</dt>
             <dd>
               <a href={`tel:${job.customer_phone.replace(/[^\d+]/g, "")}`} className="inline-flex items-center gap-1.5 font-medium text-primary underline-offset-4 hover:underline">
                 <Phone className="size-3.5" aria-hidden />

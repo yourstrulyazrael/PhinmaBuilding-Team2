@@ -15,7 +15,15 @@ export function NewJobForm({ today }: { today: string }) {
       <fieldset className="grid gap-4 sm:grid-cols-2">
         <legend className="mb-3 text-sm font-semibold text-tertiary">Customer</legend>
         <Field label="Customer name" name="customer_name" maxLength={100} autoComplete="off" />
-        <Field label="Customer phone" name="customer_phone" type="tel" maxLength={40} autoComplete="off" />
+        <Field
+          label="Customer Contact No."
+          name="customer_phone"
+          type="tel"
+          inputMode="tel"
+          maxLength={40}
+          autoComplete="off"
+          placeholder="e.g. 0917 123 4567"
+        />
       </fieldset>
 
       <fieldset className="grid gap-4 sm:grid-cols-2">

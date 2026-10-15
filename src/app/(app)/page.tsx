@@ -142,7 +142,7 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
           </p>
         </div>
 
-        <JobSearch q={q} sort={sort} tab={tab} clearHref={tabHref(tab, false)} />
+        <JobSearch q={q} sort={sort} tab={tab} />
 
         <nav className="flex gap-1 overflow-x-auto border-b border-border px-4 pt-4 md:px-6" aria-label="Filter repair jobs">
           {TABS.map((t) => (
