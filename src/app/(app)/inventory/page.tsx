@@ -1,9 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AlertTriangle, ArrowDownUp, History, PackagePlus, TrendingUp } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getMyShop } from "@/lib/shop";
-import { loadNames } from "@/lib/people";
 import { formatPeso, todayInManila } from "@/lib/jobs";
 import { periodFrom } from "@/lib/periods";
 import {
@@ -21,6 +18,7 @@ import { PeriodPicker } from "@/components/period-picker";
 import { cn } from "@/lib/utils";
 import { AddPartForm, PartActions } from "./part-forms";
 import { ImportExport } from "./import-export";
+import { getShop, getSupabase, getUser, getNames } from "@/lib/session";
 
 /**
  * Inventory (tickets 27–29), in the top bar for owner and staff.
@@ -29,12 +27,11 @@ import { ImportExport } from "./import-export";
  * enforces both (supabase/sql/013-inventory.sql).
  */
 export default async function InventoryPage({ searchParams }: PageProps<"/inventory">) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Shared with the layout: fetched once per page load (lib/session.ts).
+  const supabase = await getSupabase();
+  const user = await getUser();
   if (!user) redirect("/login");
-  const shop = await getMyShop(supabase, user.id);
+  const shop = await getShop();
   const isOwner = shop?.role === "owner";
   const period = periodFrom((await searchParams).period, todayInManila(), "30d");
 
@@ -45,7 +42,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/invent
     supabase.from("part_costs").select("part_id, cost"),
     supabase.from("stock_movements").select("*").order("created_at", { ascending: false }).limit(30),
     supabase.from("job_parts").select("*"),
-    loadNames(supabase),
+    getNames(),
   ]);
   const parts = (partRows ?? []) as Part[];
   const costs = new Map((costRows ?? []).map((c) => [c.part_id as string, Number(c.cost)]));

@@ -43,11 +43,13 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  // getUser() asks Supabase to confirm the login is real, and refreshes
-  // the cookie if it is about to expire.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims() checks the login is genuine (its signature) and refreshes
+  // the cookie if it is about to expire. With Supabase's newer signing
+  // keys it checks right here, without a round trip to Supabase, which
+  // makes every click faster; with older keys it asks Supabase, as
+  // getUser() did. Pages still confirm the user with getUser().
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims?.sub ? data.claims : null;
 
   const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PATHS.some((p) => path.startsWith(p));

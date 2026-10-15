@@ -2,15 +2,13 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { LogoMark } from "@/components/logo";
-import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatPeso, type Job } from "@/lib/jobs";
 import { qrSvg, trackingUrl } from "@/lib/tracking-url";
-import { getMyShop } from "@/lib/shop";
-import { loadNames } from "@/lib/people";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PrintButton } from "./print-button";
 import { SaveImageButton } from "./save-image-button";
+import { getShop, getSupabase, getUser, getNames } from "@/lib/session";
 
 /**
  * The claim slip the customer takes home. It deliberately leaves out
@@ -19,10 +17,9 @@ import { SaveImageButton } from "./save-image-button";
  */
 export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/slip">) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Shared with the layout: fetched once per page load (lib/session.ts).
+  const supabase = await getSupabase();
+  const user = await getUser();
   if (!user) redirect("/login");
 
   // RLS: only jobs from this person's shop load, so any other
@@ -30,8 +27,8 @@ export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/sl
   // the owner's contact, not whoever happens to be signed in.
   const [{ data: job }, shop, names] = await Promise.all([
     supabase.from("jobs").select("*").eq("id", id).maybeSingle<Job>(),
-    getMyShop(supabase, user.id),
-    loadNames(supabase),
+    getShop(),
+    getNames(),
   ]);
   if (!job) notFound();
   // "Your technician": just a name, never their number (ticket 13).

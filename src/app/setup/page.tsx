@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
 import { Logo } from "@/components/logo";
-import { createClient } from "@/lib/supabase/server";
-import { getMyShop } from "@/lib/shop";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SetupForm } from "./setup-form";
+import { getShop, getSupabase, getUser } from "@/lib/session";
 
 /**
  * Shown once, after signing up: everyone must be in a shop before they
@@ -12,14 +11,13 @@ import { SetupForm } from "./setup-form";
  * (ticket 22). Sits outside the (app) folder, so there is no sidebar.
  */
 export default async function SetupPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Shared with the layout: fetched once per page load (lib/session.ts).
+  const supabase = await getSupabase();
+  const user = await getUser();
   if (!user) redirect("/login");
 
   // Already in a shop: nothing to set up.
-  if (await getMyShop(supabase, user.id)) redirect("/");
+  if (await getShop()) redirect("/");
 
   const { data: technician } = await supabase
     .from("technicians")

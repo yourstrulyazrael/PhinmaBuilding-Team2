@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LogOut } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getMyShop } from "@/lib/shop";
 import { Logo } from "@/components/logo";
 import { RevealLabel, revealItem } from "@/components/reveal-label";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { signOut } from "../login/actions";
 import { NavLinks } from "./nav-links";
+import { getMe, getShop, getUser } from "@/lib/session";
 
 /**
  * The signed-in technician's shell: one top bar on every screen size,
@@ -15,21 +14,14 @@ import { NavLinks } from "./nav-links";
  * inside the (app) folder sits under it.
  */
 export default async function AppLayout({ children }: LayoutProps<"/">) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Fetched once per page load and shared with the page (lib/session.ts);
+  // the shop and the person's details load at the same time.
+  const user = await getUser();
   if (!user) redirect("/login");
+  const [shop, technician] = await Promise.all([getShop(), getMe()]);
 
   // Every page in here needs a shop: jobs belong to one.
-  const shop = await getMyShop(supabase, user.id);
   if (!shop) redirect("/setup");
-
-  const { data: technician } = await supabase
-    .from("technicians")
-    .select("display_name, contact_number")
-    .eq("id", user.id)
-    .maybeSingle();
 
   const name = technician?.display_name ?? "Technician";
 

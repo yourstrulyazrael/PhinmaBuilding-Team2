@@ -1,19 +1,18 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft, Bell, Clock, Settings2, UserCog, UsersRound } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
 import { formatDate, todayInManila, type Job } from "@/lib/jobs";
 import { attentionAlerts, isLate, overdueAndAwaiting } from "@/lib/workspace";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { cn } from "@/lib/utils";
-import { getMyShop } from "@/lib/shop";
 import { ShopSettings } from "./shop-settings";
 import { lowStock, type Part } from "@/lib/inventory";
 import { StaffTab } from "./staff-tab";
 import { CustomersTab } from "./customers-tab";
 import { NotificationsTab } from "./notifications-tab";
+import { getShop, getSupabase, getUser } from "@/lib/session";
 
 // ownerOnly tabs are left out entirely for staff: not shown, and typing
 // the address falls back to the first tab.
@@ -30,10 +29,9 @@ const TABS = [
  * jobs (src/lib/workspace.ts), so there are no extra tables.
  */
 export default async function WorkspacePage({ searchParams }: PageProps<"/workspace">) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Shared with the layout: fetched once per page load (lib/session.ts).
+  const supabase = await getSupabase();
+  const user = await getUser();
   if (!user) redirect("/login");
 
   // RLS: only ever this shop's jobs and members, and this person's own
@@ -42,7 +40,7 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
     await Promise.all([
     supabase.from("jobs").select("*"),
     supabase.from("technicians").select("display_name, contact_number").eq("id", user.id).maybeSingle(),
-    getMyShop(supabase, user.id),
+    getShop(),
     supabase.from("shop_members").select("*").order("joined_at"),
     supabase.from("technicians").select("id, display_name, contact_number"),
     supabase.from("parts").select("*"),

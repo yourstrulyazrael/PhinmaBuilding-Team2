@@ -1,24 +1,15 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { todayInManila } from "@/lib/jobs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { NewJobForm } from "./new-job-form";
+import { getShop, getUser } from "@/lib/session";
 
 export default async function NewJobPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
   // A job must belong to a shop (the database insists), so anyone
-  // without one is sent to Set up first.
-  const { data: technician } = await supabase
-    .from("technicians")
-    .select("id")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (!technician) redirect("/setup");
+  // without one is sent to Set up first. Shared with the layout, so this
+  // costs no extra trip to the database (lib/session.ts).
+  if (!(await getUser())) redirect("/login");
+  if (!(await getShop())) redirect("/setup");
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col px-4 py-6 md:py-10">

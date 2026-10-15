@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AlarmClock, ArrowLeft, ExternalLink, Lock, Package, Phone, QrCode } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatPeso, isFinished, paymentLabel, todayInManila, type Job } from "@/lib/jobs";
 import { currentPrice, isLate } from "@/lib/workspace";
 import { buttonVariants } from "@/components/ui/button";
@@ -11,28 +10,27 @@ import { CopyMessageButton } from "@/components/copy-message-button";
 import { trackingUrl } from "@/lib/tracking-url";
 import { delayMessage, updateMessage } from "@/lib/update-message";
 import { JobDetailsForm } from "./job-details-form";
-import { getMyShop } from "@/lib/shop";
-import { canChange, loadNames, nameOf, type Viewer } from "@/lib/people";
+import { canChange, nameOf, type Viewer } from "@/lib/people";
 import { HandledBy } from "@/components/handled-by";
 import { StatusBadge } from "@/components/status-badge";
 import { CancelRequest } from "./cancel-request";
 import { PartsUsed } from "./parts-used";
+import { getShop, getSupabase, getUser, getNames } from "@/lib/session";
 
 // The technician's view of one repair job. Unlike the claim slip and
 // tracking page, this screen shows the customer's name and phone.
 export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Shared with the layout: fetched once per page load (lib/session.ts).
+  const supabase = await getSupabase();
+  const user = await getUser();
   if (!user) redirect("/login");
 
   // RLS: a job from another shop returns nothing -> "not found".
   const [{ data: job }, shop, names, { data: usedRows }, { data: partRows }] = await Promise.all([
     supabase.from("jobs").select("*").eq("id", id).maybeSingle<Job>(),
-    getMyShop(supabase, user.id),
-    loadNames(supabase),
+    getShop(),
+    getNames(),
     // Parts used on this repair, and the catalog to pick from (ticket 28).
     supabase.from("job_parts").select("*").eq("job_id", id).order("created_at"),
     supabase.from("parts").select("*").order("name"),

@@ -1,6 +1,4 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { getMyShop } from "@/lib/shop";
 import { formatDate, formatPeso, todayInManila, type Job } from "@/lib/jobs";
 import { buildReport } from "@/lib/report";
 import { partsMoney, type JobPart } from "@/lib/inventory";
@@ -11,6 +9,7 @@ import { TrendCharts } from "@/components/trend-charts";
 import { Card } from "@/components/ui/card";
 import { LogoMark } from "@/components/logo";
 import { ReportToolbar } from "./report-toolbar";
+import { getShop, getSupabase, getUser } from "@/lib/session";
 
 /**
  * Reports (tickets 25–26), its own page in the top bar, owner only: it
@@ -19,13 +18,12 @@ import { ReportToolbar } from "./report-toolbar";
  * builds a workbook from the same numbers.
  */
 export default async function ReportsPage({ searchParams }: PageProps<"/reports">) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Shared with the layout: fetched once per page load (lib/session.ts).
+  const supabase = await getSupabase();
+  const user = await getUser();
   if (!user) redirect("/login");
 
-  const shop = await getMyShop(supabase, user.id);
+  const shop = await getShop();
   if (shop?.role !== "owner") redirect("/");
 
   const period = periodFrom((await searchParams).period, todayInManila(), "30d", true);

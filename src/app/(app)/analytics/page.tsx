@@ -1,7 +1,5 @@
 import { redirect } from "next/navigation";
 import { ChartColumn, ChartLine } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getMyShop } from "@/lib/shop";
 import { formatPeso, todayInManila, type Job } from "@/lib/jobs";
 import { periodFrom } from "@/lib/periods";
 import { analytics, trend } from "@/lib/workspace";
@@ -10,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PeriodPicker } from "@/components/period-picker";
 import { TrendCharts } from "@/components/trend-charts";
 import { cn } from "@/lib/utils";
+import { getShop, getSupabase, getUser } from "@/lib/session";
 
 /**
  * Analytics (tickets 10 and 26), its own page in the top bar, owner
@@ -17,12 +16,11 @@ import { cn } from "@/lib/utils";
  * every number and chart follows the chosen period.
  */
 export default async function AnalyticsPage({ searchParams }: PageProps<"/analytics">) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Shared with the layout: fetched once per page load (lib/session.ts).
+  const supabase = await getSupabase();
+  const user = await getUser();
   if (!user) redirect("/login");
-  const shop = await getMyShop(supabase, user.id);
+  const shop = await getShop();
   if (shop?.role !== "owner") redirect("/");
 
   const today = todayInManila();

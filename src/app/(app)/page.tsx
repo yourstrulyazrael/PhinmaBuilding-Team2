@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AlarmClock, CalendarDays, CircleCheck, Clock, Plus, QrCode, Smartphone, Wrench } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatPeso, isFinished, parseSort, searchJobs, sortJobs, todayInManila, type Job } from "@/lib/jobs";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,10 +8,10 @@ import { StatusPicker } from "@/components/status-picker";
 import { cn } from "@/lib/utils";
 import { currentPrice, isLate } from "@/lib/workspace";
 import { JobSearch } from "./job-search";
-import { getMyShop } from "@/lib/shop";
-import { canChange, loadNames, type Viewer } from "@/lib/people";
+import { canChange, type Viewer } from "@/lib/people";
 import { HandledBy } from "@/components/handled-by";
 import { StatusBadge } from "@/components/status-badge";
+import { getMe, getNames, getShop, getSupabase, getUser } from "@/lib/session";
 
 // "My jobs" (the phones you handle) comes first and is the default
 // (ticket 13); "All jobs" is the whole shop.
@@ -26,29 +25,23 @@ const TABS = [
 // The technician's landing page: greeting, three counts, and the
 // Repair jobs list.
 export default async function Overview({ searchParams }: PageProps<"/">) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Shared with the layout: fetched once per page load (lib/session.ts).
+  const supabase = await getSupabase();
+  const user = await getUser();
   if (!user) redirect("/login");
 
-  const { data: technician } = await supabase
-    .from("technicians")
-    .select("display_name")
-    .eq("id", user.id)
-    .maybeSingle();
-
+  // RLS means this only ever returns jobs from the signed-in person's shop,
+  // and only their shopmates' names. All at once; the shop and the
+  // person's details are shared with the layout (no extra trip).
+  const [{ data, error }, shop, names, technician] = await Promise.all([
+    supabase.from("jobs").select("*"),
+    getShop(),
+    getNames(),
+    getMe(),
+  ]);
   // The layout already sends anyone without a shop to Set up; this is a
   // safety net in case that ever changes.
   if (!technician) redirect("/setup");
-
-  // RLS means this only ever returns jobs from the signed-in person's shop,
-  // and only their shopmates' names.
-  const [{ data, error }, shop, names] = await Promise.all([
-    supabase.from("jobs").select("*"),
-    getMyShop(supabase, user.id),
-    loadNames(supabase),
-  ]);
   const viewer: Viewer = { id: user.id, isOwner: shop?.role === "owner", names };
   if (error) throw error;
   const jobs = (data ?? []) as Job[];
