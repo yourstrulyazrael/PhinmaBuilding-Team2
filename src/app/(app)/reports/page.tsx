@@ -41,7 +41,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
   const points = trend(jobs, period);
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-6 md:px-8 md:py-10 print:max-w-none print:gap-3 print:p-0">
+    <main className="mx-auto flex w-full max-w-[120rem] flex-col gap-4 px-4 py-6 md:px-8 md:py-10 2xl:px-12 print:max-w-none print:gap-3 print:p-0">
       {/* Landscape paper for the wide jobs table. Only on this page. */}
       <style>{"@page { size: A4 landscape; margin: 12mm; }"}</style>
 

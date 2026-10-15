@@ -37,7 +37,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps<"/analyt
   const maxDevice = Math.max(1, ...a.topDevices.map((d) => d.count));
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-6 md:px-8 md:py-10">
+    <main className="mx-auto flex w-full max-w-[120rem] flex-col gap-4 px-4 py-6 md:px-8 md:py-10 2xl:px-12">
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold tracking-tight text-tertiary md:text-3xl">Analytics</h1>
         <p className="text-sm text-muted-foreground">{period.label}, in Manila time.</p>

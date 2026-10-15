@@ -55,7 +55,7 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
   const panel = overdueAndAwaiting(jobs, today);
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-6 md:px-8 md:py-10">
+    <main className="mx-auto flex w-full max-w-[120rem] flex-col gap-4 px-4 py-6 md:px-8 md:py-10 2xl:px-12">
       <Link href="/" className={buttonVariants({ variant: "ghost", size: "sm", className: "w-fit" })}>
         <ArrowLeft className="mr-1.5 size-4" aria-hidden />
         Repair desk

@@ -109,3 +109,19 @@ body {
     transform: translateY(-4px) scale(0.98);
   }
 }
+
+/* Big screens: scale the whole app up a little, so text, buttons and
+   spacing aren't tiny on a 1920×1080 monitor. Everything is sized in
+   rem, so this one setting grows it all in proportion. Phones and
+   laptops are unchanged, and printing (claim slips, reports) keeps
+   normal sizes. */
+@media screen and (min-width: 1440px) {
+  html {
+    font-size: 106.25%; /* 17px */
+  }
+}
+@media screen and (min-width: 1800px) {
+  html {
+    font-size: 112.5%; /* 18px */
+  }
+}

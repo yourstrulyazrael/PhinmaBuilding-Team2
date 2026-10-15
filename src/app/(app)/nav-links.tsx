@@ -37,7 +37,7 @@ export function NavLinks({ isOwner }: { isOwner: boolean }) {
               active ? "bg-muted text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
-            <Icon className="size-4 shrink-0" aria-hidden />
+            <Icon className="size-4 shrink-0 md:size-5" aria-hidden />
             <RevealLabel>{label}</RevealLabel>
           </Link>
         );

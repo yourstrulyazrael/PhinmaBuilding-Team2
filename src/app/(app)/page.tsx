@@ -91,7 +91,7 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 md:px-8 md:py-10">
+    <main className="mx-auto flex w-full max-w-[120rem] flex-col gap-6 px-4 py-6 md:px-8 md:py-10 2xl:px-12">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">

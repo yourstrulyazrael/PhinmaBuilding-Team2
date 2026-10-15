@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
  * readers still read it. On a phone (no hover) only the icon shows.
  */
 export const revealItem =
-  "group/reveal flex h-9 shrink-0 items-center rounded-[var(--radius)] px-2 text-sm sm:px-2.5 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  "group/reveal flex h-9 shrink-0 items-center rounded-[var(--radius)] px-2 text-sm font-medium sm:px-2.5 md:h-10 md:px-3 md:text-[0.95rem] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 export function RevealLabel({ children, className }: { children: React.ReactNode; className?: string }) {
   return (

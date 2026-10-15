@@ -45,7 +45,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
   const late = isLate(job, todayInManila());
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 md:px-8 md:py-10">
+    <main className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 py-6 md:px-8 md:py-10">
       <Link href="/" className={buttonVariants({ variant: "ghost", size: "sm", className: "w-fit" })}>
         <ArrowLeft className="mr-1.5 size-4" aria-hidden />
         Repair jobs

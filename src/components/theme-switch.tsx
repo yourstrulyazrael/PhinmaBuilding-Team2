@@ -80,7 +80,7 @@ export function ThemeSwitch({ className }: { className?: string }) {
       aria-label={`Theme: ${label}. Switch to ${next.label}`}
       className={cn(revealItem, "text-muted-foreground hover:bg-muted hover:text-foreground", className)}
     >
-      <Icon className="size-4 shrink-0" aria-hidden />
+      <Icon className="size-4 shrink-0 md:size-5" aria-hidden />
       <RevealLabel>Theme: {label}</RevealLabel>
     </button>
   );

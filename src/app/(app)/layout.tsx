@@ -36,10 +36,12 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex flex-1 flex-col">
       <header className="sticky top-0 z-20 border-b border-border bg-card/90 backdrop-blur print:hidden">
-        <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-2 px-4 md:gap-4 md:px-8">
+        {/* Full width: logo and pages hug the left edge, theme and sign
+            out the right edge, at any screen size. */}
+        <div className="flex h-14 w-full items-center gap-2 px-4 md:h-16 md:gap-4 md:px-8 2xl:px-12">
           <Link href="/" aria-label="Zenith Repair: Overview" className="shrink-0 rounded-[var(--radius)]">
             {/* On a narrow phone, just the logo: the buttons need the room. */}
-            <Logo size={32} nameClassName="hidden sm:inline" />
+            <Logo size={36} nameClassName="hidden sm:inline" />
           </Link>
 
           <NavLinks isOwner={shop.role === "owner"} />
@@ -70,7 +72,7 @@ function Avatar({ name, contact }: { name: string; contact?: string }) {
     <span className="group/reveal hidden h-9 items-center px-1 sm:flex" title={name}>
       <span
         aria-hidden
-        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-tertiary text-xs font-semibold text-tertiary-foreground"
+        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-tertiary text-xs font-semibold text-tertiary-foreground md:size-9 md:text-sm"
       >
         {initials || "T"}
       </span>
@@ -86,7 +88,7 @@ function SignOutButton() {
   return (
     <form action={signOut}>
       <button type="submit" className={`${revealItem} text-muted-foreground hover:bg-muted hover:text-foreground`}>
-        <LogOut className="size-4 shrink-0" aria-hidden />
+        <LogOut className="size-4 shrink-0 md:size-5" aria-hidden />
         <RevealLabel>Sign out</RevealLabel>
       </button>
     </form>

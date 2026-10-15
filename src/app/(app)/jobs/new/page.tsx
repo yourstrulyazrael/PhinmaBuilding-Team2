@@ -21,7 +21,7 @@ export default async function NewJobPage() {
   if (!technician) redirect("/setup");
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-col px-4 py-6 md:py-10">
+    <main className="mx-auto flex w-full max-w-3xl flex-col px-4 py-6 md:py-10">
       <Card>
         <CardHeader>
           <CardTitle className="text-tertiary">Add a repair</CardTitle>
