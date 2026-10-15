@@ -42,3 +42,6 @@ next-env.d.ts
 
 # ...but DO commit the template, it has no real values
 !.env.example
+
+# Personal Claude Code settings: each teammate keeps their own
+.claude/settings.local.json
