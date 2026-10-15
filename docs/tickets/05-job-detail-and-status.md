@@ -11,8 +11,9 @@ tracking page after refreshing.
 
 - [x] Tapping a job on the Jobs list opens its Job detail screen
 - [x] All six statuses can be set directly, in any order
-- [x] The status picker on the Jobs list changes a job's status in one
-      tap
+- [x] The status picker on the Jobs list changes a job's status without
+      opening the job (a dropdown: tidier on a phone than six buttons;
+      Job detail has the one-tap buttons)
 - [x] Notes, parts replaced, revised estimate and promised date can be
       edited and saved
 - [x] The revised estimate cannot be negative and can be left empty

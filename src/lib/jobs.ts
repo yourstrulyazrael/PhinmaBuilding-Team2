@@ -74,6 +74,51 @@ export function todayInManila() {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
 }
 
+// Ways the Jobs list can be ordered. The first one is the default.
+export const SORTS = [
+  { value: "promised", label: "Promised date" },
+  { value: "newest", label: "Newest added" },
+  { value: "oldest", label: "Oldest added" },
+  { value: "customer", label: "Customer name" },
+] as const;
+
+export type Sort = (typeof SORTS)[number]["value"];
+
+export function parseSort(value: unknown): Sort {
+  return SORTS.find((s) => s.value === value)?.value ?? "promised";
+}
+
+// Jobs whose device, problem, customer name or phone contain the search
+// words, ignoring upper/lower case. Every word must match somewhere,
+// so "iphone maria" finds Maria's iPhone.
+export function searchJobs(jobs: Job[], query: string) {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return jobs;
+  return jobs.filter((job) => {
+    const text = [job.device, job.problem, job.customer_name, job.customer_phone]
+      .join(" ")
+      .toLowerCase();
+    return words.every((word) => text.includes(word));
+  });
+}
+
+// A sorted copy; the original list is left alone.
+export function sortJobs(jobs: Job[], sort: Sort) {
+  const sorted = [...jobs];
+  switch (sort) {
+    case "newest":
+      return sorted.sort((a, b) => b.created_at.localeCompare(a.created_at));
+    case "oldest":
+      return sorted.sort((a, b) => a.created_at.localeCompare(b.created_at));
+    case "customer":
+      return sorted.sort((a, b) => a.customer_name.localeCompare(b.customer_name, "en", { sensitivity: "base" }));
+    default:
+      return sorted.sort(
+        (a, b) => a.promised_date.localeCompare(b.promised_date) || a.created_at.localeCompare(b.created_at),
+      );
+  }
+}
+
 // Tracking codes are 32 lowercase letters and digits (see
 // supabase/sql/004-tracking-page.sql).
 export function isTrackingCode(code: string) {

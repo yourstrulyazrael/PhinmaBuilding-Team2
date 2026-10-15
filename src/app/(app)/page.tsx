@@ -2,11 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CalendarDays, CircleCheck, Clock, Plus, QrCode, Smartphone, Wrench } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { formatDate, formatPeso, todayInManila, type Job } from "@/lib/jobs";
+import { formatDate, formatPeso, parseSort, searchJobs, sortJobs, todayInManila, type Job } from "@/lib/jobs";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StatusPicker } from "@/components/status-picker";
 import { cn } from "@/lib/utils";
+import { JobSearch } from "./job-search";
 
 const TABS = [
   { key: "all", label: "All jobs" },
@@ -34,23 +35,39 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
   if (!technician) redirect("/details");
 
   // RLS means this only ever returns the signed-in technician's jobs.
-  const { data, error } = await supabase
-    .from("jobs")
-    .select("*")
-    .order("promised_date", { ascending: true })
-    .order("created_at", { ascending: true });
+  const { data, error } = await supabase.from("jobs").select("*");
   if (error) throw error;
   const jobs = (data ?? []) as Job[];
 
+  const params = await searchParams;
+  const tab = TABS.find((t) => t.key === params.tab)?.key ?? "all";
+  const q = typeof params.q === "string" ? params.q.trim().slice(0, 100) : "";
+  const sort = parseSort(params.sort);
+
+  // The summary cards count every job; the list below shows only the
+  // jobs that match the search, in the chosen order.
   const open = jobs.filter((j) => j.status !== "picked_up");
   const waitingOnParts = jobs.filter((j) => j.status === "waiting_for_parts");
   const ready = jobs.filter((j) => j.status === "ready_for_pickup");
-  const done = jobs.filter((j) => j.status === "picked_up");
 
-  const { tab: tabParam } = await searchParams;
-  const tab = TABS.find((t) => t.key === tabParam)?.key ?? "all";
-  const shown = tab === "ready" ? ready : tab === "parts" ? waitingOnParts : open;
-  const tabCounts = { all: open.length, ready: ready.length, parts: waitingOnParts.length };
+  const matches = sortJobs(searchJobs(jobs, q), sort);
+  const listed = {
+    all: matches.filter((j) => j.status !== "picked_up"),
+    ready: matches.filter((j) => j.status === "ready_for_pickup"),
+    parts: matches.filter((j) => j.status === "waiting_for_parts"),
+  };
+  const shown = listed[tab];
+  const done = matches.filter((j) => j.status === "picked_up");
+
+  // Keeps the search and sort when switching tabs.
+  function tabHref(key: (typeof TABS)[number]["key"], keepSearch = true) {
+    const query = new URLSearchParams();
+    if (key !== "all") query.set("tab", key);
+    if (q && keepSearch) query.set("q", q);
+    if (sort !== "promised") query.set("sort", sort);
+    const s = query.toString();
+    return s ? `/?${s}` : "/";
+  }
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 md:px-8 md:py-10">
@@ -92,11 +109,13 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
           </p>
         </div>
 
+        <JobSearch q={q} sort={sort} tab={tab} clearHref={tabHref(tab, false)} />
+
         <nav className="flex gap-1 overflow-x-auto border-b border-border px-4 pt-4 md:px-6" aria-label="Filter repair jobs">
           {TABS.map((t) => (
             <Link
               key={t.key}
-              href={t.key === "all" ? "/" : `/?tab=${t.key}`}
+              href={tabHref(t.key)}
               aria-current={tab === t.key ? "page" : undefined}
               className={cn(
                 "-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-3 pb-2.5 text-sm font-medium",
@@ -106,13 +125,13 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
               )}
             >
               {t.label}
-              <span className="text-xs opacity-70">{tabCounts[t.key]}</span>
+              <span className="text-xs opacity-70">{listed[t.key].length}</span>
             </Link>
           ))}
         </nav>
 
         {shown.length === 0 ? (
-          <EmptyState tab={tab} />
+          <EmptyState tab={tab} q={q} clearHref={tabHref(tab, false)} />
         ) : (
           <JobList jobs={shown} />
         )}
@@ -176,7 +195,17 @@ function StatCard({
   );
 }
 
-function EmptyState({ tab }: { tab: string }) {
+function EmptyState({ tab, q, clearHref }: { tab: string; q: string; clearHref: string }) {
+  if (q) {
+    return (
+      <div className="flex flex-col items-center gap-2 px-4 py-10 text-center text-sm text-muted-foreground md:px-6">
+        <p>No repairs match “{q}”.</p>
+        <Link href={clearHref} className="font-medium text-primary underline-offset-4 hover:underline">
+          Clear search
+        </Link>
+      </div>
+    );
+  }
   const message =
     tab === "ready"
       ? "No phones are ready for pickup."

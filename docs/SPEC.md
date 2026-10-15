@@ -48,7 +48,9 @@ are the only user who logs in. Customers only view a **tracking page**.
    soonest promised date first. Each row shows the device, customer
    name, status and promised date, plus a status picker for one-tap
    changes. A "New job" button. Picked-up jobs sit in a collapsed "Done"
-   section at the bottom.
+   section at the bottom. A search box finds jobs by device, problem,
+   customer name or phone, and a sort menu orders the list by promised
+   date, newest or oldest added, or customer name (ticket 08).
 3. **New job**: form for customer name, customer phone, device, problem,
    initial quote (₱) and promised date. Saving opens that job's claim
    slip.
