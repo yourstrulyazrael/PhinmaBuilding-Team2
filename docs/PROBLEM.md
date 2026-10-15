@@ -1,87 +1,107 @@
-# GasBayan
+# Zenith Repair
 
 ## Who
-A **Driver** in Iloilo City who fuels up regularly. Our real example is
-our teammate, who rides a motorcycle every day between home and the
-University of Iloilo. Tricycle, jeepney and car drivers use the app in
-exactly the same way: they look at prices and they report prices.
+An independent cellphone repair technician: one person doing repairs on
+their own, with no shop counter and no staff. Specifically, our teammate,
+who usually has 3–5 phones in progress at once (more in busy weeks, while
+phones wait for diagnosis, parts or pickup).
 
 ## The struggle
-Our teammate fills up at the gas station a couple of blocks from home
-because it is the closest and most familiar, not because it is the
-cheapest. Other stations nearby are **₱2–5 per litre cheaper**, but there
-is no easy way to know which ones or by how much.
-
-Our teammate puts in about **13 litres a week** (one full tank). That is
-**₱26–65 a week, roughly ₱100–260 a month**, overpaid by one student.
-For jeepney and tricycle drivers, who fill up more and live on thin
-margins, the loss is bigger.
+- **The technician's side (our teammate's real incident):** A customer
+  asked for an update on their phone. Our teammate had to scroll back
+  through Messenger to remember the repair details and the price they had
+  agreed. They also lost track of which repairs were still ongoing and
+  which customers they had already updated. It wasted time, made them
+  look disorganised, and risked the customer's trust.
+- **The customer's side (a teammate who left a phone for repair):** They
+  had no way of knowing what was happening or when the phone would be
+  ready, so they had to wait for the technician to message them. The
+  status, the expected cost and the pickup date were all unclear.
 
 ## Today's workaround
-- Go to the usual station and pay whatever it charges.
-- Notice signboards while riding past, and try to remember them.
-- Ask friends.
-
-A group chat could share prices, but it buries old posts, cannot sort by
-cheapest, and does not show how fresh a price is.
+Messenger conversations and personal notes. Repair details, quotes and
+progress are spread across chats, so finding one job means scrolling.
+A spreadsheet could track jobs, but it cannot update customers, and the
+customer has no way to check on their own.
 
 ## The MVP
-GasBayan shows Drivers the gas stations near them, sorted cheapest first
-for their fuel type, using prices reported by other Drivers.
+The technician logs each repair job, gives the customer a claim slip with
+a QR code, and updates the status with one tap. The customer scans the QR
+to see their own phone's status, so they no longer need to message and ask.
 
-What is in:
-- A **dashboard** anyone can view without signing in: stations sorted
-  cheapest first for Regular Unleaded, Premium or Diesel, with price age
-  and distance.
-- Distance is worked out in the Driver's browser. Their location is
-  **never saved**.
-- **Email and password sign-in** to report prices, with a sign-in
-  button in the navbar. (Changed from login links during /to-spec: the
-  free plan's email limit could block sign-ups during testing.)
-- Signed-in Drivers can **report a price** and tap **"Still correct"** to
-  confirm an existing one.
-- Impossible prices (e.g. below ₱40 or above ₱100 per litre) are
-  rejected.
-- The dashboard shows the **most recent** report for each station and
-  fuel type.
-- 10–20 stations on or near the home ↔ University of Iloilo route,
-  added by hand by our team.
+- Only the technician logs in. Customers scan and view, with no account.
+- Statuses: Received, Diagnosing, Waiting for parts, Repairing, Ready for
+  pickup, and Picked up. The technician can set any status directly.
+- Claim slip: shows the initial quote and any revised estimate and can be
+  **printed** (the device's normal print screen) or **saved as an image**
+  (to send on Messenger later).
+- **Copy update message** button: copies a ready-made update with the
+  tracking link, for the technician to paste into Messenger.
+- The tracking page shows: device, problem, initial quote, any revised
+  estimate, diagnosis/repair notes, parts replaced, status, promised date,
+  technician's contact. It **never** shows the customer's name or phone
+  number, and its link must be impossible to guess.
+- Each repair has a detail page where the technician can add customer-visible
+  diagnosis/repair notes and parts replaced, and directly select any repair
+  status without following a fixed sequence.
+- The copy update message includes the initial quote and tracking link. If
+  diagnosis changes the estimate, the technician can update the revised
+  expected total, which is shown alongside the initial quote. The technician
+  confirms the revised cost with the customer before proceeding.
 
 ## How we'll know it worked
-**The demo (3 minutes):** open GasBayan → see the cheapest stations
-nearby, sorted, with "reported 2h ago" → sign in → report a new price →
-watch that station move to the top of the list.
+**Demo (3 minutes):** the technician adds a job → a QR appears → a judge
+scans it with their own phone and sees "Received" → the technician taps
+"Ready for pickup" → the judge refreshes and sees it change.
 
-**Who tries it before Session 3:**
-- Our motorcycle-riding teammate, on their real daily route.
-- 2–3 drivers we do not know, approached near the University of Iloilo
-  gate (e.g. tricycle drivers). One named team member is responsible for
-  doing this.
+**Before Session 3:** our technician teammate uses it for real repair jobs.
+
+**Known risk:** our only tester is on the team, so their feedback may be
+biased toward what we already planned. We should try to get one technician
+who isn't on the team to try it, even for 10 minutes.
 
 ## Out of scope
-- Map view with price pins
-- Live station search (Google Maps / Places API is a paid service)
-- Photos of signboards as proof
-- Admin or moderator approval of prices
-- Long-distance trips and stations outside the home ↔ UI route
-- Other cities
+- Built-in printer support (we use the device's normal print screen only)
+- Automatic SMS or Messenger delivery (the local preview only queues messages
+  for manual copying)
+- Customer accounts and ratings
+
+## Current local-preview extensions
+
+The current prototype also includes repair intake details (serial number,
+accessories, condition and photos), customer estimate approval, payment
+entries and printable receipts, parts inventory and usage, warranty terms and
+claim logs, repair activity history, a local notification outbox, customer
+profiles derived from repair records, overdue and awaiting-pickup alerts,
+basic operational analytics, technician assignments, and shop/status-label
+customization.
+
+These are browser-local prototype workflows, not shared production services.
+Jobs, customer decisions, photos, payments, inventory, notifications and
+settings stay in the current browser profile. There is no cross-device sync,
+payment processing, automated message delivery, multi-user authentication or
+permission enforcement. Analytics are indicative only, and a printed preview
+receipt is not proof of an electronic payment. Do not use the prototype as a
+system of record for live customer data or financial reporting.
 
 ## Glossary
-- **Driver**: anyone who fuels a vehicle (motorcycle, tricycle, jeepney,
-  car). The app's one type of user. Can view prices without signing in,
-  and must sign in to report or confirm.
-- **Station**: a gas station on or near the home ↔ University of Iloilo
-  route, added by hand by our team.
-- **Fuel type**: one of Regular Unleaded, Premium, or Diesel.
-- **Price report**: a price for one fuel type at one station, entered by
-  a signed-in Driver from the station's signboard, with the time it was
-  entered.
-- **Current price**: the most recent price report for a station and fuel
-  type. This is what the dashboard shows.
-- **Price age**: how long ago the current price was reported ("reported
-  3 hours ago").
-- **Confirmation**: a signed-in Driver tapping "Still correct" on a
-  current price.
-- **Dashboard**: the first screen. Stations sorted cheapest first for the
-  chosen fuel type, with current price, price age, confirmations and
-  distance.
+- **Independent technician**: one person doing repairs alone, without a
+  shop or staff. Our only user who logs in.
+- **Repair job**: one customer's device, brought in for one repair, from
+  drop-off to pickup.
+- **Initial quote**: the estimated repair price shared with the customer
+  before work begins.
+- **Revised estimate**: the updated expected total after diagnosis. The
+  technician confirms the amount with the customer before proceeding.
+- **Status**: where a repair job is right now. One of Received,
+  Diagnosing, Waiting for parts, Repairing, Ready for pickup, Picked up.
+- **Claim slip**: given to the customer at drop-off. It shows the device,
+  problem, initial quote, any revised estimate, promised date and QR code.
+  Can be printed or saved as an image.
+- **Receipt**: printable local-preview summary of recorded payments; not a
+  payment processor receipt.
+- **Tracking page**: a read-only web page for one repair job, opened by
+  scanning its QR code. No login. It never shows the customer's name or
+  phone number.
+- **Copy update message**: a button that copies a ready-made status
+  update with the tracking link, for pasting into Messenger.
