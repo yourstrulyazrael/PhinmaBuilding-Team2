@@ -112,7 +112,9 @@ least one real apprentice. Customers never log in; they only view a
   through the "start a shop" database function. Delete: nobody.
 
 **`shop_members`**: who belongs to which shop.
-- `shop_id`, `technician_id`, `role` (owner or apprentice), `joined_at`
+- `shop_id`, `technician_id`, `role` (owner or apprentice), `joined_at`,
+  `can_revise_estimate` (off by default; only the owner can switch it,
+  through a database function)
 - A technician belongs to at most one shop.
 - Read: members of the same shop (so names can be shown on jobs).
 - Insert, update, delete: **nobody directly**, not even the owner, so an
@@ -145,7 +147,9 @@ least one real apprentice. Customers never log in; they only view a
   An **apprentice** may change only jobs they handle, and only `status`,
   `notes`, `parts_replaced`, `promised_date`, the payment record and
   clearing a cancellation request. (Ticket 17–19 additions.) The database itself
-  rejects an apprentice changing prices, `handled_by`, `quoted_by` or
+  rejects an apprentice changing prices (except the revised estimate,
+  for staff the owner has allowed: `shop_members.can_revise_estimate`,
+  ticket 23), `handled_by`, `quoted_by` or
   `shop_id`, so a hand-crafted request from a browser cannot get round
   it.
 - **Status** also allows **Cancelled** (a 7th status; like Picked up,
