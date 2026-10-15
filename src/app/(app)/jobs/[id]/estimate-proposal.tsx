@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { Check, Send, TrendingUp, X } from "lucide-react";
+import { Check, Send, X } from "lucide-react";
 import { formatPeso } from "@/lib/jobs";
 import { decideRevisedEstimate, proposeRevisedEstimate, type ActionResult } from "./actions";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ function ProposeEstimateForm({ jobId, current }: { jobId: string; current: numbe
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <Label htmlFor="amount">New amount (₱)</Label>
+        <Label htmlFor="amount">Revised estimate (₱)</Label>
         <Input
           id="amount"
           name="amount"
@@ -35,7 +35,7 @@ function ProposeEstimateForm({ jobId, current }: { jobId: string; current: numbe
         />
       </div>
       <div className="flex flex-col gap-2">
-        <Label htmlFor="reason">Why?</Label>
+        <Label htmlFor="reason">Why the new amount?</Label>
         <Textarea
           id="reason"
           name="reason"
@@ -45,7 +45,9 @@ function ProposeEstimateForm({ jobId, current }: { jobId: string; current: numbe
           required
           placeholder="e.g. Opened it up: the charging port is also damaged and needs replacing."
         />
-        <p className="text-xs text-muted-foreground">10 to 500 characters. Only your owner sees this.</p>
+        <p className="text-xs text-muted-foreground">
+          10 to 500 characters. Goes to your owner to approve; the customer is asked only after that.
+        </p>
       </div>
       {state.error && (
         <p role="alert" className="text-sm text-destructive">
@@ -69,54 +71,35 @@ export type LastProposal = {
 };
 
 /**
- * Staff's line under "Update for the customer": the revised estimate as
- * a one-line summary, with their last proposal's state. "Propose" opens
- * the form in place, so the card stays short until it's needed.
+ * Staff's revised estimate, under "Update for the customer": the form
+ * itself, shown straight away. While a proposal waits for the owner, it
+ * shows that instead; after an answer, one line above the form says how
+ * it went.
  */
 export function ProposeEstimate({ jobId, current, last }: { jobId: string; current: number; last: LastProposal | null }) {
-  const [open, setOpen] = useState(false);
-  const waiting = last?.status === "pending";
+  if (last?.status === "pending") {
+    return (
+      <div className="flex flex-col gap-1 text-sm">
+        <p className="font-medium">Revised estimate</p>
+        <p className="text-muted-foreground">
+          <span className="font-medium text-highlight">Waiting for your owner:</span> you proposed{" "}
+          <span className="tabular-nums">{formatPeso(last.amount)}</span> on {last.sentOn}.
+        </p>
+        <p className="whitespace-pre-line text-xs text-muted-foreground">&ldquo;{last.reason}&rdquo;</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-3 text-sm">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="font-medium">Revised estimate</span>
-          <span className="text-xs text-muted-foreground">
-            {waiting ? (
-              <>
-                <span className="font-medium text-highlight">Waiting for your owner:</span> you proposed{" "}
-                <span className="tabular-nums">{formatPeso(last.amount)}</span> on {last.sentOn}.
-              </>
-            ) : last ? (
-              <>
-                Your last proposal, <span className="tabular-nums">{formatPeso(last.amount)}</span>, was{" "}
-                {last.status === "approved" ? "approved" : "not approved"}.
-                {last.ownerNote && <> Owner&apos;s note: {last.ownerNote}</>}
-              </>
-            ) : (
-              "Found more to fix? Propose a new amount; your owner decides."
-            )}
-          </span>
-        </div>
-        {!waiting && !open && (
-          <Button type="button" variant="secondary" size="sm" onClick={() => setOpen(true)}>
-            <TrendingUp className="mr-1.5 size-3.5" aria-hidden />
-            Propose
-          </Button>
-        )}
-      </div>
-
-      {waiting && <p className="whitespace-pre-line text-xs text-muted-foreground">&ldquo;{last.reason}&rdquo;</p>}
-
-      {open && !waiting && (
-        <div className="flex flex-col gap-3 rounded-[var(--radius)] border border-border p-3">
-          <ProposeEstimateForm jobId={jobId} current={current} />
-          <Button type="button" variant="ghost" size="sm" className="w-fit" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-        </div>
+      {last && (
+        <p className="text-xs text-muted-foreground">
+          Your last proposal, <span className="tabular-nums">{formatPeso(last.amount)}</span>, was{" "}
+          {last.status === "approved" ? "approved" : "not approved"}.
+          {last.ownerNote && <> Owner&apos;s note: {last.ownerNote}</>}
+        </p>
       )}
+      <ProposeEstimateForm jobId={jobId} current={current} />
     </div>
   );
 }
