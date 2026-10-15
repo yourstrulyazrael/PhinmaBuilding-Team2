@@ -1,11 +1,15 @@
-import { ChartColumn } from "lucide-react";
+import Link from "next/link";
+import { ChartColumn, FileText } from "lucide-react";
 import { formatPeso, type Job } from "@/lib/jobs";
 import { analytics } from "@/lib/workspace";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 // This month's numbers, in Manila time, worked out from the jobs.
-export function AnalyticsTab({ jobs, today }: { jobs: Job[]; today: string }) {
+// The owner also gets Reports: a monthly report to export as Excel or
+// PDF (ticket 25).
+export function AnalyticsTab({ jobs, today, isOwner }: { jobs: Job[]; today: string; isOwner: boolean }) {
   const a = analytics(jobs, today);
   const monthName = new Date(`${today}T00:00:00Z`).toLocaleDateString("en-US", {
     month: "long",
@@ -16,6 +20,14 @@ export function AnalyticsTab({ jobs, today }: { jobs: Job[]; today: string }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {isOwner && (
+        <div className="flex justify-end">
+          <Link href="/workspace/report" className={buttonVariants({ variant: "secondary", size: "sm" })}>
+            <FileText className="mr-1.5 size-4" aria-hidden />
+            Reports: export Excel or PDF
+          </Link>
+        </div>
+      )}
       <section className="grid grid-cols-2 gap-3 md:grid-cols-3" aria-label="Key numbers">
         <Stat label={`Received in ${monthName}`} value={String(a.receivedThisMonth)} />
         <Stat label={`Picked up in ${monthName}`} value={String(a.pickedUpThisMonth)} />

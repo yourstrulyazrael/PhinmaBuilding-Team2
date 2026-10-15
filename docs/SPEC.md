@@ -97,7 +97,10 @@ least one real apprentice. Customers never log in; they only view a
 8. **Workspace**: the **owner** sees every tab: **Customers**,
    **Notifications**, **Analytics**, **Staff** (the staff list, each one's "Can revise
    estimates" switch, **Add staff** and **Remove**) and **Shop settings**
-   (the shop name, their own name and contact, and their password). An **apprentice** sees only **Notifications**. Both see
+   (the shop name, their own name and contact, and their password).
+   Analytics has **Reports** for the owner: a monthly report (summary
+   and every job received that month, no customer phone numbers) that
+   exports as Excel (.xlsx) or PDF (ticket 25). An **apprentice** sees only **Notifications**. Both see
    the **Overdue & awaiting pickup** panel. Owner-only tabs refuse
    apprentices, even if they type the address.
 9. **Not in a shop**: a removed apprentice sees "You're not in a shop"

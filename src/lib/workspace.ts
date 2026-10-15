@@ -29,6 +29,12 @@ export function isLate(job: Pick<Job, "status" | "promised_date">, today: string
   return !isFinished(job.status) && job.status !== "ready_for_pickup" && job.promised_date < today;
 }
 
+// When a job was picked up: the payment time (ticket 19), or for older
+// jobs the last update, which is usually marking "Picked up".
+export function pickedUpOn(job: Job) {
+  return manilaDate(job.paid_at ?? job.updated_at);
+}
+
 // What the customer will actually pay: the revised estimate if there is one.
 export function currentPrice(job: Job) {
   return Number(job.revised_estimate ?? job.initial_quote);
@@ -143,9 +149,6 @@ export function analytics(jobs: Job[], today: string) {
   const open = jobs.filter((j) => !isFinished(j.status));
   const pickedUp = jobs.filter((j) => j.status === "picked_up");
 
-  // When it was picked up: the payment time (ticket 19), or for older
-  // jobs the last update, which is usually marking "Picked up".
-  const pickedUpOn = (j: Job) => manilaDate(j.paid_at ?? j.updated_at);
   const turnarounds = pickedUp.map((j) => daysBetween(manilaDate(j.created_at), pickedUpOn(j)));
   const avgTurnaround = turnarounds.length
     ? turnarounds.reduce((sum, d) => sum + d, 0) / turnarounds.length

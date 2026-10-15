@@ -97,7 +97,7 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
 
       {tab === "customers" && <CustomersTab jobs={jobs} />}
       {tab === "notifications" && <NotificationsTab jobs={jobs} today={today} />}
-      {tab === "analytics" && <AnalyticsTab jobs={jobs} today={today} />}
+      {tab === "analytics" && <AnalyticsTab jobs={jobs} today={today} isOwner={shop?.role === "owner"} />}
       {tab === "settings" && shop && (
         <ShopSettings
           shop={shop}
