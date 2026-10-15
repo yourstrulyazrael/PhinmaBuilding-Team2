@@ -70,6 +70,17 @@ keeps its older names (`revised_estimate`, `promised_date`).
 **Currency** (ticket 54): the owner picks it on Account (peso by
 default); every amount, for shop and customer, is shown in it. Amounts
 are not converted.
+
+**Pickup, warranty and receipts** (tickets 44, 56–58): the owner can
+**Reassign** a repair to anyone current in the shop. When a repair is
+**Ready for pickup**, its page offers a ready-made message (total, address,
+opening hours) to copy. Every repair has a **warranty** from pickup (the
+owner sets the days on Account; 30 by default), shown on the claim slip,
+the repair page and the tracking page; a picked-up repair inside its
+warranty can be marked **Back under warranty** and handed back without a
+new payment. After payment, a printable **receipt** (quote, parts, total,
+payment, warranty) is one tap away; it is an acknowledgement, not an
+official receipt.
 1. **Sign in / Set up your store**: email and password. Nobody can create
    an account on their own (ticket 35): "Have a store code? Set up your
    store" also asks for a **store code** the developer gave the owner.
@@ -335,6 +346,6 @@ Phase 2 (only shown if finished and tested in time):
 - A full activity history log (phase 2 records only "Quoted by" and
   "Handled by")
 - More than one shop per owner, or one person in several shops
-- Intake photos, receipts, warranty, suppliers and purchase orders (see
-  `docs/LATER.md`)
+- Intake photos, suppliers and purchase orders (see `docs/LATER.md`).
+  (Receipts and warranty were moved into scope by the team: tickets 57–58.)
 - Online payments: payment is recorded by hand at pickup

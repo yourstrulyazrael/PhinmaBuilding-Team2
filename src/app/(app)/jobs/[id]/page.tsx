@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { AlarmClock, ExternalLink, Lock, Package, PackageCheck, Phone, QrCode, Smartphone, ThumbsDown, ThumbsUp, TrendingUp } from "lucide-react";
+import { AlarmClock, ExternalLink, Lock, Package, PackageCheck, Phone, QrCode, ReceiptText, Smartphone, ThumbsDown, ThumbsUp, TrendingUp } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
 import { formatDate, formatPeso, isFinished, paymentLabel, todayInManila, type Job } from "@/lib/jobs";
@@ -106,6 +106,13 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
               <QrCode className="size-4" aria-hidden />
               Claim slip
             </Link>
+            {/* Once it's paid for (ticket 58). */}
+            {job.amount_paid !== null && (
+              <Link href={`/jobs/${job.id}/receipt`} className={buttonVariants({ variant: "secondary", size: "sm" })}>
+                <ReceiptText className="size-4" aria-hidden />
+                Receipt
+              </Link>
+            )}
             <Link
               href={`/track/${job.tracking_code}`}
               target="_blank"
