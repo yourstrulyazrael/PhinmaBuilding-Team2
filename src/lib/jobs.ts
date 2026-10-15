@@ -23,16 +23,23 @@ export function isFinished(status: Status) {
   return status === "picked_up" || status === "cancelled";
 }
 
+// How a customer can pay at pickup. E-wallet and card also need the last
+// 4 digits of the reference number (ticket 20).
 export const PAYMENT_METHODS = [
-  { value: "cash", label: "Cash" },
-  { value: "gcash", label: "GCash" },
-  { value: "other", label: "Other" },
+  { value: "cash", label: "Cash", needsRef: false },
+  { value: "ewallet", label: "E-wallet", needsRef: true },
+  { value: "card", label: "Card", needsRef: true },
 ] as const;
 
-export type PaymentMethod = (typeof PAYMENT_METHODS)[number]["value"];
+// "other" only appears on payments recorded before ticket 20.
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number]["value"] | "other";
 
 export function paymentLabel(method: PaymentMethod | null) {
   return PAYMENT_METHODS.find((m) => m.value === method)?.label ?? "Other";
+}
+
+export function needsPaymentRef(method: string) {
+  return PAYMENT_METHODS.some((m) => m.value === method && m.needsRef);
 }
 
 export type Job = {
@@ -56,6 +63,7 @@ export type Job = {
   // Recorded at pickup (ticket 19).
   amount_paid: number | null;
   payment_method: PaymentMethod | null;
+  payment_ref: string | null; // last 4 digits, e-wallet and card only
   paid_at: string | null;
   notes: string;
   parts_replaced: string;

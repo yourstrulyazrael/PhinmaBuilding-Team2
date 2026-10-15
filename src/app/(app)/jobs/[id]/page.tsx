@@ -1,15 +1,15 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, ExternalLink, Phone, QrCode } from "lucide-react";
+import { AlarmClock, ArrowLeft, ExternalLink, Phone, QrCode } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { formatDate, formatPeso, isFinished, paymentLabel, type Job } from "@/lib/jobs";
-import { currentPrice } from "@/lib/workspace";
+import { formatDate, formatPeso, isFinished, paymentLabel, todayInManila, type Job } from "@/lib/jobs";
+import { currentPrice, isLate } from "@/lib/workspace";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusPicker } from "@/components/status-picker";
 import { CopyMessageButton } from "@/components/copy-message-button";
 import { trackingUrl } from "@/lib/tracking-url";
-import { updateMessage } from "@/lib/update-message";
+import { delayMessage, updateMessage } from "@/lib/update-message";
 import { JobDetailsForm } from "./job-details-form";
 import { CancelRequest } from "./cancel-request";
 
@@ -27,6 +27,9 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
   const { data: job } = await supabase.from("jobs").select("*").eq("id", id).maybeSingle<Job>();
   if (!job) notFound();
 
+  const url = await trackingUrl(job.tracking_code);
+  const late = isLate(job, todayInManila());
+
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 md:px-8 md:py-10">
       <Link href="/" className={buttonVariants({ variant: "ghost", size: "sm", className: "w-fit" })}>
@@ -40,7 +43,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
           <p className="text-sm text-muted-foreground">{job.problem}</p>
         </div>
         <div className="flex flex-wrap items-start gap-2">
-          <CopyMessageButton message={updateMessage(job, await trackingUrl(job.tracking_code))} />
+          <CopyMessageButton message={updateMessage(job, url)} />
           <Link href={`/jobs/${job.id}/slip`} className={buttonVariants({ variant: "secondary", size: "sm" })}>
             <QrCode className="mr-1.5 size-4" aria-hidden />
             Claim slip
@@ -58,6 +61,25 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
 
       {job.cancel_requested_at && !isFinished(job.status) && (
         <CancelRequest jobId={job.id} reason={job.cancel_reason} requestedOn={formatDateTime(job.cancel_requested_at)} />
+      )}
+
+      {late && (
+        <div
+          role="status"
+          className="flex flex-col gap-3 rounded-[var(--radius)] border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/50"
+        >
+          <div className="flex items-start gap-3">
+            <AlarmClock className="mt-0.5 size-5 shrink-0 text-amber-700 dark:text-amber-300" aria-hidden />
+            <div className="flex flex-col gap-1">
+              <p className="font-medium text-amber-800 dark:text-amber-200">This repair is late</p>
+              <p className="text-sm text-muted-foreground">
+                It was promised for {formatDate(job.promised_date)}. The customer&apos;s tracking page now shows an
+                apology. Let them know, and set a new promised date below.
+              </p>
+            </div>
+          </div>
+          <CopyMessageButton label="Copy delay message" message={delayMessage(job, url)} />
+        </div>
       )}
 
       <Card>
@@ -98,6 +120,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
                 <dt className="text-muted-foreground">Paid</dt>
                 <dd className="font-medium">
                   {formatPeso(job.amount_paid)} by {paymentLabel(job.payment_method)}
+                  {job.payment_ref && <span className="font-normal text-muted-foreground"> (ref …{job.payment_ref})</span>}
                   {job.paid_at && <span className="font-normal text-muted-foreground"> on {formatDateTime(job.paid_at)}</span>}
                 </dd>
               </>

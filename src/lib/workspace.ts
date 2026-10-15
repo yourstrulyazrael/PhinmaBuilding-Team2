@@ -17,8 +17,15 @@ export function daysBetween(from: string, to: string) {
   return Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000);
 }
 
+// The "YYYY-MM-DD" date a number of days after another.
+export function addDays(date: string, days: number) {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 // Past the promised date and the phone is not ready yet.
-export function isLate(job: Job, today: string) {
+export function isLate(job: Pick<Job, "status" | "promised_date">, today: string) {
   return !isFinished(job.status) && job.status !== "ready_for_pickup" && job.promised_date < today;
 }
 
@@ -66,7 +73,7 @@ export function groupCustomers(jobs: Job[]): Customer[] {
 
 export type Alert = {
   job: Job;
-  kind: "cancel" | "declined" | "overdue" | "ready" | "parts" | "estimate";
+  kind: "cancel" | "declined" | "overdue" | "due_today" | "due_tomorrow" | "ready" | "parts" | "estimate";
   message: string;
 };
 
@@ -91,6 +98,15 @@ export function attentionAlerts(jobs: Job[], today: string): Alert[] {
       const days = daysBetween(job.promised_date, today);
       alerts.push({ job, kind: "overdue", message: `${days} day${days === 1 ? "" : "s"} past the promised date` });
     }
+    // A heads-up before it is late: promised today or tomorrow, and the
+    // phone is not ready yet.
+    if (job.status !== "ready_for_pickup") {
+      if (job.promised_date === today) {
+        alerts.push({ job, kind: "due_today", message: "Promised for today, and not ready yet" });
+      } else if (job.promised_date === addDays(today, 1)) {
+        alerts.push({ job, kind: "due_tomorrow", message: "Promised for tomorrow, and not ready yet" });
+      }
+    }
     if (job.status === "ready_for_pickup") {
       const days = daysBetween(manilaDate(job.updated_at), today);
       alerts.push({
@@ -109,7 +125,7 @@ export function attentionAlerts(jobs: Job[], today: string): Alert[] {
       alerts.push({ job, kind: "estimate", message: "Waiting for the customer to approve the revised estimate" });
     }
   }
-  const order: Alert["kind"][] = ["cancel", "declined", "overdue", "ready", "parts", "estimate"];
+  const order: Alert["kind"][] = ["cancel", "declined", "overdue", "due_today", "due_tomorrow", "ready", "parts", "estimate"];
   return alerts.sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind));
 }
 

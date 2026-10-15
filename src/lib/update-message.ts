@@ -1,4 +1,4 @@
-import { formatPeso, statusLabel, type Job } from "@/lib/jobs";
+import { formatDate, formatPeso, statusLabel, type Job } from "@/lib/jobs";
 
 /**
  * The ready-made message the technician pastes into Messenger.
@@ -24,4 +24,18 @@ export function updateMessage(
   }
   lines.push("", `Track your repair anytime: ${trackingUrl}`);
   return lines.join("\n");
+}
+
+/**
+ * The apology the technician pastes into Messenger when a repair is
+ * past its promised date (ticket 21). Same rule as above: built only
+ * from these fields, so the customer's name and phone can't slip in.
+ */
+export function delayMessage(job: Pick<Job, "device" | "status" | "promised_date">, trackingUrl: string) {
+  return [
+    `Hi! Sorry, your ${job.device} repair is taking longer than we promised (${formatDate(job.promised_date)}).`,
+    `It's currently at: ${statusLabel(job.status)}. We'll let you know as soon as it's ready.`,
+    "",
+    `Track your repair anytime: ${trackingUrl}`,
+  ].join("\n");
 }

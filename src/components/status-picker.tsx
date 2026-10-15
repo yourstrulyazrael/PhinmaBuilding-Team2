@@ -52,11 +52,11 @@ export function StatusPicker({
     });
   }
 
-  function confirmPayment(amount: number, method: PaymentMethod) {
+  function confirmPayment(amount: number, method: PaymentMethod, ref: string) {
     setAskPayment(false);
     startTransition(async () => {
       setOptimistic("picked_up");
-      const result = await recordPickup(jobId, amount, method);
+      const result = await recordPickup(jobId, amount, method, ref);
       if (result.error) setError(result.error);
     });
   }

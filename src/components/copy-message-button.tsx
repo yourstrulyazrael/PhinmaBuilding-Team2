@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 // Copies the update message to the clipboard, then shows "Copied" for
 // a couple of seconds so the technician knows it worked.
-export function CopyMessageButton({ message }: { message: string }) {
+export function CopyMessageButton({ message, label = "Copy update message" }: { message: string; label?: string }) {
   const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
 
   async function copy() {
@@ -27,7 +27,7 @@ export function CopyMessageButton({ message }: { message: string }) {
         ) : (
           <Copy className="mr-1.5 size-4" aria-hidden />
         )}
-        {state === "copied" ? "Copied" : "Copy update message"}
+        {state === "copied" ? "Copied" : label}
       </Button>
       <p role="status" className="text-xs text-muted-foreground">
         {state === "failed" && "Couldn't copy. Your browser blocked the clipboard."}

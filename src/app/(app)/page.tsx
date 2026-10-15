@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CalendarDays, CircleCheck, Clock, Plus, QrCode, Smartphone, Wrench } from "lucide-react";
+import { AlarmClock, CalendarDays, CircleCheck, Clock, Plus, QrCode, Smartphone, Wrench } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatPeso, isFinished, parseSort, searchJobs, sortJobs, todayInManila, type Job } from "@/lib/jobs";
 import { buttonVariants } from "@/components/ui/button";
@@ -51,6 +51,11 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
   const waitingOnParts = jobs.filter((j) => j.status === "waiting_for_parts");
   const ready = jobs.filter((j) => j.status === "ready_for_pickup");
 
+  // Repairs that are late, or promised for today and not ready yet.
+  const today = todayInManila();
+  const lateCount = open.filter((j) => isLate(j, today)).length;
+  const dueTodayCount = open.filter((j) => j.status !== "ready_for_pickup" && j.promised_date === today).length;
+
   const matches = sortJobs(searchJobs(jobs, q), sort);
   const listed = {
     all: matches.filter((j) => !isFinished(j.status)),
@@ -91,6 +96,25 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
           Add a repair
         </Link>
       </header>
+
+      {(lateCount > 0 || dueTodayCount > 0) && (
+        <Link
+          href="/workspace?tab=notifications"
+          className="flex items-center gap-3 rounded-[var(--radius)] border border-amber-300 bg-amber-50 px-4 py-3 text-sm hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/50 dark:hover:bg-amber-950"
+        >
+          <AlarmClock className="size-5 shrink-0 text-amber-700 dark:text-amber-300" aria-hidden />
+          <span className="flex-1 text-amber-900 dark:text-amber-100">
+            {[
+              lateCount > 0 && `${lateCount} repair${lateCount === 1 ? " is" : "s are"} late`,
+              dueTodayCount > 0 && `${dueTodayCount} due today`,
+            ]
+              .filter(Boolean)
+              .join(", ")}
+            . Let the customers know.
+          </span>
+          <span className="font-medium text-amber-800 dark:text-amber-200">View</span>
+        </Link>
+      )}
 
       <section className="grid grid-cols-3 gap-3 md:gap-4" aria-label="Summary">
         <StatCard label="Open repairs" value={open.length} caption="Jobs still in progress" icon={Wrench} tone="navy" />

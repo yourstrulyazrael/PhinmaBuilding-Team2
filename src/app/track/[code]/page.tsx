@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { CalendarDays, Phone } from "lucide-react";
+import { AlarmClock, CalendarDays, Phone } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { createClient } from "@/lib/supabase/server";
-import { STATUSES, formatDate, formatPeso, isFinished, isTrackingCode, type Status } from "@/lib/jobs";
+import { STATUSES, formatDate, formatPeso, isFinished, isTrackingCode, todayInManila, type Status } from "@/lib/jobs";
+import { isLate } from "@/lib/workspace";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { cn } from "@/lib/utils";
@@ -77,6 +78,9 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
   const current = steps.findIndex((s) => s.value === job.status);
   const cancelled = job.status === "cancelled";
   const finished = isFinished(job.status);
+  // Past the promised date and not ready: apologise (ticket 21). It goes
+  // away when the shop sets a new date or the phone is ready.
+  const late = isLate(job, todayInManila());
   const updated = new Date(job.updated_at).toLocaleString("en-US", {
     timeZone: "Asia/Manila",
     month: "short",
@@ -131,6 +135,22 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
         </ol>
         )}
       </Card>
+
+      {late && (
+        <div
+          role="status"
+          className="flex items-start gap-3 rounded-[var(--radius)] border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/50"
+        >
+          <AlarmClock className="mt-0.5 size-5 shrink-0 text-amber-700 dark:text-amber-300" aria-hidden />
+          <div className="flex flex-col gap-1">
+            <p className="font-medium text-amber-900 dark:text-amber-100">Sorry, your repair is running late</p>
+            <p className="text-sm text-muted-foreground">
+              We promised it for {formatDate(job.promised_date)} and it isn&apos;t ready yet. We&apos;re still working
+              on it and will update the date here. You can call the shop below anytime.
+            </p>
+          </div>
+        </div>
+      )}
 
       {job.estimate_status === "pending" && job.revised_estimate !== null && !finished && (
         <EstimateQuestion code={code} initial={job.initial_quote} revised={job.revised_estimate} />

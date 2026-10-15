@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Banknote } from "lucide-react";
-import { formatPeso, PAYMENT_METHODS, type PaymentMethod } from "@/lib/jobs";
+import { formatPeso, needsPaymentRef, PAYMENT_METHODS, type PaymentMethod } from "@/lib/jobs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,11 +25,12 @@ export function PaymentDialog({
   open: boolean;
   price: number;
   device?: string;
-  onConfirm: (amount: number, method: PaymentMethod) => void;
+  onConfirm: (amount: number, method: PaymentMethod, ref: string) => void;
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const [method, setMethod] = useState<PaymentMethod>("cash");
+  const askRef = needsPaymentRef(method);
   const [error, setError] = useState<string>();
 
   useEffect(() => {
@@ -41,13 +42,19 @@ export function PaymentDialog({
 
   function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const amount = Number(new FormData(e.currentTarget).get("amount"));
+    const form = new FormData(e.currentTarget);
+    const amount = Number(form.get("amount"));
+    const ref = String(form.get("payment_ref") ?? "").trim();
     if (!Number.isFinite(amount) || amount < 0) {
       setError("Enter the amount paid, ₱0 or more.");
       return;
     }
+    if (askRef && !/^[0-9]{4}$/.test(ref)) {
+      setError("Enter the last 4 digits of the reference number.");
+      return;
+    }
     setError(undefined);
-    onConfirm(amount, method);
+    onConfirm(amount, method, askRef ? ref : "");
   }
 
   return (
@@ -114,6 +121,25 @@ export function PaymentDialog({
               ))}
             </div>
           </fieldset>
+
+          {/* Only the last 4 digits: enough to match the payment in the
+              e-wallet or card app, without storing the whole number. */}
+          {askRef && (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="payment_ref">Last 4 digits of the reference number</Label>
+              <Input
+                id="payment_ref"
+                name="payment_ref"
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={4}
+                pattern="[0-9]{4}"
+                placeholder="e.g. 1234"
+                required
+                className="w-32 font-mono tracking-widest"
+              />
+            </div>
+          )}
 
           {error && (
             <p role="alert" className="text-sm text-destructive">

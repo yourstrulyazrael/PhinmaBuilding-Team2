@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { PAYMENT_METHODS, STATUSES } from "@/lib/jobs";
+import { needsPaymentRef, PAYMENT_METHODS, STATUSES } from "@/lib/jobs";
 
 export type ActionResult = { error?: string; saved?: boolean };
 
@@ -35,18 +35,29 @@ export async function setStatus(jobId: string, status: string): Promise<ActionRe
 // Marks the job Picked up and records the payment, in one update, so a
 // pickup is never saved without its payment (ticket 19). The database
 // stamps paid_at itself.
-export async function recordPickup(jobId: string, amount: number, method: string): Promise<ActionResult> {
+export async function recordPickup(
+  jobId: string,
+  amount: number,
+  method: string,
+  ref: string,
+): Promise<ActionResult> {
   if (!Number.isFinite(amount) || amount < 0 || amount > 99_999_999.99) {
     return { error: "Enter the amount paid, ₱0 or more." };
   }
   if (!PAYMENT_METHODS.some((m) => m.value === method)) {
     return { error: "Choose how the customer paid." };
   }
+  // E-wallet and card: the last 4 digits of the reference. Cash: none.
+  // The database checks the same rule.
+  const paymentRef = needsPaymentRef(method) ? ref.trim() : null;
+  if (paymentRef !== null && !/^[0-9]{4}$/.test(paymentRef)) {
+    return { error: "Enter the last 4 digits of the reference number." };
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("jobs")
-    .update({ status: "picked_up", amount_paid: amount, payment_method: method })
+    .update({ status: "picked_up", amount_paid: amount, payment_method: method, payment_ref: paymentRef })
     .eq("id", jobId)
     .select("id");
   if (error) return { error: "Couldn't save the payment. Please try again." };
