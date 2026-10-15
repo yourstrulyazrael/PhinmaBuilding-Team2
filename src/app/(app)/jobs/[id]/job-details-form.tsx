@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState } from "react";
-import Link from "next/link";
 import { updateJobDetails, type ActionResult } from "./actions";
 import type { Job } from "@/lib/jobs";
 import { Button } from "@/components/ui/button";
@@ -11,8 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 
 // Everything here is shown to the customer on their tracking page.
 // The revised estimate box only appears for the owner and staff the
-// owner allows (ticket 23; staff ask for it, ticket 37); the database
-// enforces the same rule.
+// owner allows (ticket 23; staff ask for it, ticket 37, or propose one
+// under this form, ticket 39); the database enforces the same rule.
 export function JobDetailsForm({ job, canReviseEstimate }: { job: Job; canReviseEstimate: boolean }) {
   const [state, formAction, pending] = useActionState<ActionResult, FormData>(
     updateJobDetails.bind(null, job.id),
@@ -57,15 +56,6 @@ export function JobDetailsForm({ job, canReviseEstimate }: { job: Job; canRevise
             placeholder="Leave empty if unchanged"
           />
         </div>
-        )}
-        {!canReviseEstimate && (
-          <p className="self-end text-xs text-muted-foreground sm:col-span-2">
-            Need to revise the estimate? Propose one to your owner below, or{" "}
-            <Link href="/account" className="underline underline-offset-4">
-              ask to set them yourself
-            </Link>
-            .
-          </p>
         )}
         <div className="flex flex-col gap-2">
           <Label htmlFor="promised_date">Promised date</Label>

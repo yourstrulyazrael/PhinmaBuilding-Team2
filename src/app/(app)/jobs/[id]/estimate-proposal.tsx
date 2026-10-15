@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { Check, Send, X } from "lucide-react";
+import { Check, Send, TrendingUp, X } from "lucide-react";
+import { formatPeso } from "@/lib/jobs";
 import { decideRevisedEstimate, proposeRevisedEstimate, type ActionResult } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 // "use client" because they show "Sending…" and errors in place.
 
 // Staff: the new amount and why. Sent to the owner, not the customer.
-export function ProposeEstimateForm({ jobId, current }: { jobId: string; current: number }) {
+function ProposeEstimateForm({ jobId, current }: { jobId: string; current: number }) {
   const [state, formAction, pending] = useActionState<ActionResult, FormData>(
     proposeRevisedEstimate.bind(null, jobId),
     {},
@@ -56,6 +57,67 @@ export function ProposeEstimateForm({ jobId, current }: { jobId: string; current
         {pending ? "Sending…" : "Send to owner"}
       </Button>
     </form>
+  );
+}
+
+export type LastProposal = {
+  amount: number;
+  reason: string;
+  status: "pending" | "approved" | "rejected";
+  ownerNote: string;
+  sentOn: string; // already formatted for display
+};
+
+/**
+ * Staff's line under "Update for the customer": the revised estimate as
+ * a one-line summary, with their last proposal's state. "Propose" opens
+ * the form in place, so the card stays short until it's needed.
+ */
+export function ProposeEstimate({ jobId, current, last }: { jobId: string; current: number; last: LastProposal | null }) {
+  const [open, setOpen] = useState(false);
+  const waiting = last?.status === "pending";
+
+  return (
+    <div className="flex flex-col gap-3 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="font-medium">Revised estimate</span>
+          <span className="text-xs text-muted-foreground">
+            {waiting ? (
+              <>
+                <span className="font-medium text-highlight">Waiting for your owner:</span> you proposed{" "}
+                <span className="tabular-nums">{formatPeso(last.amount)}</span> on {last.sentOn}.
+              </>
+            ) : last ? (
+              <>
+                Your last proposal, <span className="tabular-nums">{formatPeso(last.amount)}</span>, was{" "}
+                {last.status === "approved" ? "approved" : "not approved"}.
+                {last.ownerNote && <> Owner&apos;s note: {last.ownerNote}</>}
+              </>
+            ) : (
+              "Found more to fix? Propose a new amount; your owner decides."
+            )}
+          </span>
+        </div>
+        {!waiting && !open && (
+          <Button type="button" variant="secondary" size="sm" onClick={() => setOpen(true)}>
+            <TrendingUp className="mr-1.5 size-3.5" aria-hidden />
+            Propose
+          </Button>
+        )}
+      </div>
+
+      {waiting && <p className="whitespace-pre-line text-xs text-muted-foreground">&ldquo;{last.reason}&rdquo;</p>}
+
+      {open && !waiting && (
+        <div className="flex flex-col gap-3 rounded-[var(--radius)] border border-border p-3">
+          <ProposeEstimateForm jobId={jobId} current={current} />
+          <Button type="button" variant="ghost" size="sm" className="w-fit" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }
 

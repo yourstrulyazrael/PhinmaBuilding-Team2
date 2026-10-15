@@ -8,12 +8,13 @@ rejects it.
 
 **Status:** in progress (needs `supabase/sql/020-estimate-proposals.sql` run)
 
-- [x] On an open repair they handle, staff without the permission see
-      **Propose a revised estimate**: the new amount and why (10–500
+- [x] On an open repair they handle, staff without the permission see a
+      **Revised estimate** line under "Update for the customer"; **Propose**
+      opens the form in place: the new amount and why (10–500
       characters)
 - [x] They then see it as waiting, or their last proposal approved or not
       approved with the owner's note, and can propose again
-- [x] The owner sees a waiting proposal on that repair (amount, current
+- [x] The owner sees a waiting proposal at the top of that same card (amount, current
       price, reason, who and when) with Approve / Reject and a note
 - [x] Approving sets the revised estimate exactly as if the owner typed
       it: the customer is asked to accept it on the tracking page

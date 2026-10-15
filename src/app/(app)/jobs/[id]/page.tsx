@@ -15,7 +15,7 @@ import { HandledBy } from "@/components/handled-by";
 import { StatusBadge } from "@/components/status-badge";
 import { CancelRequest } from "./cancel-request";
 import { PartsUsed } from "./parts-used";
-import { ProposalDecision, ProposeEstimateForm } from "./estimate-proposal";
+import { ProposalDecision, ProposeEstimate } from "./estimate-proposal";
 import { getShop, getSupabase, getUser, getNames } from "@/lib/session";
 
 // The technician's view of one repair job. Unlike the claim slip and
@@ -193,12 +193,34 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
         </CardContent>
       </Card>
 
+      {/* What the customer sees, and the revised estimate, in one card
+          (ticket 39). The owner answers a waiting proposal at the top;
+          staff who handle this repair, and can't set the estimate
+          themselves, propose one from the line under the form. */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base text-tertiary">Update for the customer</CardTitle>
           <CardDescription>Shown on the customer&apos;s tracking page.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-5">
+          {viewer.isOwner && proposal?.status === "pending" && (
+            <div className="flex flex-col gap-3 rounded-[var(--radius)] border border-highlight/40 bg-highlight/5 p-4 text-sm">
+              <div className="flex flex-col gap-0.5">
+                <p className="flex items-center gap-2 font-medium text-tertiary">
+                  <TrendingUp className="size-4 text-highlight" aria-hidden />
+                  {nameOf(proposal.staff_id, viewer)} proposes a revised estimate of{" "}
+                  <span className="tabular-nums">{formatPeso(proposal.amount)}</span>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Now {formatPeso(currentPrice(job))} · {formatDateTime(proposal.created_at)} · approving asks the
+                  customer to accept it
+                </p>
+              </div>
+              <p className="whitespace-pre-line">{proposal.reason}</p>
+              <ProposalDecision proposalId={proposal.id} jobId={job.id} />
+            </div>
+          )}
+
           {editable ? (
             <JobDetailsForm job={job} canReviseEstimate={shop?.canReviseEstimate ?? false} />
           ) : (
@@ -209,73 +231,28 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
               <dd>{job.parts_replaced || "–"}</dd>
             </dl>
           )}
+
+          {!viewer.isOwner && editable && !(shop?.canReviseEstimate ?? false) && !isFinished(job.status) && (
+            <div className="border-t border-border pt-4">
+              <ProposeEstimate
+                jobId={job.id}
+                current={currentPrice(job)}
+                last={
+                  proposal
+                    ? {
+                        amount: Number(proposal.amount),
+                        reason: proposal.reason,
+                        status: proposal.status,
+                        ownerNote: proposal.owner_note,
+                        sentOn: formatDateTime(proposal.created_at),
+                      }
+                    : null
+                }
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
-
-      {/* Revised-estimate proposals (ticket 39). The owner answers one
-          that is waiting; staff who handle this repair, and can't set the
-          estimate themselves, propose one. */}
-      {viewer.isOwner && proposal?.status === "pending" && (
-        <Card className="border-highlight/40">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base text-tertiary">
-              <TrendingUp className="size-4" aria-hidden />
-              Revised estimate proposed
-            </CardTitle>
-            <CardDescription>
-              By {nameOf(proposal.staff_id, viewer)}, {formatDateTime(proposal.created_at)}. Approving sets it as the
-              revised estimate, and the customer is asked to accept it.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4 text-sm">
-            <p>
-              <span className="text-lg font-semibold tabular-nums text-tertiary">{formatPeso(proposal.amount)}</span>{" "}
-              <span className="text-muted-foreground">(now {formatPeso(currentPrice(job))})</span>
-            </p>
-            <p className="whitespace-pre-line">{proposal.reason}</p>
-            <ProposalDecision proposalId={proposal.id} jobId={job.id} />
-          </CardContent>
-        </Card>
-      )}
-      {!viewer.isOwner && editable && !(shop?.canReviseEstimate ?? false) && !isFinished(job.status) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base text-tertiary">
-              <TrendingUp className="size-4" aria-hidden />
-              Propose a revised estimate
-            </CardTitle>
-            <CardDescription>
-              Found more to fix? Send the new amount and why to your owner. If they approve, the customer is asked to
-              accept it.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4 text-sm">
-            {proposal?.status === "pending" ? (
-              <div className="flex flex-col gap-2">
-                <p>
-                  <span className="rounded-full bg-highlight/15 px-2 py-0.5 text-xs font-medium text-highlight">Waiting</span>{" "}
-                  You proposed <span className="font-medium tabular-nums">{formatPeso(proposal.amount)}</span> on{" "}
-                  {formatDateTime(proposal.created_at)}.
-                </p>
-                <p className="whitespace-pre-line text-muted-foreground">&ldquo;{proposal.reason}&rdquo;</p>
-              </div>
-            ) : (
-              <>
-                {proposal && (
-                  <div className="flex flex-col gap-1 rounded-[var(--radius)] bg-muted p-3">
-                    <p>
-                      Your last proposal, {formatPeso(proposal.amount)}, was{" "}
-                      <span className="font-medium">{proposal.status === "approved" ? "approved" : "not approved"}</span>.
-                    </p>
-                    {proposal.owner_note && <p className="text-muted-foreground">Owner&apos;s note: {proposal.owner_note}</p>}
-                  </div>
-                )}
-                <ProposeEstimateForm jobId={job.id} current={currentPrice(job)} />
-              </>
-            )}
-          </CardContent>
-        </Card>
-      )}
 
       <Card>
         <CardHeader>
