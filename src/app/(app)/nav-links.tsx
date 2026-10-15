@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Briefcase, ChartLine, FileText, LayoutGrid, Plus, UserRound } from "lucide-react";
+import { Briefcase, ChartLine, FileText, LayoutGrid, Package, Plus, UserRound } from "lucide-react";
 import { RevealLabel, revealItem } from "@/components/reveal-label";
 import { cn } from "@/lib/utils";
 
@@ -13,8 +13,11 @@ const LINKS = [
   { href: "/jobs/new", label: "Add a repair", icon: Plus, ownerOnly: false },
   { href: "/analytics", label: "Analytics", icon: ChartLine, ownerOnly: true },
   { href: "/reports", label: "Reports", icon: FileText, ownerOnly: true },
+  { href: "/inventory", label: "Inventory", icon: Package, ownerOnly: false },
   { href: "/workspace", label: "Workspace", icon: Briefcase, ownerOnly: false },
-  { href: "/details", label: "My details", icon: UserRound, ownerOnly: false },
+  // On a phone the bar is full: My details is also in Workspace → Shop
+  // settings, so it hides there.
+  { href: "/details", label: "My details", icon: UserRound, ownerOnly: false, phoneHidden: true },
 ];
 
 // The technician's navigation, in the top bar: icons only, and each
@@ -25,7 +28,7 @@ export function NavLinks({ isOwner }: { isOwner: boolean }) {
 
   return (
     <nav aria-label="Main" className="flex items-center gap-0.5 sm:gap-1">
-      {LINKS.filter((l) => isOwner || !l.ownerOnly).map(({ href, label, icon: Icon }) => {
+      {LINKS.filter((l) => isOwner || !l.ownerOnly).map(({ href, label, icon: Icon, ...link }) => {
         const active = pathname === href;
         return (
           <Link
@@ -34,6 +37,7 @@ export function NavLinks({ isOwner }: { isOwner: boolean }) {
             aria-current={active ? "page" : undefined}
             className={cn(
               revealItem,
+              "phoneHidden" in link && "hidden sm:flex",
               active ? "bg-muted text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >

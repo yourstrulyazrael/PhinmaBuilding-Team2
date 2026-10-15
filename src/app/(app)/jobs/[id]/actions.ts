@@ -129,3 +129,36 @@ export async function updateJobDetails(
   revalidatePath(`/jobs/${jobId}`);
   return { saved: true };
 }
+
+// Records a part used on this repair (ticket 28). The database deducts
+// the stock and only allows the owner or the job's handler.
+export async function addJobPart(jobId: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  const partId = String(formData.get("part_id") ?? "");
+  const quantity = Number(formData.get("quantity"));
+  if (!partId) return { error: "Choose a part." };
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 99) return { error: "Enter a quantity from 1 to 99." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("job_parts").insert({ job_id: jobId, part_id: partId, quantity });
+  if (error) {
+    return {
+      error: /row-level security|policy/i.test(error.message)
+        ? "You can only record parts on repairs you are handling."
+        : "Couldn't record the part. Please try again.",
+    };
+  }
+  revalidatePath(`/jobs/${jobId}`);
+  revalidatePath("/inventory");
+  return { saved: true };
+}
+
+// Removes a part recorded by mistake; the database puts the stock back.
+export async function removeJobPart(jobPartId: string, jobId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("job_parts").delete().eq("id", jobPartId).select("id");
+  if (error) return { error: "Couldn't remove the part. Please try again." };
+  if (!data?.length) return { error: "You can only change parts on repairs you are handling." };
+  revalidatePath(`/jobs/${jobId}`);
+  revalidatePath("/inventory");
+  return { saved: true };
+}

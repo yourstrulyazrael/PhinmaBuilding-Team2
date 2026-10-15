@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Ban, Bell, CalendarClock, CircleCheck, Clock, Hourglass, Package, ThumbsDown, TrendingUp } from "lucide-react";
+import { Ban, Bell, CalendarClock, CircleCheck, Clock, Hourglass, Package, PackageX, ThumbsDown, TrendingUp } from "lucide-react";
+import type { Part } from "@/lib/inventory";
 import type { Job } from "@/lib/jobs";
 import { attentionAlerts, type Alert } from "@/lib/workspace";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,11 +26,13 @@ export function NotificationsTab({
   today,
   me,
   names,
+  lowStock,
 }: {
   jobs: Job[];
   today: string;
   me: string;
   names: Record<string, string>;
+  lowStock: Part[]; // parts at or below their low-stock level (ticket 27)
 }) {
   const alerts = attentionAlerts(jobs, today);
 
@@ -44,7 +47,27 @@ export function NotificationsTab({
           Repairs that need you. These are reminders for you only: nothing is sent to customers.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col gap-4">
+        {lowStock.length > 0 && (
+          <Link
+            href="/inventory"
+            className="flex items-start gap-3 rounded-[var(--radius)] border border-amber-300 bg-amber-50 p-3 text-sm hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/50 dark:hover:bg-amber-950"
+          >
+            <PackageX className="mt-0.5 size-4 shrink-0 text-amber-700 dark:text-amber-300" aria-hidden />
+            <span className="flex flex-col gap-0.5">
+              <span className="font-medium text-amber-900 dark:text-amber-100">
+                Low stock: {lowStock.length} part{lowStock.length === 1 ? "" : "s"}
+              </span>
+              <span className="text-muted-foreground">
+                {lowStock
+                  .slice(0, 5)
+                  .map((p) => `${p.name} (${p.quantity < 0 ? "check count" : p.quantity})`)
+                  .join(", ")}
+                {lowStock.length > 5 && ", …"}
+              </span>
+            </span>
+          </Link>
+        )}
         {alerts.length === 0 ? (
           <p className="text-sm text-muted-foreground">All caught up. Nothing needs your attention.</p>
         ) : (

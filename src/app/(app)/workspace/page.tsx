@@ -10,6 +10,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { cn } from "@/lib/utils";
 import { getMyShop } from "@/lib/shop";
 import { ShopSettings } from "./shop-settings";
+import { lowStock, type Part } from "@/lib/inventory";
 import { StaffTab } from "./staff-tab";
 import { CustomersTab } from "./customers-tab";
 import { NotificationsTab } from "./notifications-tab";
@@ -37,12 +38,14 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
 
   // RLS: only ever this shop's jobs and members, and this person's own
   // details plus their shopmates' names.
-  const [{ data, error }, { data: technician }, shop, { data: members }, { data: people }] = await Promise.all([
+  const [{ data, error }, { data: technician }, shop, { data: members }, { data: people }, { data: partRows }] =
+    await Promise.all([
     supabase.from("jobs").select("*"),
     supabase.from("technicians").select("display_name, contact_number").eq("id", user.id).maybeSingle(),
     getMyShop(supabase, user.id),
     supabase.from("shop_members").select("*").order("joined_at"),
     supabase.from("technicians").select("id, display_name, contact_number"),
+    supabase.from("parts").select("*"),
   ]);
   if (error) throw error;
   const jobs = (data ?? []) as Job[];
@@ -99,6 +102,7 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
           jobs={jobs}
           today={today}
           me={user.id}
+          lowStock={lowStock((partRows ?? []) as Part[])}
           names={Object.fromEntries((people ?? []).map((p) => [p.id, p.display_name]))}
         />
       )}

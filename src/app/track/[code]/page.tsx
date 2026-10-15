@@ -28,6 +28,7 @@ type TrackedJob = {
   estimate_status: "pending" | "approved" | "declined" | null;
   notes: string;
   parts_replaced: string;
+  parts_used: string | null; // recorded parts, by name (ticket 28)
   promised_date: string;
   updated_at: string;
   cancel_requested: boolean;
@@ -187,10 +188,10 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
               <dd className="whitespace-pre-line">{job.notes}</dd>
             </>
           )}
-          {job.parts_replaced && (
+          {(job.parts_used || job.parts_replaced) && (
             <>
               <dt className="text-muted-foreground">Parts replaced</dt>
-              <dd className="whitespace-pre-line">{job.parts_replaced}</dd>
+              <dd className="whitespace-pre-line">{[job.parts_used, job.parts_replaced].filter(Boolean).join("\n")}</dd>
             </>
           )}
         </dl>

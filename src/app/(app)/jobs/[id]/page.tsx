@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { AlarmClock, ArrowLeft, ExternalLink, Lock, Phone, QrCode } from "lucide-react";
+import { AlarmClock, ArrowLeft, ExternalLink, Lock, Package, Phone, QrCode } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatPeso, isFinished, paymentLabel, todayInManila, type Job } from "@/lib/jobs";
 import { currentPrice, isLate } from "@/lib/workspace";
@@ -16,6 +16,7 @@ import { canChange, loadNames, nameOf, type Viewer } from "@/lib/people";
 import { HandledBy } from "@/components/handled-by";
 import { StatusBadge } from "@/components/status-badge";
 import { CancelRequest } from "./cancel-request";
+import { PartsUsed } from "./parts-used";
 
 // The technician's view of one repair job. Unlike the claim slip and
 // tracking page, this screen shows the customer's name and phone.
@@ -28,10 +29,13 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
   if (!user) redirect("/login");
 
   // RLS: a job from another shop returns nothing -> "not found".
-  const [{ data: job }, shop, names] = await Promise.all([
+  const [{ data: job }, shop, names, { data: usedRows }, { data: partRows }] = await Promise.all([
     supabase.from("jobs").select("*").eq("id", id).maybeSingle<Job>(),
     getMyShop(supabase, user.id),
     loadNames(supabase),
+    // Parts used on this repair, and the catalog to pick from (ticket 28).
+    supabase.from("job_parts").select("id, part_id, quantity").eq("job_id", id).order("created_at"),
+    supabase.from("parts").select("id, sku, name, quantity, active").order("name"),
   ]);
   if (!job) notFound();
 
@@ -40,6 +44,14 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
   const viewer: Viewer = { id: user.id, isOwner: shop?.role === "owner", names };
   const editable = canChange(job, viewer);
   const handler = nameOf(job.handled_by, viewer);
+  const catalog = new Map((partRows ?? []).map((p) => [p.id as string, p]));
+  const used = (usedRows ?? []).map((u) => ({
+    id: u.id as string,
+    name: catalog.get(u.part_id)?.name ?? "Part",
+    sku: catalog.get(u.part_id)?.sku ?? "",
+    quantity: u.quantity as number,
+  }));
+  const pickable = (partRows ?? []).filter((p) => p.active).map((p) => ({ id: p.id, name: p.name, sku: p.sku, quantity: p.quantity }));
 
   const url = await trackingUrl(job.tracking_code);
   const late = isLate(job, todayInManila());
@@ -186,6 +198,19 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
               <dd>{job.parts_replaced || "–"}</dd>
             </dl>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base text-tertiary">
+            <Package className="size-4" aria-hidden />
+            Parts used
+          </CardTitle>
+          <CardDescription>Taken out of stock. The customer sees the part names.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PartsUsed jobId={job.id} used={used} parts={pickable} editable={editable} />
         </CardContent>
       </Card>
     </main>
