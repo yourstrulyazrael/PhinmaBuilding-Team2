@@ -117,6 +117,12 @@ least one real apprentice. Customers never log in; they only view a
    answer is the **first thing shown** (ticket 40). When the customer
    **approves**, the owner and the person handling the repair get a
    notification (and a count on the bell) that day and the next.
+   **Declining** asks the customer to confirm and say why (ticket 41);
+   the shop sees the reason on the repair and in the notification. The
+   bell's badge counts only notifications not yet seen (opening
+   Notifications clears it; remembered per browser), blinks when a new
+   one arrives, and the app refreshes every 30 seconds so they arrive
+   without reloading.
    Removing someone keeps their login and their name on past repairs,
    but they lose all access at once and their open repairs move to the
    owner (deleting the login would need the `service_role` key). Settings live on

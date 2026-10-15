@@ -4,7 +4,7 @@ import { getMyShop } from "@/lib/shop";
 import { loadNames } from "@/lib/people";
 import { todayInManila, type Job } from "@/lib/jobs";
 import { lowStock, type Part } from "@/lib/inventory";
-import { attentionAlerts } from "@/lib/workspace";
+import { attentionAlerts, type Alert } from "@/lib/workspace";
 
 /**
  * The signed-in person, their shop and their shopmates' names, fetched
@@ -55,15 +55,15 @@ export const getMe = cache(async () => {
 export const getNotifications = cache(async () => {
   const supabase = await getSupabase();
   const shop = await getShop();
-  if (!shop) return { alerts: [], lowStock: [], requests: 0, proposals: [], count: 0 };
+  if (!shop) return { alerts: [], lowStock: [], requests: 0, proposals: [], keys: [] as string[] };
 
   const owner = shop.role === "owner";
-  const [{ data: jobRows }, { data: partRows }, { count: requests }, { data: proposalRows }] = await Promise.all([
+  const [{ data: jobRows }, { data: partRows }, { data: requestRows }, { data: proposalRows }] = await Promise.all([
     supabase.from("jobs").select("*").not("status", "in", "(picked_up,cancelled)"),
     supabase.from("parts").select("*"),
     owner
-      ? supabase.from("estimate_requests").select("id", { count: "exact", head: true }).eq("status", "pending")
-      : Promise.resolve({ count: 0 }),
+      ? supabase.from("estimate_requests").select("id").eq("status", "pending")
+      : Promise.resolve({ data: [] }),
     // Owner: revised estimates staff proposed on a repair (ticket 39).
     owner
       ? supabase.from("estimate_proposals").select("id, job_id, staff_id, amount").eq("status", "pending")
@@ -74,19 +74,33 @@ export const getNotifications = cache(async () => {
   const user = await getUser();
   const alerts = attentionAlerts((jobRows ?? []) as Job[], todayInManila(), user ? { id: user.id, isOwner: owner } : undefined);
   const low = lowStock((partRows ?? []) as Part[]);
-  const waiting = requests ?? 0;
+  const requestIds = (requestRows ?? []).map((r) => r.id as string);
   // Only proposals on repairs that are still open need an answer.
   const openJobs = new Map(((jobRows ?? []) as Job[]).map((j) => [j.id, j]));
   const proposals = (proposalRows ?? []).flatMap((p) => {
     const job = openJobs.get(p.job_id as string);
     return job ? [{ id: p.id as string, job, staffId: p.staff_id as string, amount: Number(p.amount) }] : [];
   });
-  return {
-    alerts,
-    lowStock: low,
-    requests: waiting,
-    proposals,
-    // Low stock counts once, however many parts are low.
-    count: alerts.length + (low.length > 0 ? 1 : 0) + waiting + proposals.length,
-  };
+
+  // A stable name for each notification (ticket 41), so the bell can
+  // remember which ones you have already seen and spot new arrivals.
+  // Where the same reminder can come back for a new reason (another
+  // cancel request, another answer, another estimate), the name includes
+  // that, so it counts as new. Low-stock names start "low:": the bell
+  // counts them as one.
+  const keys = [
+    ...alerts.map(({ job, kind }) => `${kind}:${job.id}:${alertStamp(job, kind)}`),
+    ...low.map((p) => `low:${p.id}`),
+    ...requestIds.map((id) => `request:${id}`),
+    ...proposals.map((p) => `proposal:${p.id}`),
+  ];
+
+  return { alerts, lowStock: low, requests: requestIds.length, proposals, keys };
 });
+
+function alertStamp(job: Job, kind: Alert["kind"]) {
+  if (kind === "cancel") return job.cancel_requested_at ?? "";
+  if (kind === "approved" || kind === "declined") return job.estimate_answered_at ?? "";
+  if (kind === "estimate") return String(job.revised_estimate ?? "");
+  return "";
+}

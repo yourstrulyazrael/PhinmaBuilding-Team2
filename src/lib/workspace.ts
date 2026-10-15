@@ -103,7 +103,13 @@ export function attentionAlerts(jobs: Job[], today: string, viewer?: AlertViewer
       });
     }
     if (job.estimate_status === "declined") {
-      alerts.push({ job, kind: "declined", message: "Customer declined the revised estimate" });
+      alerts.push({
+        job,
+        kind: "declined",
+        message: job.estimate_decline_reason
+          ? `Customer declined the revised estimate: “${job.estimate_decline_reason}”`
+          : "Customer declined the revised estimate",
+      });
     }
     // The customer said yes (ticket 40): tell the owner and whoever is
     // handling the repair, on the day they answered and the day after.

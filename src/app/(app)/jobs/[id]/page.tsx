@@ -290,9 +290,15 @@ function EstimateAnswer({ job }: { job: Job }) {
     declined: "Customer declined",
   };
   return (
-    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[job.estimate_status]}`}>
-      {labels[job.estimate_status]}
-    </span>
+    <>
+      <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[job.estimate_status]}`}>
+        {labels[job.estimate_status]}
+      </span>
+      {/* Why they declined, in their words (ticket 41). */}
+      {job.estimate_status === "declined" && job.estimate_decline_reason && (
+        <span className="basis-full text-xs text-muted-foreground">&ldquo;{job.estimate_decline_reason}&rdquo;</span>
+      )}
+    </>
   );
 }
 

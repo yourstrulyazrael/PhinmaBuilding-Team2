@@ -10,10 +10,20 @@ export type CustomerActionResult = { error?: string };
 // tracking code in the link is what proves it is their repair. Each
 // database function does only its one job, on that one job.
 
-export async function answerEstimate(code: string, approve: boolean): Promise<CustomerActionResult> {
+// Declining needs a reason (ticket 41), so the shop knows what to do next.
+export async function answerEstimate(code: string, approve: boolean, reason = ""): Promise<CustomerActionResult> {
   if (!isTrackingCode(code)) return { error: "This link isn't valid." };
+  const why = reason.trim();
+  if (!approve && !why) return { error: "Please tell the shop why you are declining." };
+  if (why.length > 300) return { error: "Please keep the reason under 300 characters." };
   const supabase = await createClient();
-  const { error } = await supabase.rpc("answer_estimate", { code, approve });
+  let { error } = await supabase.rpc("answer_estimate", { code, approve, reason: approve ? "" : why });
+  // Before 021 is run, only the old two-argument function exists
+  // (PGRST202 = "no such function"). Answer anyway rather than leave the
+  // customer stuck; the reason is just not saved until then.
+  if (error?.code === "PGRST202") {
+    ({ error } = await supabase.rpc("answer_estimate", { code, approve }));
+  }
   // The function's own messages are written for customers.
   if (error) return { error: error.message };
   revalidatePath(`/track/${code}`);

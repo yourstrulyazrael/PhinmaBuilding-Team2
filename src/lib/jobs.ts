@@ -57,6 +57,7 @@ export type Job = {
   // nothing to answer.
   estimate_status: "pending" | "approved" | "declined" | null;
   estimate_answered_at: string | null;
+  estimate_decline_reason?: string; // why the customer declined (ticket 41); after 021
   // A customer's cancellation request (ticket 18).
   cancel_requested_at: string | null;
   cancel_reason: string;

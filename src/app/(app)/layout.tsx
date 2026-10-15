@@ -42,7 +42,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
 
           <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-2">
             <ThemeSwitch />
-            <NotificationsLink count={notifications.count} />
+            <NotificationsLink keys={notifications.keys} userId={user.id} />
             <AccountLink name={name} contact={technician?.contact_number} />
             <SignOutButton />
           </div>

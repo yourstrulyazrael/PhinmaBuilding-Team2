@@ -8,15 +8,19 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-// Approve or Decline a revised estimate (ticket 17).
+// Approve or Decline a revised estimate (ticket 17). Decline confirms
+// and asks why first (ticket 41).
 export function EstimateQuestion({ code, initial, revised }: { code: string; initial: number; revised: number }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>();
+  // Decline asks "are you sure, and why?" first (ticket 41).
+  const [declining, setDeclining] = useState(false);
+  const [reason, setReason] = useState("");
 
   function answer(approve: boolean) {
     setError(undefined);
     startTransition(async () => {
-      const result = await answerEstimate(code, approve);
+      const result = await answerEstimate(code, approve, approve ? "" : reason);
       if (result.error) setError(result.error);
     });
   }
@@ -31,16 +35,64 @@ export function EstimateQuestion({ code, initial, revised }: { code: string; ini
           approve.
         </p>
       </div>
-      <div className="flex gap-2">
-        <Button type="button" size="sm" disabled={pending} onClick={() => answer(true)}>
-          <Check className="mr-1.5 size-4" aria-hidden />
-          Approve
-        </Button>
-        <Button type="button" size="sm" variant="secondary" disabled={pending} onClick={() => answer(false)}>
-          <X className="mr-1.5 size-4" aria-hidden />
-          Decline
-        </Button>
-      </div>
+
+      {declining ? (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            answer(false);
+          }}
+          className="flex flex-col gap-3 rounded-[var(--radius)] border border-border bg-card p-3"
+        >
+          <div>
+            <p className="font-medium text-tertiary">Decline the new estimate?</p>
+            <p className="text-sm text-muted-foreground">
+              The shop won&apos;t continue at {formatPeso(revised)} and will contact you about what to do next.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="decline-reason">Why are you declining?</Label>
+            <Textarea
+              id="decline-reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              maxLength={300}
+              required
+              autoFocus
+              placeholder="e.g. It's more than I can spend right now. Please just fix the screen."
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" size="sm" variant="destructive" disabled={pending || !reason.trim()}>
+              {pending ? "Sending…" : "Yes, decline"}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={pending}
+              onClick={() => {
+                setDeclining(false);
+                setError(undefined);
+              }}
+            >
+              Go back
+            </Button>
+          </div>
+        </form>
+      ) : (
+        <div className="flex gap-2">
+          <Button type="button" size="sm" disabled={pending} onClick={() => answer(true)}>
+            <Check className="mr-1.5 size-4" aria-hidden />
+            {pending ? "Sending…" : "Approve"}
+          </Button>
+          <Button type="button" size="sm" variant="secondary" disabled={pending} onClick={() => setDeclining(true)}>
+            <X className="mr-1.5 size-4" aria-hidden />
+            Decline
+          </Button>
+        </div>
+      )}
       {error && (
         <p role="alert" className="text-sm text-destructive">
           {error}
