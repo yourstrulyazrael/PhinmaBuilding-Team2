@@ -1,9 +1,10 @@
 "use client";
 
+import { useMoney } from "@/components/currency";
+
 import { useActionState, useState, useTransition } from "react";
 import { Plus, X } from "lucide-react";
 import { addJobPart, removeJobPart, type ActionResult } from "./actions";
-import { formatPeso } from "@/lib/jobs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -26,6 +27,7 @@ export function PartsUsed({
   parts: PickablePart[];
   editable: boolean;
 }) {
+  const { money } = useMoney();
   const [state, formAction, pending] = useActionState<ActionResult, FormData>(addJobPart.bind(null, jobId), {});
   const [removing, startRemove] = useTransition();
   const [removeError, setRemoveError] = useState<string>();
@@ -43,7 +45,7 @@ export function PartsUsed({
                 {u.quantity > 1 && <span className="text-muted-foreground"> ×{u.quantity}</span>}
                 <span className="ml-2 font-mono text-xs text-muted-foreground">{u.sku}</span>
               </span>
-              <span className="ml-auto tabular-nums text-muted-foreground">{formatPeso(u.unitPrice * u.quantity)}</span>
+              <span className="ml-auto tabular-nums text-muted-foreground">{money(u.unitPrice * u.quantity)}</span>
               {editable && (
                 <button
                   type="button"
@@ -67,7 +69,7 @@ export function PartsUsed({
           <li className="flex items-center justify-between gap-3 bg-muted/50 px-3 py-2 text-sm">
             <span className="font-medium">Parts total</span>
             <span className="font-semibold tabular-nums">
-              {formatPeso(used.reduce((sum, u) => sum + u.unitPrice * u.quantity, 0))}
+              {money(used.reduce((sum, u) => sum + u.unitPrice * u.quantity, 0))}
             </span>
           </li>
         </ul>
@@ -92,7 +94,7 @@ export function PartsUsed({
                 </option>
                 {parts.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} ({p.sku}) · {formatPeso(p.price)} · {p.quantity} in stock
+                    {p.name} ({p.sku}) · {money(p.price)} · {p.quantity} in stock
                   </option>
                 ))}
               </select>

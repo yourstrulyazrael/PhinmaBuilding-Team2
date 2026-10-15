@@ -15,6 +15,8 @@ export type MyShop = {
   address: string;
   phone: string;
   slipNote: string;
+  // The shop's currency, e.g. "PHP" (ticket 54); "PHP" before 026.
+  currency: string;
   // The number customers should call: the shop phone, or the owner's.
   contact: string;
 };
@@ -28,6 +30,7 @@ type Membership = {
     address?: string;
     phone?: string;
     slip_note?: string;
+    currency?: string;
     owner: { display_name: string; contact_number: string } | null;
   } | null;
 };
@@ -66,6 +69,7 @@ export async function getMyShop(supabase: SupabaseClient, userId: string): Promi
     address: shop.address ?? "",
     phone,
     slipNote: shop.slip_note ?? "",
+    currency: shop.currency ?? "PHP",
     contact: phone || ownerContact,
   };
 }

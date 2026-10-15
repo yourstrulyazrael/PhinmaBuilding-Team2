@@ -90,11 +90,13 @@ export function StaffTab({ staff, requests }: { staff: StaffMember[]; requests: 
                 <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
                   <dt className="text-muted-foreground">Email</dt>
                   <dd className="min-w-0">
+                    {/* Email and number are plain text, not links, so a click
+                        doesn't open a "which app?" prompt. Select to copy. */}
                     {m.email ? (
-                      <a href={`mailto:${m.email}`} className="inline-flex max-w-full items-center gap-1.5 hover:underline">
+                      <span className="inline-flex max-w-full items-center gap-1.5">
                         <Mail className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-                        <span className="truncate">{m.email}</span>
-                      </a>
+                        <span className="select-all truncate">{m.email}</span>
+                      </span>
                     ) : (
                       <span className="text-muted-foreground">Run 018 in Supabase to see it</span>
                     )}
@@ -102,10 +104,10 @@ export function StaffTab({ staff, requests }: { staff: StaffMember[]; requests: 
                   <dt className="text-muted-foreground">Contact</dt>
                   <dd>
                     {m.contact ? (
-                      <a href={`tel:${m.contact.replace(/[^\d+]/g, "")}`} className="inline-flex items-center gap-1.5 hover:underline">
+                      <span className="inline-flex items-center gap-1.5">
                         <Phone className="size-3.5 text-muted-foreground" aria-hidden />
-                        {m.contact}
-                      </a>
+                        <span className="select-all">{m.contact}</span>
+                      </span>
                     ) : (
                       "–"
                     )}

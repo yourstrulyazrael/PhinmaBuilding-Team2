@@ -1,9 +1,10 @@
 "use client";
 
+import { useMoney } from "@/components/currency";
+
 import { useDeferredValue, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown, Barcode, Package, Search, X } from "lucide-react";
 import { stockLevel, type Part, type StockLevel } from "@/lib/inventory";
-import { formatPeso } from "@/lib/jobs";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ const SORT_OPTIONS: { label: string; sort: Sort }[] = [
  * stays fast.
  */
 export function PartsTable({ parts, costs, isOwner }: { parts: Part[]; costs: Record<string, number>; isOwner: boolean }) {
+  const { money } = useMoney();
   const [query, setQuery] = useState("");
   const [lowOnly, setLowOnly] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
@@ -252,8 +254,8 @@ export function PartsTable({ parts, costs, isOwner }: { parts: Part[]; costs: Re
                       </div>
                     </td>
                     <td className="px-3 py-3 text-primary">{p.category || <span className="text-muted-foreground">–</span>}</td>
-                    {isOwner && <td className="px-3 py-3 font-mono tabular-nums">{formatPeso(costs[p.id] ?? 0)}</td>}
-                    <td className="px-3 py-3 font-mono tabular-nums">{formatPeso(Number(p.retail_price ?? 0))}</td>
+                    {isOwner && <td className="px-3 py-3 font-mono tabular-nums">{money(costs[p.id] ?? 0)}</td>}
+                    <td className="px-3 py-3 font-mono tabular-nums">{money(Number(p.retail_price ?? 0))}</td>
                     <td className="px-3 py-3">
                       <StockPill part={p} />
                     </td>

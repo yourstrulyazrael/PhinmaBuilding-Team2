@@ -66,6 +66,10 @@ least one real apprentice. Customers never log in; they only view a
 **Drop-off date** (when it came in), **Estimated completion date** (what
 the shop expects; "Est. completion" where space is short). The database
 keeps its older names (`revised_estimate`, `promised_date`).
+
+**Currency** (ticket 54): the owner picks it on Account (peso by
+default); every amount, for shop and customer, is shown in it. Amounts
+are not converted.
 1. **Sign in / Set up your store**: email and password. Nobody can create
    an account on their own (ticket 35): "Have a store code? Set up your
    store" also asks for a **store code** the developer gave the owner.

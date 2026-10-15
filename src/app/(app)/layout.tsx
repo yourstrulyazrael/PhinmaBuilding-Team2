@@ -7,6 +7,7 @@ import { ThemeSwitch } from "@/components/theme-switch";
 import { signOut } from "../login/actions";
 import { AccountLink, NavLinks, NotificationsLink } from "./nav-links";
 import { ShopLive } from "./shop-live";
+import { CurrencyProvider } from "@/components/currency";
 import { getMe, getNotifications, getShop, getUser } from "@/lib/session";
 
 /**
@@ -29,32 +30,35 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   const name = technician?.display_name ?? "Technician";
 
   return (
-    <div className="flex flex-1 flex-col">
-      <header className="sticky top-0 z-20 border-b border-border bg-card/90 backdrop-blur print:hidden">
-        {/* Full width: logo and pages hug the left edge; theme, bell,
-            account and sign out the right edge, at any screen size. */}
-        <div className="flex h-14 w-full items-center gap-2 px-4 md:h-16 md:gap-4 md:px-8 2xl:px-12">
-          <Link href="/" aria-label="Zenith Repair: Overview" className="shrink-0 rounded-[var(--radius)]">
-            {/* On a narrow phone, just the logo: the buttons need the room. */}
-            <Logo size={36} nameClassName="hidden sm:inline" />
-          </Link>
-
-          <NavLinks isOwner={shop.role === "owner"} />
-
-          <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-2">
-            <ThemeSwitch />
-            <NotificationsLink keys={notifications.keys} userId={user.id} />
-            <AccountLink name={name} contact={technician?.contact_number} />
-            <SignOutButton />
+    // Browser-drawn amounts use the shop's currency (ticket 54).
+    <CurrencyProvider currency={shop.currency}>
+      <div className="flex flex-1 flex-col">
+        <header className="sticky top-0 z-20 border-b border-border bg-card/90 backdrop-blur print:hidden">
+          {/* Full width: logo and pages hug the left edge; theme, bell,
+              account and sign out the right edge, at any screen size. */}
+          <div className="flex h-14 w-full items-center gap-2 px-4 md:h-16 md:gap-4 md:px-8 2xl:px-12">
+            <Link href="/" aria-label="Zenith Repair: Overview" className="shrink-0 rounded-[var(--radius)]">
+              {/* On a narrow phone, just the logo: the buttons need the room. */}
+              <Logo size={36} nameClassName="hidden sm:inline" />
+            </Link>
+  
+            <NavLinks isOwner={shop.role === "owner"} />
+  
+            <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-2">
+              <ThemeSwitch />
+              <NotificationsLink keys={notifications.keys} userId={user.id} />
+              <AccountLink name={name} contact={technician?.contact_number} />
+              <SignOutButton />
+            </div>
           </div>
-        </div>
-      </header>
-
-      <div className="flex min-w-0 flex-1 flex-col">{children}</div>
-
-      {/* Customer answers arrive live (ticket 52). */}
-      <ShopLive shopId={shop.id} userId={user.id} isOwner={shop.role === "owner"} />
-    </div>
+        </header>
+  
+        <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+  
+        {/* Customer answers arrive live (ticket 52). */}
+        <ShopLive shopId={shop.id} userId={user.id} isOwner={shop.role === "owner"} />
+      </div>
+    </CurrencyProvider>
   );
 }
 

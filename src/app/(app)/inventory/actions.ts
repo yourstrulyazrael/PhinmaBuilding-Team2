@@ -23,8 +23,8 @@ function readPart(formData: FormData) {
   if (!sku || sku.length > 40) return { error: "Enter a SKU (up to 40 characters)." };
   if (!name || name.length > 100) return { error: "Enter the part name (up to 100 characters)." };
   if (category.length > 50) return { error: "Keep the category under 50 characters." };
-  if (!Number.isFinite(cost) || cost < 0 || cost > 99_999_999.99) return { error: "Enter a cost of ₱0 or more." };
-  if (!Number.isFinite(retail) || retail < 0 || retail > 99_999_999.99) return { error: "Enter a retail price of ₱0 or more." };
+  if (!Number.isFinite(cost) || cost < 0 || cost > 99_999_999.99) return { error: "Enter a cost of 0 or more." };
+  if (!Number.isFinite(retail) || retail < 0 || retail > 99_999_999.99) return { error: "Enter a retail price of 0 or more." };
   if (!Number.isInteger(lowStockAt) || lowStockAt < 0 || lowStockAt > 9999) {
     return { error: "Enter a low-stock level: a whole number, 0 or more." };
   }

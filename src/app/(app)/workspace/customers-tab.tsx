@@ -40,13 +40,12 @@ export function CustomersTab({ jobs }: { jobs: Job[] }) {
                     {formatDate(manilaDate(c.lastVisit))}
                   </p>
                 </div>
-                <a
-                  href={`tel:${c.phone.replace(/[^\d+]/g, "")}`}
-                  className="inline-flex w-fit items-center gap-1.5 text-sm text-primary underline-offset-4 hover:underline"
-                >
-                  <Phone className="size-3.5" aria-hidden />
-                  {c.phone}
-                </a>
+                {/* Plain text, not a "tel:" link, so a click doesn't open a
+                    "call with…?" prompt. Select to copy. */}
+                <span className="inline-flex w-fit items-center gap-1.5 text-sm">
+                  <Phone className="size-3.5 text-muted-foreground" aria-hidden />
+                  <span className="select-all">{c.phone}</span>
+                </span>
                 <ul className="flex flex-col gap-1.5">
                   {c.jobs.map((job) => (
                     <li key={job.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">

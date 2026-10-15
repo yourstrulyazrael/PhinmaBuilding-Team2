@@ -14,13 +14,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { CURRENCIES, currencySymbol } from "@/lib/money";
 
 // The forms on the Account page (ticket 34). "use client" because each
 // shows "Saving…" and the result without reloading the page.
 
 // Store details: owner only (the page hides it from staff; RLS refuses
 // them anyway).
-export function ShopDetailsForm({ shopId, name, address, phone }: { shopId: string; name: string; address: string; phone: string }) {
+export function ShopDetailsForm({
+  shopId,
+  name,
+  address,
+  phone,
+  currency,
+}: {
+  shopId: string;
+  name: string;
+  address: string;
+  phone: string;
+  currency: string;
+}) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(saveShopDetails.bind(null, shopId), {});
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -32,6 +45,24 @@ export function ShopDetailsForm({ shopId, name, address, phone }: { shopId: stri
       </Field>
       <Field id="phone" label="Shop phone" hint="Optional. Customers call this; if empty, they call your own number.">
         <Input id="phone" name="phone" type="tel" defaultValue={phone} maxLength={40} placeholder="e.g. (033) 123 4567" />
+      </Field>
+      <Field
+        id="currency"
+        label="Currency"
+        hint="Every price, payment and report in your shop, and on customers' pages, uses it. Amounts aren't converted."
+      >
+        <select
+          id="currency"
+          name="currency"
+          defaultValue={currency}
+          className="h-10 w-full rounded-[var(--radius)] border border-input bg-card px-3 text-base shadow-xs focus-visible:border-ring focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/15 md:text-sm"
+        >
+          {CURRENCIES.map((c) => (
+            <option key={c.code} value={c.code}>
+              {currencySymbol(c.code)} · {c.label} ({c.code})
+            </option>
+          ))}
+        </select>
       </Field>
       <Result state={state} pending={pending} />
       <Submit pending={pending}>Save store details</Submit>

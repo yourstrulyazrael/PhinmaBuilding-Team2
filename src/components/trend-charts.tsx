@@ -1,20 +1,13 @@
 "use client";
 
+import { useMoney } from "@/components/currency";
 import type { TrendPoint } from "@/lib/workspace";
 import { LineChart } from "./line-chart";
-
-// "₱1,500" in tooltips; "₱1.5K" on the axis, to keep it narrow.
-const peso = (n: number) =>
-  new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 }).format(n);
-const pesoShort = (n: number) =>
-  n >= 1000
-    ? `₱${new Intl.NumberFormat("en-PH", { maximumFractionDigits: 1 }).format(n / 1000)}K`
-    : `₱${Math.round(n)}`;
 
 /**
  * The two trend charts under the statistics (ticket 26): repairs
  * received vs picked up, and money earned. Two charts, not one, because
- * counts and pesos can't honestly share an axis.
+ * counts and money can't honestly share an axis.
  */
 export function TrendCharts({ points, bucket }: { points: TrendPoint[]; bucket: "hour" | "day" }) {
   const labels = points.map((p) => p.label);
@@ -37,15 +30,20 @@ export function TrendCharts({ points, bucket }: { points: TrendPoint[]; bucket: 
   );
 }
 
+// Money in the shop's currency (ticket 54): "$1,500" in tooltips, and
+// "$1.5K" on the axis to keep it narrow.
 function EarnedChart({ labels, axisName, values }: { labels: string[]; axisName: string; values: number[] }) {
+  const { money, symbol } = useMoney();
+  const short = (n: number) =>
+    n >= 1000 ? `${symbol}${new Intl.NumberFormat("en", { maximumFractionDigits: 1 }).format(n / 1000)}K` : `${symbol}${Math.round(n)}`;
   return (
     <LineChart
-      title="Earned (₱)"
+      title={`Earned (${symbol})`}
       axisName={axisName}
       labels={labels}
       series={[{ name: "Earned", color: "var(--chart-2)", values }]}
-      format={peso}
-      tickFormat={pesoShort}
+      format={(n) => money(Math.round(n))}
+      tickFormat={short}
     />
   );
 }

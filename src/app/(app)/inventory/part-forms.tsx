@@ -1,5 +1,7 @@
 "use client";
 
+import { useMoney } from "@/components/currency";
+
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { Archive, ArchiveRestore, EllipsisVertical, PackagePlus, Pencil, Plus, SlidersHorizontal, Trash2, TriangleAlert } from "lucide-react";
 import { addPart, deletePart, editPart, recordMovement, setPartActive, type FormState } from "./actions";
@@ -38,6 +40,7 @@ export function CategoryList({ categories }: { categories: string[] }) {
 
 // SKU, name, category, prices and low-stock level: shared by Add and Edit.
 function PartFields({ part, cost }: { part?: Part; cost?: number }) {
+  const { symbol } = useMoney();
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <Field label="Name">
@@ -52,10 +55,10 @@ function PartFields({ part, cost }: { part?: Part; cost?: number }) {
       <Field label="Low-stock level">
         <Input name="low_stock_at" type="number" inputMode="numeric" min={0} step={1} defaultValue={part?.low_stock_at ?? 2} required />
       </Field>
-      <Field label="Cost (₱): what the shop pays">
+      <Field label={`Cost (${symbol}): what the shop pays`}>
         <Input name="cost" type="number" inputMode="decimal" min={0} step="0.01" defaultValue={cost ?? ""} required />
       </Field>
-      <Field label="Retail price (₱): what the customer pays">
+      <Field label={`Retail price (${symbol}): what the customer pays`}>
         <Input name="retail_price" type="number" inputMode="decimal" min={0} step="0.01" defaultValue={part?.retail_price ?? ""} required />
       </Field>
     </div>

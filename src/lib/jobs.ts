@@ -5,6 +5,8 @@
  * (supabase/sql/008-estimate-cancel-payment.sql).
  */
 
+import { money } from "@/lib/money";
+
 export const STATUSES = [
   { value: "received", label: "Received" },
   { value: "diagnosing", label: "Diagnosing" },
@@ -103,13 +105,11 @@ export const STATUS_DOTS: Record<Status, string> = {
   cancelled: "bg-red-500",
 };
 
-// ₱1,500 — no decimals unless there are centavos.
-export function formatPeso(amount: number) {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    minimumFractionDigits: Number.isInteger(Number(amount)) ? 0 : 2,
-  }).format(amount);
+// An amount in the shop's currency (ticket 54; the name is from when it
+// was always pesos). For pages drawn on the SERVER: it uses this
+// request's shop currency. Browser components use useMoney() instead.
+export function formatPeso(amount: number | string) {
+  return money(amount);
 }
 
 // "2026-10-18" -> "Oct 18, 2026". Read as a calendar date, so the time

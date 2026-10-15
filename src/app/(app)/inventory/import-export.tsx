@@ -1,5 +1,7 @@
 "use client";
 
+import { useMoney } from "@/components/currency";
+
 import { useState, useTransition } from "react";
 import { ChevronDown, Download, FileJson, FileSpreadsheet, FileText, FileUp, Upload } from "lucide-react";
 import { importParts } from "./actions";
@@ -14,7 +16,6 @@ import {
   type FileRow,
   type Problem,
 } from "@/lib/inventory-io";
-import { formatPeso } from "@/lib/jobs";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Menu } from "@/components/menu";
 import { Modal } from "@/components/modal";
@@ -29,15 +30,16 @@ const FORMATS: { key: Format; label: string; icon: typeof FileText }[] = [
   { key: "json", label: "JSON", icon: FileJson },
 ];
 
-function save(rows: FileRow[], format: Format, baseName: string) {
+function save(rows: FileRow[], format: Format, baseName: string, symbol: string) {
   if (format === "csv") return download(toCsv(rows), `${baseName}.csv`, "text/csv;charset=utf-8");
   if (format === "json") return download(toJson(rows), `${baseName}.json`, "application/json");
-  return downloadXlsx(rows, `${baseName}.xlsx`);
+  return downloadXlsx(rows, `${baseName}.xlsx`, symbol);
 }
 
 // "Export ▾" in the page header (owner): the inventory in the template's
 // columns, so it can be edited and imported back (ticket 31).
 export function ExportMenu({ current }: { current: FileRow[] }) {
+  const { symbol } = useMoney();
   const today = new Date().toISOString().slice(0, 10);
   return (
     <Menu
@@ -53,7 +55,7 @@ export function ExportMenu({ current }: { current: FileRow[] }) {
       items={FORMATS.map(({ key, label, icon }) => ({
         label,
         icon,
-        onSelect: () => void save(current, key, `inventory-${today}`),
+        onSelect: () => void save(current, key, `inventory-${today}`, symbol),
       }))}
     />
   );
@@ -83,6 +85,7 @@ export function ImportButton({ current }: { current: FileRow[] }) {
 }
 
 function ImportPanel({ current, onDone }: { current: FileRow[]; onDone: () => void }) {
+  const { money, symbol } = useMoney();
   const [fileName, setFileName] = useState<string>();
   const [plan, setPlan] = useState<Plan[]>([]);
   const [problems, setProblems] = useState<Problem[]>([]);
@@ -141,7 +144,7 @@ function ImportPanel({ current, onDone }: { current: FileRow[]; onDone: () => vo
         </p>
         <div className="flex flex-wrap gap-2">
           {FORMATS.map(({ key, label, icon: Icon }) => (
-            <Button key={key} type="button" size="sm" variant="secondary" onClick={() => save(templateRows(), key, "inventory-template")}>
+            <Button key={key} type="button" size="sm" variant="secondary" onClick={() => save(templateRows(), key, "inventory-template", symbol)}>
               <Icon className="size-4" aria-hidden />
               {label}
             </Button>
@@ -225,8 +228,8 @@ function ImportPanel({ current, onDone }: { current: FileRow[]; onDone: () => vo
                       <span className="ml-2 font-mono text-xs text-muted-foreground">{p.row.sku}</span>
                     </td>
                     <td className="px-3 py-1.5 text-muted-foreground">{p.row.category}</td>
-                    <td className="px-3 py-1.5 text-right tabular-nums">{formatPeso(p.row.cost)}</td>
-                    <td className="px-3 py-1.5 text-right tabular-nums">{formatPeso(p.row.retail_price)}</td>
+                    <td className="px-3 py-1.5 text-right tabular-nums">{money(p.row.cost)}</td>
+                    <td className="px-3 py-1.5 text-right tabular-nums">{money(p.row.retail_price)}</td>
                     <td className="px-3 py-1.5 text-right tabular-nums">
                       {p.row.quantity}
                       {p.action !== "new" && p.stockChange !== 0 && (

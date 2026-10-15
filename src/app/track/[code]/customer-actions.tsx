@@ -1,9 +1,10 @@
 "use client";
 
+import { useMoney } from "@/components/currency";
+
 import { useState, useTransition } from "react";
 import { Ban, Check, X } from "lucide-react";
 import { answerEstimate, requestCancellation } from "./actions";
-import { formatPeso } from "@/lib/jobs";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +22,7 @@ export function EstimateQuestion({
   revised: number;
   parts?: number; // parts used so far, charged on top of labour (ticket 47)
 }) {
+  const { money } = useMoney();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>();
   // Decline asks "are you sure, and why?" first (ticket 41).
@@ -40,12 +42,12 @@ export function EstimateQuestion({
       <div>
         <p className="font-medium text-tertiary">Please approve the revised quote</p>
         <p className="text-sm text-muted-foreground">
-          After checking your phone, the quote changed from {formatPeso(initial)} to{" "}
-          <span className="font-semibold text-foreground">{formatPeso(revised)}</span>
+          After checking your phone, the quote changed from {money(initial)} to{" "}
+          <span className="font-semibold text-foreground">{money(revised)}</span>
           {Number(parts) > 0 ? (
             <>
-              . With the parts ({formatPeso(parts)}), your total would be{" "}
-              <span className="font-semibold text-foreground">{formatPeso(Number(revised) + Number(parts))}</span>
+              . With the parts ({money(parts)}), your total would be{" "}
+              <span className="font-semibold text-foreground">{money(Number(revised) + Number(parts))}</span>
             </>
           ) : null}
           . Work continues once you approve.
@@ -63,7 +65,7 @@ export function EstimateQuestion({
           <div>
             <p className="font-medium text-tertiary">Decline the revised quote?</p>
             <p className="text-sm text-muted-foreground">
-              The shop won&apos;t continue at {formatPeso(revised)} and will contact you about what to do next.
+              The shop won&apos;t continue at {money(revised)} and will contact you about what to do next.
             </p>
           </div>
           <div className="flex flex-col gap-2">

@@ -62,8 +62,15 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
 
   // Repairs that are late, or promised for today and not ready yet.
   const today = todayInManila();
-  const lateCount = open.filter((j) => isLate(j, today)).length;
-  const dueTodayCount = open.filter((j) => j.status !== "ready_for_pickup" && j.promised_date === today).length;
+  const lateJobs = open.filter((j) => isLate(j, today));
+  const dueTodayJobs = open.filter((j) => j.status !== "ready_for_pickup" && j.promised_date === today);
+  const lateCount = lateJobs.length;
+  const dueTodayCount = dueTodayJobs.length;
+  // "Let the customer know" for one person, "customers" for more. Two
+  // repairs for the same person count once (same contact number).
+  const customersToTell = new Set(
+    [...lateJobs, ...dueTodayJobs].map((j) => j.customer_phone.replace(/\D/g, "") || j.id),
+  ).size;
 
   const matches = sortJobs(searchJobs(jobs, q), sort);
   const listed = {
@@ -116,7 +123,7 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
             ]
               .filter(Boolean)
               .join(", ")}
-            . Let the customers know.
+            . Let the {customersToTell === 1 ? "customer" : "customers"} know.
           </span>
           <span className="font-medium text-amber-800 dark:text-amber-200">View</span>
         </Link>

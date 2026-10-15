@@ -1,5 +1,7 @@
 "use client";
 
+import { useMoney } from "@/components/currency";
+
 import { useActionState } from "react";
 import { createJob, type NewJobState } from "./actions";
 import { Button } from "@/components/ui/button";
@@ -8,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 export function NewJobForm({ today }: { today: string }) {
+  const { symbol } = useMoney();
   const [state, formAction, pending] = useActionState<NewJobState, FormData>(createJob, {});
 
   return (
@@ -30,7 +33,7 @@ export function NewJobForm({ today }: { today: string }) {
         <legend className="mb-3 text-sm font-semibold text-tertiary">Repair</legend>
         <Field label="Device" name="device" maxLength={100} placeholder="e.g. iPhone 12" />
         <Field
-          label="Initial quote (₱)"
+          label={`Initial quote (${symbol})`}
           name="initial_quote"
           type="number"
           inputMode="decimal"

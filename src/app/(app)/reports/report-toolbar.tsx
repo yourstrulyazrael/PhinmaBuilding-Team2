@@ -1,12 +1,12 @@
 "use client";
 
+import { useMoney } from "@/components/currency";
 import { useState } from "react";
 import { FileDown, FileSpreadsheet } from "lucide-react";
 import type { Report } from "@/lib/report";
 import type { TrendPoint } from "@/lib/workspace";
 import { Button } from "@/components/ui/button";
 
-const PESO = '"₱"#,##0.00';
 
 /**
  * The two exports (tickets 25–26). Hidden when printing.
@@ -27,6 +27,7 @@ export function ReportToolbar({
   points: TrendPoint[];
   bucket: "hour" | "day";
 }) {
+  const { symbol } = useMoney();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -37,7 +38,8 @@ export function ReportToolbar({
       // Loaded only when needed, so other pages stay light.
       const { default: writeXlsxFile } = await import("write-excel-file/browser");
       const bold = (value: string) => ({ value, fontWeight: "bold" as const });
-      const peso = (value: number | null) => (value === null ? null : { value, format: PESO });
+      // Excel shows the shop's currency sign too (ticket 54).
+      const peso = (value: number | null) => (value === null ? null : { value, format: `"${symbol}"#,##0.00` });
 
       const summary = [
         [bold(shopName)],

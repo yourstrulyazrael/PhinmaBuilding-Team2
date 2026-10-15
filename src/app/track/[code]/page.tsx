@@ -9,6 +9,8 @@ import { StatusBadge } from "@/components/status-badge";
 import { cn } from "@/lib/utils";
 import { AutoRefresh } from "./auto-refresh";
 import { CancelRequestForm, EstimateQuestion } from "./customer-actions";
+import { CurrencyProvider } from "@/components/currency";
+import { setRequestCurrency } from "@/lib/money";
 
 export const metadata: Metadata = {
   title: "Repair status · Zenith Repair",
@@ -38,6 +40,7 @@ type TrackedJob = {
   // After 023 (ticket 47): parts used, at retail, and each one.
   parts_total?: number;
   parts_lines?: { name: string; quantity: number; unit_price: number }[];
+  shop_currency?: string; // after 026 (ticket 54)
   technician_name: string; // who is handling the phone
 };
 
@@ -56,15 +59,19 @@ export default async function TrackingPage({ params, searchParams }: PageProps<"
     const supabase = await createClient();
     const { data } = await supabase.rpc("get_tracking_page", { code });
     job = (data?.[0] as TrackedJob | undefined) ?? null;
+    // Amounts in the shop's currency (ticket 54).
+    setRequestCurrency(job?.shop_currency);
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
-      <Logo name={job?.shop_name ?? "Zenith Repair"} />
+    <CurrencyProvider currency={job?.shop_currency ?? "PHP"}>
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
+        <Logo name={job?.shop_name ?? "Zenith Repair"} />
 
-      {job && (answered === "approved" || answered === "declined") && <AnswerThanks answer={answered} />}
-      {job ? <JobStatus job={job} code={code} /> : <NotFound />}
-    </main>
+        {job && (answered === "approved" || answered === "declined") && <AnswerThanks answer={answered} />}
+        {job ? <JobStatus job={job} code={code} /> : <NotFound />}
+      </main>
+    </CurrencyProvider>
   );
 }
 

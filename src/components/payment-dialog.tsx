@@ -1,8 +1,10 @@
 "use client";
 
+import { useMoney } from "@/components/currency";
+
 import { useEffect, useRef, useState } from "react";
 import { Banknote } from "lucide-react";
-import { formatPeso, needsPaymentRef, PAYMENT_METHODS, type PaymentMethod } from "@/lib/jobs";
+import { needsPaymentRef, PAYMENT_METHODS, type PaymentMethod } from "@/lib/jobs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +30,7 @@ export function PaymentDialog({
   onConfirm: (amount: number, method: PaymentMethod, ref: string) => void;
   onClose: () => void;
 }) {
+  const { money, symbol } = useMoney();
   const ref = useRef<HTMLDialogElement>(null);
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const askRef = needsPaymentRef(method);
@@ -46,7 +49,7 @@ export function PaymentDialog({
     const amount = Number(form.get("amount"));
     const ref = String(form.get("payment_ref") ?? "").trim();
     if (!Number.isFinite(amount) || amount < 0) {
-      setError("Enter the amount paid, ₱0 or more.");
+      setError("Enter the amount paid, 0 or more.");
       return;
     }
     if (askRef && !/^[0-9]{4}$/.test(ref)) {
@@ -75,13 +78,13 @@ export function PaymentDialog({
                 Record payment
               </h2>
               <p className="text-sm text-muted-foreground">
-                {device ? `${device}: ` : ""}final price {formatPeso(price)}. Saving marks it Picked up.
+                {device ? `${device}: ` : ""}final price {money(price)}. Saving marks it Picked up.
               </p>
             </div>
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="amount">Amount paid (₱)</Label>
+            <Label htmlFor="amount">Amount paid ({symbol})</Label>
             <Input
               id="amount"
               name="amount"

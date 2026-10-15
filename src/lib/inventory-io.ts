@@ -37,10 +37,11 @@ const EXAMPLES: FileRow[] = [
   { sku: "BAT-A52", name: "Galaxy A52 battery", category: "Batteries", cost: 650, retail_price: 1100, quantity: 10, low_stock_at: 3 },
 ];
 
-// "₱1,200.50" -> 1200.5; "" -> NaN.
+// "₱1,200.50", "$1,200.50", "PHP 1,200.50" -> 1200.5; "" -> NaN. Any
+// currency sign or code is ignored (ticket 54).
 function toNumber(value: unknown) {
   if (typeof value === "number") return value;
-  const cleaned = String(value ?? "").replace(/[₱,\s]/g, "").replace(/^php/i, "");
+  const cleaned = String(value ?? "").replace(/[^0-9.-]/g, "");
   return cleaned === "" ? NaN : Number(cleaned);
 }
 
@@ -96,8 +97,8 @@ export function rowsFromTable(table: unknown[][]): { rows: FileRow[]; problems: 
       !row.name ? "No name." :
       row.name.length > 100 ? "Name is longer than 100 characters." :
       row.category.length > 50 ? "Category is longer than 50 characters." :
-      !(Number.isFinite(row.cost) && row.cost >= 0 && row.cost <= 99_999_999.99) ? "Cost must be ₱0 or more." :
-      !(Number.isFinite(row.retail_price) && row.retail_price >= 0 && row.retail_price <= 99_999_999.99) ? "Retail price must be ₱0 or more." :
+      !(Number.isFinite(row.cost) && row.cost >= 0 && row.cost <= 99_999_999.99) ? "Cost must be 0 or more." :
+      !(Number.isFinite(row.retail_price) && row.retail_price >= 0 && row.retail_price <= 99_999_999.99) ? "Retail price must be 0 or more." :
       !(Number.isInteger(row.quantity) && row.quantity >= 0 && row.quantity <= 9999) ? "Quantity must be a whole number from 0 to 9,999." :
       !(Number.isInteger(row.low_stock_at) && row.low_stock_at >= 0 && row.low_stock_at <= 9999) ? "Low-stock level must be a whole number, 0 or more." :
       seen.has(row.sku.toLowerCase()) ? `Same SKU as row ${seen.get(row.sku.toLowerCase())}.` :
@@ -156,7 +157,7 @@ function csvCell(value: string | number) {
 }
 
 export function toCsv(rows: FileRow[]) {
-  // The BOM makes Excel read ₱ and accents correctly.
+  // The BOM makes Excel read currency signs and accents correctly.
   return "﻿" + [COLUMNS.join(","), ...rows.map((r) => COLUMNS.map((c) => csvCell(r[c])).join(","))].join("\r\n") + "\r\n";
 }
 
@@ -176,10 +177,10 @@ export function download(content: BlobPart, fileName: string, type: string) {
 }
 
 // An Excel workbook with one "Inventory" sheet in the template's columns.
-export async function downloadXlsx(rows: FileRow[], fileName: string) {
+export async function downloadXlsx(rows: FileRow[], fileName: string, symbol = "₱") {
   const { default: writeXlsxFile } = await import("write-excel-file/browser");
   const bold = (value: string) => ({ value, fontWeight: "bold" as const });
-  const peso = (value: number) => ({ value, format: '"₱"#,##0.00' });
+  const peso = (value: number) => ({ value, format: `"${symbol}"#,##0.00` });
   await writeXlsxFile([
     {
       sheet: "Inventory",

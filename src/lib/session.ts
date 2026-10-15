@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getMyShop } from "@/lib/shop";
+import { setRequestCurrency } from "@/lib/money";
 import { loadNames } from "@/lib/people";
 import { todayInManila, type Job } from "@/lib/jobs";
 import { lowStock, type Part } from "@/lib/inventory";
@@ -27,7 +28,11 @@ export const getUser = cache(async () => {
 
 export const getShop = cache(async () => {
   const user = await getUser();
-  return user ? getMyShop(await getSupabase(), user.id) : null;
+  const shop = user ? await getMyShop(await getSupabase(), user.id) : null;
+  // Every amount drawn for this request uses the shop's currency
+  // (ticket 54; lib/money.ts).
+  setRequestCurrency(shop?.currency);
+  return shop;
 });
 
 export const getNames = cache(async () => loadNames(await getSupabase()));

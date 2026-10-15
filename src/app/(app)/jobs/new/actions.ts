@@ -28,7 +28,7 @@ export async function createJob(
   if (!job.device) return { error: "Enter the device, e.g. iPhone 12." };
   if (!job.problem) return { error: "Describe the problem." };
   if (!quoteText || !Number.isFinite(initialQuote) || initialQuote < 0) {
-    return { error: "Enter an initial quote of ₱0 or more." };
+    return { error: "Enter an initial quote of 0 or more." };
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(job.promised_date)) {
     return { error: "Pick an estimated completion date." };

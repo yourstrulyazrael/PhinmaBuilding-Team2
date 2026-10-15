@@ -44,8 +44,14 @@ export default async function AccountPage() {
       />
 
       {owner && (
-        <Section icon={Store} title="Store details" description="Shown on every claim slip and tracking page.">
-          <ShopDetailsForm shopId={shop.id} name={shop.name} address={shop.address} phone={shop.phone} />
+        <Section icon={Store} title="Store details" description="Shown on every claim slip and tracking page; the currency is used everywhere.">
+          <ShopDetailsForm
+            shopId={shop.id}
+            name={shop.name}
+            address={shop.address}
+            phone={shop.phone}
+            currency={shop.currency}
+          />
         </Section>
       )}
 

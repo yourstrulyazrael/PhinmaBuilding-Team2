@@ -1,8 +1,9 @@
 "use client";
 
+import { useMoney } from "@/components/currency";
+
 import { useActionState, useState, useTransition } from "react";
 import { Check, Send, X } from "lucide-react";
-import { formatPeso } from "@/lib/jobs";
 import { decideRevisedEstimate, proposeRevisedEstimate, type ActionResult } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,7 @@ export function ProposeEstimate({
   last: LastProposal | null;
   children: React.ReactNode;
 }) {
+  const { money, symbol } = useMoney();
   const [state, formAction, pending] = useActionState<ActionResult, FormData>(
     proposeRevisedEstimate.bind(null, jobId),
     {},
@@ -55,7 +57,7 @@ export function ProposeEstimate({
           <p className="font-medium">Revised quote</p>
           <p className="text-muted-foreground">
             <span className="font-medium text-highlight">Waiting for your owner:</span> you proposed{" "}
-            <span className="tabular-nums">{formatPeso(last.amount)}</span> on {last.sentOn}.
+            <span className="tabular-nums">{money(last.amount)}</span> on {last.sentOn}.
           </p>
           <p className="whitespace-pre-line text-xs text-muted-foreground">&ldquo;{last.reason}&rdquo;</p>
         </div>
@@ -68,7 +70,7 @@ export function ProposeEstimate({
     <>
       <form id={FORM_ID} action={formAction} className="flex flex-col gap-4 text-sm">
         <div className="flex flex-col gap-2">
-          <Label htmlFor="amount">Revised quote (₱)</Label>
+          <Label htmlFor="amount">Revised quote ({symbol})</Label>
           <Input
             id="amount"
             name="amount"

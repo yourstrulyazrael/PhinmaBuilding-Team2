@@ -45,7 +45,7 @@ export async function recordPickup(
   ref: string,
 ): Promise<ActionResult> {
   if (!Number.isFinite(amount) || amount < 0 || amount > 99_999_999.99) {
-    return { error: "Enter the amount paid, ₱0 or more." };
+    return { error: "Enter the amount paid, 0 or more." };
   }
   if (!PAYMENT_METHODS.some((m) => m.value === method)) {
     return { error: "Choose how the customer paid." };
@@ -106,7 +106,7 @@ export async function updateJobDetails(
   if (notes.length > 2000) return { error: "Keep notes under 2,000 characters." };
   if (partsReplaced.length > 500) return { error: "Keep parts replaced under 500 characters." };
   if (revisedEstimate !== null && (!Number.isFinite(revisedEstimate) || revisedEstimate < 0)) {
-    return { error: "Enter a revised quote of ₱0 or more, or leave it empty." };
+    return { error: "Enter a revised quote of 0 or more, or leave it empty." };
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(promisedDate)) {
     return { error: "Pick an estimated completion date." };

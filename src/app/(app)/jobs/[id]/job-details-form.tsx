@@ -1,5 +1,7 @@
 "use client";
 
+import { useMoney } from "@/components/currency";
+
 import { useActionState } from "react";
 import { updateJobDetails, type ActionResult } from "./actions";
 import type { Job } from "@/lib/jobs";
@@ -13,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 // owner allows (ticket 23; staff ask for it, ticket 37, or propose one
 // under this form, ticket 39); the database enforces the same rule.
 export function JobDetailsForm({ job, canReviseEstimate }: { job: Job; canReviseEstimate: boolean }) {
+  const { symbol } = useMoney();
   const [state, formAction, pending] = useActionState<ActionResult, FormData>(
     updateJobDetails.bind(null, job.id),
     {},
@@ -44,7 +47,7 @@ export function JobDetailsForm({ job, canReviseEstimate }: { job: Job; canRevise
       <div className="grid gap-4 sm:grid-cols-2">
         {canReviseEstimate && (
         <div className="flex flex-col gap-2">
-          <Label htmlFor="revised_estimate">Revised quote (₱)</Label>
+          <Label htmlFor="revised_estimate">Revised quote ({symbol})</Label>
           <Input
             id="revised_estimate"
             name="revised_estimate"

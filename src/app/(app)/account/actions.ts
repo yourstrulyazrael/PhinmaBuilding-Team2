@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { isCurrency } from "@/lib/money";
 
 /**
  * Everything saved from the Account page (ticket 34). Each form gets
@@ -41,8 +42,9 @@ export async function saveDetails(_prev: FormState, formData: FormData): Promise
   return { saved: true };
 }
 
-// The shop's name, address and phone. RLS only lets the owner update the
-// shop, so for anyone else no row changes and we say so.
+// The shop's name, address, phone and currency (ticket 54). RLS only
+// lets the owner update the shop, so for anyone else no row changes and
+// we say so.
 export async function saveShopDetails(shopId: string, _prev: FormState, formData: FormData): Promise<FormState> {
   const name = String(formData.get("shop_name") ?? "").trim();
   const address = String(formData.get("address") ?? "").trim();
@@ -50,6 +52,8 @@ export async function saveShopDetails(shopId: string, _prev: FormState, formData
   if (!name || name.length > 80) return { error: "Enter a shop name (up to 80 characters)." };
   if (address.length > 200) return { error: "Keep the address to 200 characters." };
   if (phone.length > 40) return { error: "Keep the phone number to 40 characters." };
+  const currency = String(formData.get("currency") ?? "PHP");
+  if (!isCurrency(currency)) return { error: "Pick a currency from the list." };
 
   const supabase = await createClient();
   const { data, error } = await supabase.from("shops").update({ name, address, phone }).eq("id", shopId).select("id");
@@ -57,6 +61,11 @@ export async function saveShopDetails(shopId: string, _prev: FormState, formData
   if (!data?.length) return { error: "Only the shop owner can change the shop details." };
 
   revalidatePath("/", "layout");
+
+  // Saved on its own, so the rest still saves before 026 is run.
+  const { error: currencyError } = await supabase.from("shops").update({ currency }).eq("id", shopId);
+  if (currencyError) return { error: "Saved, except the currency. Run 026 in Supabase first." };
+
   return { saved: true };
 }
 
