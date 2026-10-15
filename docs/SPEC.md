@@ -102,7 +102,8 @@ least one real apprentice. Customers never log in; they only view a
    **Workspace**: the **owner** sees every tab: **Customers**
    and **Staff** (a card per person with their sign-in
    email, number, joined date, last sign-in and repairs, ticket 36; never
-   their password, which nobody can read; **Edit** their name and number;
+   their password, which nobody can read, though the owner can **Reset
+   password** to a new temporary one, ticket 46; **Edit** their name and number;
    **Remove** them, ticket 37; **Add staff**). Staff **ask** to revise
    estimates from their Account page, with a reason; the request waits
    at the top of the Staff tab (with a count on the tab) until the owner

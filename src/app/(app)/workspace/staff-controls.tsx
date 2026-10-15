@@ -1,19 +1,21 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { Check, Pencil, UserMinus, X } from "lucide-react";
+import { Check, KeyRound, Pencil, UserMinus, X } from "lucide-react";
 import {
   decideEstimateRequest,
   removeStaff,
+  resetStaffPassword,
   revokeEstimatePermission,
   updateStaff,
   type EditStaffState,
+  type ResetPasswordState,
 } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-// The owner's controls on each staff card (ticket 37). "use client"
+// The owner's controls on each staff card (tickets 37 and 46). "use client"
 // because they open, confirm and show results without a page reload.
 
 // Revised estimates: shown, and taken back here; granted only by
@@ -53,15 +55,20 @@ export function EstimateAccess({ staffId, allowed }: { staffId: string; allowed:
 
 // Edit and Remove, side by side. Each opens in place.
 export function StaffActions({ staffId, name, contact, openJobs }: { staffId: string; name: string; contact: string; openJobs: number }) {
-  const [mode, setMode] = useState<"idle" | "edit" | "remove">("idle");
+  const [mode, setMode] = useState<"idle" | "edit" | "password" | "remove">("idle");
 
   if (mode === "edit") return <EditStaffForm staffId={staffId} name={name} contact={contact} onDone={() => setMode("idle")} />;
+  if (mode === "password") return <ResetPasswordForm staffId={staffId} name={name} onDone={() => setMode("idle")} />;
   if (mode === "remove") return <ConfirmRemove staffId={staffId} name={name} openJobs={openJobs} onCancel={() => setMode("idle")} />;
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-wrap gap-2">
       <Button type="button" variant="secondary" size="sm" onClick={() => setMode("edit")}>
         <Pencil className="mr-1.5 size-3.5" aria-hidden />
         Edit
+      </Button>
+      <Button type="button" variant="secondary" size="sm" onClick={() => setMode("password")}>
+        <KeyRound className="mr-1.5 size-3.5" aria-hidden />
+        Reset password
       </Button>
       <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => setMode("remove")}>
         <UserMinus className="mr-1.5 size-3.5" aria-hidden />
@@ -98,6 +105,64 @@ function EditStaffForm({ staffId, name, contact, onDone }: { staffId: string; na
       <div className="flex gap-2">
         <Button type="submit" size="sm" disabled={pending}>{pending ? "Saving…" : "Save"}</Button>
         <Button type="button" variant="ghost" size="sm" onClick={onDone}>Cancel</Button>
+      </div>
+    </form>
+  );
+}
+
+// A new temporary password for someone who forgot theirs (ticket 46).
+// Shown as plain text so the owner can read it back to them; the old
+// one is never shown, because nobody can read it.
+function ResetPasswordForm({ staffId, name, onDone }: { staffId: string; name: string; onDone: () => void }) {
+  const [state, formAction, pending] = useActionState<ResetPasswordState, FormData>(
+    resetStaffPassword.bind(null, staffId),
+    {},
+  );
+  if (state.done && !pending) {
+    return (
+      <div className="flex flex-col gap-2 rounded-[var(--radius)] bg-muted p-3 text-sm">
+        <p role="status">
+          Done. {name} has been signed out everywhere and can now sign in with the new password. Tell them to change
+          it on their Account page.
+        </p>
+        <Button type="button" variant="ghost" size="sm" className="w-fit" onClick={onDone}>
+          Close
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <form action={formAction} className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor={`password-${staffId}`}>New temporary password for {name}</Label>
+        <Input
+          id={`password-${staffId}`}
+          name="new_password"
+          type="text"
+          autoComplete="off"
+          spellCheck={false}
+          minLength={8}
+          maxLength={72}
+          placeholder="At least 8 characters"
+          required
+        />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Their old password stops working and they&apos;re signed out on every device. Give them this one in person or
+        by message.
+      </p>
+      {state.error && (
+        <p role="alert" className="text-sm text-destructive">
+          {state.error}
+        </p>
+      )}
+      <div className="flex gap-2">
+        <Button type="submit" size="sm" disabled={pending}>
+          {pending ? "Resetting…" : "Reset password"}
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={onDone} disabled={pending}>
+          Cancel
+        </Button>
       </div>
     </form>
   );

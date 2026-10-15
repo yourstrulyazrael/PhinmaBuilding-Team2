@@ -133,3 +133,25 @@ export async function removeStaff(staffId: string): Promise<{ error?: string; mo
   revalidatePath("/", "layout");
   return { moved: Number(data ?? 0) };
 }
+
+export type ResetPasswordState = { error?: string; done?: boolean };
+
+// The owner gives a staff member a new temporary password (ticket 46).
+// The database checks it's the owner and their current staff, stores it
+// scrambled, and signs that person out everywhere.
+export async function resetStaffPassword(
+  staffId: string,
+  _prev: ResetPasswordState,
+  formData: FormData,
+): Promise<ResetPasswordState> {
+  const password = String(formData.get("new_password") ?? "");
+  if (password.length < 8) return { error: "Use at least 8 characters." };
+  if (new TextEncoder().encode(password).length > 72) return { error: "Use at most 72 characters." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("reset_staff_password", { staff_id: staffId, new_password: password });
+  if (error) {
+    return { error: error.code === "PGRST202" ? "Run 022 in Supabase first." : error.message };
+  }
+  return { done: true };
+}

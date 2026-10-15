@@ -73,7 +73,7 @@ export function StaffTab({ staff, requests }: { staff: StaffMember[]; requests: 
           </CardTitle>
           <CardDescription>
             Everyone who can sign in to your shop. Passwords can&apos;t be shown to anyone: they are stored scrambled.
-            Staff change theirs on their Account page.
+            If someone forgets theirs, use Reset password to give them a new one.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -111,7 +111,7 @@ export function StaffTab({ staff, requests }: { staff: StaffMember[]; requests: 
                     )}
                   </dd>
                   <dt className="text-muted-foreground">Password</dt>
-                  <dd className="text-muted-foreground">Hidden (can&apos;t be viewed)</dd>
+                  <dd className="text-muted-foreground">Hidden (can&apos;t be viewed; use Reset password)</dd>
                   <dt className="text-muted-foreground">Joined</dt>
                   <dd>{formatDate(manilaDate(m.joinedAt))}</dd>
                   <dt className="text-muted-foreground">Last sign-in</dt>

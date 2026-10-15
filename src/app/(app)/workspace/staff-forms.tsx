@@ -40,7 +40,7 @@ export function AddStaffForm() {
         </div>
       </div>
       <p className="text-xs text-muted-foreground">
-        Give them the email and temporary password. They can change the password in their Shop settings once
+        Give them the email and temporary password. They can change the password on their Account page once
         signed in. Staff can add repairs and work on the phones they handle, but can&apos;t change prices.
       </p>
 
