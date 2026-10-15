@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { AlarmClock, ExternalLink, Lock, Package, Phone, QrCode, Smartphone, ThumbsDown, ThumbsUp, TrendingUp } from "lucide-react";
+import { AlarmClock, ExternalLink, Lock, Package, PackageCheck, Phone, QrCode, Smartphone, ThumbsDown, ThumbsUp, TrendingUp } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
 import { formatDate, formatPeso, isFinished, paymentLabel, todayInManila, type Job } from "@/lib/jobs";
@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { StatusPicker } from "@/components/status-picker";
 import { CopyMessageButton } from "@/components/copy-message-button";
 import { trackingUrl } from "@/lib/tracking-url";
-import { delayMessage, updateMessage } from "@/lib/update-message";
+import { delayMessage, readyMessage, updateMessage } from "@/lib/update-message";
 import { JobDetailsForm } from "./job-details-form";
 import { canChange, nameOf, type Viewer } from "@/lib/people";
 import { HandledBy } from "@/components/handled-by";
@@ -142,12 +142,36 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
             <div className="flex flex-col gap-1">
               <p className="font-medium text-amber-800 dark:text-amber-200">This repair is late</p>
               <p className="text-sm text-muted-foreground">
-                It was promised for {formatDate(job.promised_date)}. The customer&apos;s tracking page now shows an
+                Its estimated completion date was {formatDate(job.promised_date)}. The customer&apos;s tracking page now shows an
                 apology. Let them know, and set a new estimated completion date below.
               </p>
             </div>
           </div>
           <CopyMessageButton label="Copy delay message" message={delayMessage(job, url)} />
+        </div>
+      )}
+
+      {/* Marked ready: the message to send, one tap away (ticket 56). */}
+      {job.status === "ready_for_pickup" && (
+        <div
+          role="status"
+          className="flex flex-col gap-3 rounded-[var(--radius)] border border-emerald-300 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950/50"
+        >
+          <div className="flex items-start gap-3">
+            <PackageCheck className="mt-0.5 size-5 shrink-0 text-emerald-700 dark:text-emerald-300" aria-hidden />
+            <div className="flex min-w-0 flex-col gap-1">
+              <p className="font-medium text-emerald-800 dark:text-emerald-200">Ready for pickup: tell the customer</p>
+              <p className="whitespace-pre-line rounded-[var(--radius)] border border-emerald-200 bg-card p-3 text-sm dark:border-emerald-900">
+                {readyMessage(job, shop ?? { name: "", address: "", hours: "" }, url)}
+              </p>
+              {!shop?.hours && viewer.isOwner && (
+                <p className="text-xs text-muted-foreground">
+                  Tip: add your opening hours on Account and they&apos;ll be in this message.
+                </p>
+              )}
+            </div>
+          </div>
+          <CopyMessageButton label="Copy ready message" message={readyMessage(job, shop ?? { name: "", address: "", hours: "" }, url)} />
         </div>
       )}
 

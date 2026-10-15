@@ -45,3 +45,25 @@ export function delayMessage(job: Pick<Job, "device" | "status" | "promised_date
     `Track your repair anytime: ${trackingUrl}`,
   ].join("\n");
 }
+
+/**
+ * "It's ready" (ticket 56), shown on the repair page as soon as it's
+ * marked Ready for pickup: what to pay, where and when to come. Same rule
+ * as above: no customer name or number, and the shop's details only.
+ */
+export function readyMessage(
+  job: Pick<Job, "device" | "initial_quote" | "revised_estimate" | "parts_total">,
+  shop: { name: string; address: string; hours: string },
+  trackingUrl: string,
+) {
+  const total = Number(job.revised_estimate ?? job.initial_quote) + Number(job.parts_total ?? 0);
+  const lines = [
+    `Hi! Good news: your ${job.device} is ready for pickup at ${shop.name}.`,
+    "",
+    `Total to pay: ${formatPeso(total)}`,
+  ];
+  if (shop.address) lines.push(`Where: ${shop.address}`);
+  if (shop.hours) lines.push(`Open: ${shop.hours}`);
+  lines.push("", "Please bring your claim slip.", `Details: ${trackingUrl}`);
+  return lines.join("\n");
+}
