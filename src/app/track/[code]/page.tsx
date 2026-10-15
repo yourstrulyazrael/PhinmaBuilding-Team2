@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AlarmClock, CalendarDays, CircleCheck, Phone } from "lucide-react";
+import { AlarmClock, CalendarDays, CircleCheck, Phone, ShieldCheck } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { createClient } from "@/lib/supabase/server";
 import { STATUSES, formatDate, formatPeso, isFinished, isTrackingCode, todayInManila, type Status } from "@/lib/jobs";
@@ -41,6 +41,8 @@ type TrackedJob = {
   parts_total?: number;
   parts_lines?: { name: string; quantity: number; unit_price: number }[];
   shop_currency?: string; // after 026 (ticket 54)
+  warranty_until?: string | null; // "YYYY-MM-DD", after 027 (ticket 57)
+  shop_hours?: string; // after 027 (ticket 56)
   technician_name: string; // who is handling the phone
 };
 
@@ -89,9 +91,11 @@ function NotFound() {
 
 function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
   // The six steps of a repair. Cancelled is shown separately, not as a step.
-  const steps = STATUSES.filter((s) => s.value !== "cancelled");
+  // The usual steps; cancelled and back-under-warranty are shown apart.
+  const steps = STATUSES.filter((s) => s.value !== "cancelled" && s.value !== "warranty");
   const current = steps.findIndex((s) => s.value === job.status);
   const cancelled = job.status === "cancelled";
+  const underWarranty = job.status === "warranty";
   const finished = isFinished(job.status);
   // Past the promised date and not ready: apologise (ticket 21). It goes
   // away when the shop sets a new date or the phone is ready.
@@ -133,6 +137,10 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
         {cancelled ? (
           <p className="border-t border-border pt-4 text-sm">
             This repair was cancelled. Contact the shop to arrange collecting your phone.
+          </p>
+        ) : underWarranty ? (
+          <p className="border-t border-border pt-4 text-sm">
+            Your phone is back with us under its warranty. We&apos;ll update this page as we work on it.
           </p>
         ) : (
         /* The six statuses, with only the current one marked. The
@@ -232,6 +240,18 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
             <CalendarDays className="size-3.5 text-muted-foreground" aria-hidden />
             {formatDate(job.promised_date)}
           </dd>
+          {/* Warranty from pickup (ticket 57). */}
+          {job.warranty_until && (job.status === "picked_up" || job.status === "warranty") && (
+            <>
+              <dt className="text-muted-foreground">Warranty</dt>
+              <dd className="flex items-center gap-1.5 font-medium">
+                <ShieldCheck className="size-3.5 text-primary" aria-hidden />
+                {job.warranty_until >= todayInManila()
+                  ? `Until ${formatDate(job.warranty_until)}`
+                  : `Ended ${formatDate(job.warranty_until)}`}
+              </dd>
+            </>
+          )}
           {job.notes && (
             <>
               <dt className="text-muted-foreground">Notes</dt>

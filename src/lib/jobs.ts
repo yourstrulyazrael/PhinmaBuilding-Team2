@@ -15,6 +15,8 @@ export const STATUSES = [
   { value: "ready_for_pickup", label: "Ready for pickup" },
   { value: "picked_up", label: "Picked up" },
   { value: "cancelled", label: "Cancelled" },
+  // A picked-up repair brought back within its warranty (ticket 57).
+  { value: "warranty", label: "Back under warranty" },
 ] as const;
 
 export type Status = (typeof STATUSES)[number]["value"];
@@ -91,6 +93,7 @@ export const STATUS_STYLES: Record<Status, string> = {
   ready_for_pickup: "bg-primary text-primary-foreground",
   picked_up: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
   cancelled: "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300",
+  warranty: "bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-300",
 };
 
 // A coloured dot for each status, used in the status menu. Same colour
@@ -103,6 +106,7 @@ export const STATUS_DOTS: Record<Status, string> = {
   ready_for_pickup: "bg-primary",
   picked_up: "bg-slate-300 dark:bg-slate-600",
   cancelled: "bg-red-500",
+  warranty: "bg-violet-500",
 };
 
 // An amount in the shop's currency (ticket 54; the name is from when it

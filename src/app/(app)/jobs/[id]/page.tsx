@@ -4,7 +4,7 @@ import { AlarmClock, ExternalLink, Lock, Package, PackageCheck, Phone, QrCode, S
 import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
 import { formatDate, formatPeso, isFinished, paymentLabel, todayInManila, type Job } from "@/lib/jobs";
-import { currentPrice, isLate, labourPrice, partsTotal } from "@/lib/workspace";
+import { currentPrice, isLate, labourPrice, partsTotal, warrantyEnd } from "@/lib/workspace";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusPicker } from "@/components/status-picker";
@@ -74,6 +74,8 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
 
   const url = await trackingUrl(job.tracking_code);
   const late = isLate(job, todayInManila());
+  // The warranty end date, once picked up (ticket 57).
+  const warrantyUntil = warrantyEnd(job, shop?.warrantyDays ?? 0);
 
   // Parts used, inside "Update for the customer" (ticket 28).
   const partsUsed = (
@@ -257,6 +259,21 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
                   {formatPeso(job.amount_paid)} by {paymentLabel(job.payment_method)}
                   {job.payment_ref && <span className="font-normal text-muted-foreground"> (ref …{job.payment_ref})</span>}
                   {job.paid_at && <span className="font-normal text-muted-foreground"> on {formatDateTime(job.paid_at)}</span>}
+                </dd>
+              </>
+            )}
+            {/* Warranty from pickup (ticket 57). */}
+            {warrantyUntil && (
+              <>
+                <dt className="text-muted-foreground">Warranty</dt>
+                <dd>
+                  {warrantyUntil >= todayInManila() ? (
+                    <>
+                      {shop?.warrantyDays} days, until <span className="font-medium">{formatDate(warrantyUntil)}</span>
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground">Ended {formatDate(warrantyUntil)}</span>
+                  )}
                 </dd>
               </>
             )}

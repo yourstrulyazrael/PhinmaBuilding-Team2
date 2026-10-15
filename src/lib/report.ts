@@ -8,7 +8,7 @@
  * and passed around.
  */
 import { isFinished, paymentLabel, PAYMENT_METHODS, statusLabel, STATUSES, type Job } from "@/lib/jobs";
-import { daysBetween, manilaDate, paidFor, pickedUpOn } from "@/lib/workspace";
+import { daysBetween, manilaDate, paidFor, pickedUpOn, wasPickedUp } from "@/lib/workspace";
 import type { Period } from "@/lib/periods";
 import type { PartsMoney } from "@/lib/inventory";
 
@@ -51,7 +51,7 @@ export function buildReport(jobs: Job[], period: Period, names: Map<string, stri
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
 
   // Jobs that finished during the period (whenever they came in): the money.
-  const pickedUpJobs = jobs.filter((j) => j.status === "picked_up" && inPeriod(pickedUpOn(j)));
+  const pickedUpJobs = jobs.filter((j) => wasPickedUp(j) && inPeriod(pickedUpOn(j)));
   const cancelledJobs = jobs.filter((j) => j.status === "cancelled" && inPeriod(manilaDate(j.updated_at)));
   const paid = paidFor;
 

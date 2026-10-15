@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { LogoMark } from "@/components/logo";
 import { formatDate, formatPeso, type Job } from "@/lib/jobs";
-import { currentPrice, partsTotal } from "@/lib/workspace";
+import { currentPrice, partsTotal, warrantyEnd } from "@/lib/workspace";
 import { qrSvg, trackingUrl } from "@/lib/tracking-url";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -41,6 +41,11 @@ export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/sl
     timeZone: "Asia/Manila",
   });
 
+  // Warranty (ticket 57): "30 days from pickup" before, the end date after.
+  const days = shop?.warrantyDays ?? 0;
+  const warrantyUntil = warrantyEnd(job, days);
+  const warranty = days > 0 ? (warrantyUntil ? `Until ${formatDate(warrantyUntil)}` : `${days} days from pickup`) : "";
+
   return (
     <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 py-6 md:py-10 print:max-w-none print:p-0">
       <div className="flex items-center justify-between gap-2 print:hidden">
@@ -70,6 +75,7 @@ export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/sl
                   : [["Parts", "(None used, no additional charges.)"] as [string, string]]),
                 ["Drop-off date", formatDate(receivedOn)],
                 ["Estimated completion date", formatDate(job.promised_date)],
+                ...(warranty ? [["Warranty", warranty] as [string, string]] : []),
                 ...(technician ? [["Your technician", technician] as [string, string]] : []),
               ],
               url,
@@ -127,6 +133,12 @@ export default async function ClaimSlipPage({ params }: PageProps<"/jobs/[id]/sl
           <dd>{formatDate(receivedOn)}</dd>
           <dt className="text-muted-foreground">Estimated completion date</dt>
           <dd className="font-medium">{formatDate(job.promised_date)}</dd>
+          {warranty && (
+            <>
+              <dt className="text-muted-foreground">Warranty</dt>
+              <dd>{warranty}</dd>
+            </>
+          )}
           {technician && (
             <>
               <dt className="text-muted-foreground">Your technician</dt>

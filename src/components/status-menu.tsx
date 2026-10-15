@@ -21,10 +21,12 @@ export function StatusMenu({
   value,
   pending,
   onChange,
+  options = STATUSES,
 }: {
   value: Status;
   pending: boolean;
   onChange: (next: Status) => void;
+  options?: readonly { value: Status; label: string }[]; // which statuses to offer
 }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -32,11 +34,11 @@ export function StatusMenu({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLUListElement>(null);
   const id = useId();
-  const current = STATUSES.findIndex((s) => s.value === value);
+  const current = options.findIndex((s) => s.value === value);
 
   function openMenu() {
     const rect = triggerRef.current!.getBoundingClientRect();
-    const height = STATUSES.length * ROW_HEIGHT + 8;
+    const height = options.length * ROW_HEIGHT + 8;
     const below = rect.bottom + 6 + height <= window.innerHeight;
     setPosition({
       top: below ? rect.bottom + 6 : Math.max(8, rect.top - 6 - height),
@@ -53,7 +55,7 @@ export function StatusMenu({
 
   function pick(index: number) {
     close();
-    onChange(STATUSES[index].value);
+    onChange(options[index].value);
   }
 
   // While open: move focus into the menu, and close it on a tap outside,
@@ -77,7 +79,7 @@ export function StatusMenu({
   }, [open]);
 
   function onMenuKey(e: KeyboardEvent) {
-    const last = STATUSES.length - 1;
+    const last = options.length - 1;
     const moves: Record<string, () => void> = {
       ArrowDown: () => setActive((i) => (i === last ? 0 : i + 1)),
       ArrowUp: () => setActive((i) => (i === 0 ? last : i - 1)),
@@ -102,7 +104,7 @@ export function StatusMenu({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? `${id}-menu` : undefined}
-        aria-label={`Status: ${STATUSES[current]?.label}. Change status`}
+        aria-label={`Status: ${options[current]?.label}. Change status`}
         disabled={pending}
         onClick={() => (open ? close() : openMenu())}
         onKeyDown={(e) => {
@@ -119,7 +121,7 @@ export function StatusMenu({
         )}
       >
         <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-current opacity-70" />
-        <span className="flex-1 truncate text-left">{STATUSES[current]?.label}</span>
+        <span className="flex-1 truncate text-left">{options[current]?.label}</span>
         {pending ? (
           <LoaderCircle aria-hidden className="size-3.5 shrink-0 animate-spin" />
         ) : (
@@ -142,7 +144,7 @@ export function StatusMenu({
           style={{ top: position.top, left: position.left, width: MENU_WIDTH }}
           className="fixed z-50 flex flex-col gap-0.5 rounded-[var(--radius)] border border-border bg-card p-1 text-sm text-card-foreground shadow-lg outline-none motion-safe:animate-menu-in"
         >
-          {STATUSES.map((s, i) => {
+          {options.map((s, i) => {
             const selected = i === current;
             return (
               <li

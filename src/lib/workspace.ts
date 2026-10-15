@@ -25,6 +25,21 @@ export function addDays(date: string, days: number) {
   return d.toISOString().slice(0, 10);
 }
 
+// Picked up and paid for, counting one that's back under warranty: its
+// payment still belongs to the day it was first picked up (ticket 57).
+export function wasPickedUp(job: Pick<Job, "status" | "amount_paid">) {
+  return job.status === "picked_up" || (job.status === "warranty" && job.amount_paid !== null);
+}
+
+// The last day of a repair's warranty (ticket 57), as "YYYY-MM-DD": the
+// pickup day (the payment, or the last update for older repairs) plus the
+// shop's warranty days. Null before pickup, or if the shop gives none.
+export function warrantyEnd(job: Pick<Job, "status" | "paid_at" | "updated_at">, days: number) {
+  if (days <= 0) return null;
+  const picked = job.paid_at ?? (job.status === "picked_up" || job.status === "warranty" ? job.updated_at : null);
+  return picked ? addDays(manilaDate(picked), days) : null;
+}
+
 // Past the promised date and the phone is not ready yet.
 export function isLate(job: Pick<Job, "status" | "promised_date">, today: string) {
   return !isFinished(job.status) && job.status !== "ready_for_pickup" && job.promised_date < today;
@@ -191,7 +206,7 @@ export function overdueAndAwaiting(jobs: Job[], today: string) {
 export function analytics(jobs: Job[], period: Period) {
   const inside = (date: string) => date >= period.from && date <= period.to;
   const received = jobs.filter((j) => inside(manilaDate(j.created_at)));
-  const pickedUp = jobs.filter((j) => j.status === "picked_up" && inside(pickedUpOn(j)));
+  const pickedUp = jobs.filter((j) => wasPickedUp(j) && inside(pickedUpOn(j)));
   const open = jobs.filter((j) => !isFinished(j.status));
 
   const turnarounds = pickedUp.map((j) => daysBetween(manilaDate(j.created_at), pickedUpOn(j)));
@@ -246,7 +261,7 @@ function manilaHour(timestamp: string) {
  * the jobs picked up and the money earned in that hour or day.
  */
 export function trend(jobs: Job[], period: Period, now = new Date().toISOString()): TrendPoint[] {
-  const pickedUp = jobs.filter((j) => j.status === "picked_up");
+  const pickedUp = jobs.filter((j) => wasPickedUp(j));
   const pickupTime = (j: Job) => j.paid_at ?? j.updated_at;
 
   if (period.bucket === "hour") {

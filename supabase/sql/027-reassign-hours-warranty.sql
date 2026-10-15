@@ -7,7 +7,8 @@
 --      message (e.g. "Mon–Sat, 9 AM–6 PM"); '' if not set.
 --   3. Warranty: shops.warranty_days (30 by default; 0 = no warranty) and
 --      a new status, 'warranty' ("Back under warranty"), allowed only for
---      a picked-up repair still inside its warranty. The warranty runs
+--      a picked-up repair still inside its warranty (its estimated
+--      completion date moves to today if it had passed). The warranty runs
 --      from the day it was paid for and picked up.
 --   4. get_tracking_page (from 026): also returns the warranty end date
 --      and the opening hours.
@@ -87,6 +88,11 @@ begin
     end if;
     if picked + days < (now() at time zone 'Asia/Manila')::date then
       raise exception 'This repair''s warranty ended on %.', to_char(picked + days, 'Mon DD, YYYY');
+    end if;
+    -- Its old completion date has passed: start from today, so it isn't
+    -- shown as late straight away. The shop can set a new date.
+    if new.promised_date < (now() at time zone 'Asia/Manila')::date then
+      new.promised_date := (now() at time zone 'Asia/Manila')::date;
     end if;
   end if;
   return new;

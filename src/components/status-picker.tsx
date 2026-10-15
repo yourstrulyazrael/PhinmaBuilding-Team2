@@ -40,6 +40,9 @@ export function StatusPicker({
   const [error, setError] = useState<string>();
   const [askPayment, setAskPayment] = useState(false);
   const [askCancel, setAskCancel] = useState(false);
+  // "Back under warranty" is only offered for a repair that was picked up
+  // (ticket 57); the database also checks the warranty hasn't ended.
+  const choices = STATUSES.filter((s) => s.value !== "warranty" || optimistic === "picked_up" || optimistic === "warranty");
 
   function change(next: Status) {
     if (next === optimistic) return;
@@ -48,7 +51,9 @@ export function StatusPicker({
       setAskCancel(true);
       return;
     }
-    if (next === "picked_up") {
+    // Handing back a warranty repair: it was paid for already, so no
+    // payment box (the first payment is kept).
+    if (next === "picked_up" && optimistic !== "warranty") {
       setAskPayment(true);
       return;
     }
@@ -91,7 +96,7 @@ export function StatusPicker({
   if (variant === "select") {
     return (
       <div className="flex flex-col gap-1">
-        <StatusMenu value={optimistic} pending={pending} onChange={change} />
+        <StatusMenu value={optimistic} pending={pending} onChange={change} options={choices} />
         {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
         {dialog}
       </div>
@@ -101,7 +106,7 @@ export function StatusPicker({
   return (
     <div className="flex flex-col gap-2">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="group" aria-label="Status">
-        {STATUSES.map((s) => {
+        {choices.map((s) => {
           const active = s.value === optimistic;
           const cancel = s.value === "cancelled";
           return (

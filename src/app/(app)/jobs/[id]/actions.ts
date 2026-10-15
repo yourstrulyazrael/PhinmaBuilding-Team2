@@ -13,8 +13,6 @@ export async function setStatus(jobId: string, status: string): Promise<ActionRe
   if (!STATUSES.some((s) => s.value === status)) {
     return { error: "That is not a valid status." };
   }
-  // Picked up always goes through recordPickup, so the payment is saved.
-  if (status === "picked_up") return { error: "Record the payment to mark it picked up." };
   // Cancelling goes through cancelRepair, after "Are you sure?" (ticket 51).
   if (status === "cancelled") return { error: "Confirm the cancellation first." };
 
@@ -22,11 +20,18 @@ export async function setStatus(jobId: string, status: string): Promise<ActionRe
   // RLS only lets someone update jobs they may change (the owner: any job
   // in the shop; anyone else: jobs they handle). For any other
   // job this matches no rows, so we check that one row came back.
-  const { data, error } = await supabase
-    .from("jobs")
-    .update({ status })
-    .eq("id", jobId)
-    .select("id");
+  let query = supabase.from("jobs").update({ status }).eq("id", jobId);
+  // Picked up normally goes through recordPickup, so the payment is saved.
+  // The one exception is handing back a warranty repair (ticket 57): it
+  // was paid for already, so only a job that is back under warranty and
+  // has a payment on record may skip it.
+  if (status === "picked_up") {
+    query = query.eq("status", "warranty").not("amount_paid", "is", null);
+  }
+  const { data, error } = await query.select("id");
+  if (status === "picked_up" && !error && !data?.length) {
+    return { error: "Record the payment to mark it picked up." };
+  }
   if (error) return { error: error.message };
   if (!data?.length) return { error: "You can only change repairs you are handling." };
 
