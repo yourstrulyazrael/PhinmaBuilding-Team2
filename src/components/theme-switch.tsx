@@ -13,15 +13,14 @@ const OPTIONS = [
   { value: "system", label: "System", icon: Monitor },
 ] as const;
 
-// Puts the "dark" class on <html> (or takes it off), and swaps the
-// browser-tab icon to the matching logo. The same rule runs before the
-// page appears, in the script in app/layout.tsx.
+// Puts the "dark" class on <html> (or takes it off). The same rule runs
+// before the page appears, in the script in app/layout.tsx, which also
+// keeps the tab icon matching this class.
 function apply(theme: Theme) {
   const dark =
     theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
   document.documentElement.classList.toggle("dark", dark);
-  const favicon = document.getElementById("favicon") as HTMLLinkElement | null;
-  if (favicon) favicon.href = dark ? "/logo-dark.png" : "/logo-light.png";
+  // The tab icon follows this class by itself (the script in app/layout.tsx).
 }
 
 function readSaved(): Theme {

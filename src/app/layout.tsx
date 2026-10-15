@@ -8,9 +8,22 @@ export const metadata: Metadata = {
 
 // Runs before the page is drawn, so dark mode never flashes white
 // first. Same rule as the Light / Dark / System switch: a saved choice
-// wins, otherwise follow the device. It also picks the browser-tab icon
-// to match (navy logo in dark mode). Our own fixed text, no user input.
-const THEME_SCRIPT = `try{var t=localStorage.getItem("theme");if(t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches)){document.documentElement.classList.add("dark");document.getElementById("favicon").href="/logo-dark.png"}}catch(e){}`;
+// wins, otherwise follow the device. Our own fixed text, no user input.
+//
+// It also owns the browser-tab icon: green logo in light mode, navy in
+// dark. The icon tag is made HERE, not by React, because React redraws
+// the page (e.g. the bell's refresh every 30 seconds) and would put its
+// own light-logo tag back. It watches the "dark" class on <html>, so the
+// theme switch, or the device changing to dark at sunset, swaps it on
+// every page. Each swap is a brand-new tag: some browsers ignore an
+// icon whose address is changed in place.
+const THEME_SCRIPT = `(function(){
+function dark(){var t;try{t=localStorage.getItem("theme")}catch(e){}return t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches)}
+function icon(d){var h=d?"/logo-dark.png":"/logo-light.png",o=document.getElementById("favicon");if(o&&o.getAttribute("href")===h)return;var l=document.createElement("link");l.id="favicon";l.rel="icon";l.type="image/png";l.href=h;if(o)o.remove();document.head.appendChild(l)}
+var d=dark();document.documentElement.classList.toggle("dark",d);icon(d);
+new MutationObserver(function(){icon(document.documentElement.classList.contains("dark"))}).observe(document.documentElement,{attributes:true,attributeFilter:["class"]});
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",function(){document.documentElement.classList.toggle("dark",dark())});
+})()`;
 
 // The outer shell of every page. The technician's sidebar lives in
 // (app)/layout.tsx, so public pages (sign in, tracking) stay plain.
@@ -20,10 +33,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     // tag before React starts, which is expected.
     <html lang="en" className="h-full antialiased" suppressHydrationWarning>
       <head>
-        {/* The tab icon. Must come before the script, which swaps it to
-            the dark logo; the theme switch swaps it too
-            (components/theme-switch.tsx). */}
-        <link id="favicon" rel="icon" type="image/png" href="/logo-light.png" />
+        {/* Also adds the tab icon (see above). */}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body className="min-h-full flex flex-col">{children}</body>
