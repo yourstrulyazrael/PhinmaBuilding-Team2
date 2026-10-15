@@ -6,10 +6,10 @@ the README so nobody has to hunt for it.
 
 **Blocked by:** None
 
-**Status:** todo
+**Status:** done
 
 - [x] Pushing to `main` triggers a Vercel deploy that finishes without
       errors
-- [ ] At least one teammate opens the live URL on their phone
+- [x] At least one teammate opens the live URL on their phone
 - [x] The live URL is at the top of the README
-- [ ] Works on the live URL
+- [x] Works on the live URL
