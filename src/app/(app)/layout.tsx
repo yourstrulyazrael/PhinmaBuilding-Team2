@@ -38,7 +38,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
 
           <NavLinks isOwner={shop.role === "owner"} />
 
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex items-center gap-1 md:gap-2">
             <ThemeSwitch />
             <Avatar name={name} contact={technician?.contact_number} />
             <SignOutButton />
@@ -51,7 +51,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   );
 }
 
-// Who is signed in: initials, with name and number sliding out on
+// Who is signed in: initials, with name and number in a tooltip on
 // hover. Hidden on narrow phones to leave room for the buttons.
 function Avatar({ name, contact }: { name: string; contact?: string }) {
   const initials = name
@@ -61,16 +61,16 @@ function Avatar({ name, contact }: { name: string; contact?: string }) {
     .map((word) => word[0]!.toUpperCase())
     .join("");
   return (
-    <span className="group/reveal hidden h-9 items-center px-1 sm:flex" title={name}>
+    <span className="group/reveal relative hidden h-9 items-center px-1 sm:flex">
       <span
         aria-hidden
         className="flex size-8 shrink-0 items-center justify-center rounded-full bg-tertiary text-xs font-semibold text-tertiary-foreground md:size-9 md:text-sm"
       >
         {initials || "T"}
       </span>
-      <RevealLabel className="flex flex-col leading-tight">
-        <span className="text-sm font-medium">{name}</span>
-        {contact && <span className="text-xs text-muted-foreground">{contact}</span>}
+      <RevealLabel align="end" className="flex-col items-start gap-0.5 leading-tight">
+        <span>{name}</span>
+        {contact && <span className="font-medium text-muted-foreground">{contact}</span>}
       </RevealLabel>
     </span>
   );
@@ -80,8 +80,8 @@ function SignOutButton() {
   return (
     <form action={signOut}>
       <button type="submit" className={`${revealItem} text-muted-foreground hover:bg-muted hover:text-foreground`}>
-        <LogOut className="size-4 shrink-0 md:size-5" aria-hidden />
-        <RevealLabel>Sign out</RevealLabel>
+        <LogOut className="size-[18px] shrink-0 md:size-5" aria-hidden />
+        <RevealLabel align="end">Sign out</RevealLabel>
       </button>
     </form>
   );
