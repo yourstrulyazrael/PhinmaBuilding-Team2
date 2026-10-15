@@ -71,8 +71,10 @@ function visibleLinks(isOwner: boolean) {
   return LINKS.filter((l) => isOwner || !l.ownerOnly);
 }
 
-// The page you are on: the blue accent. Everything else: grey until hovered.
-const activeItem = "bg-highlight/15 text-highlight";
+// The page you are on: an outline, forest green in light mode and blue in
+// dark (the nav-active colour in globals.css). Everything else: grey until
+// hovered.
+const activeItem = "bg-nav-active/10 text-nav-active ring-2 ring-inset ring-nav-active";
 const idleItem = "text-muted-foreground hover:bg-muted hover:text-foreground";
 
 /**
@@ -108,7 +110,7 @@ export function NotificationsLink({ count }: { count: number }) {
 /**
  * Who is signed in, as their initials, at the right of the top bar.
  * Clicking it opens Account (ticket 34); the tooltip shows their name
- * and number. Lit up in blue on the Account page, like the other links.
+ * and number. Outlined on the Account page, like the other links.
  */
 export function AccountLink({ name, contact }: { name: string; contact?: string }) {
   const active = usePathname() === "/account";
@@ -130,7 +132,7 @@ export function AccountLink({ name, contact }: { name: string; contact?: string 
         aria-hidden
         className={cn(
           "flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold md:size-8 md:text-xs",
-          active ? "bg-highlight text-white dark:text-[#0f1729]" : "bg-tertiary text-tertiary-foreground",
+          active ? "bg-nav-active text-white dark:text-[#0f1729]" : "bg-tertiary text-tertiary-foreground",
         )}
       >
         {initials || "T"}
