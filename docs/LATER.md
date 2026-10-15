@@ -27,8 +27,7 @@ The landing page follows the reference design, minus these pieces:
 
 - **Workspace tools**: customers, notifications, analytics and shop
   settings were built in ticket 10. Still parked:
-  - **Inventory** (parts in stock): needs a new table with RLS and its
-    own add/edit forms, so it gets its own ticket.
+  - **Inventory**: built in tickets 27–29.
   - **Technicians / team**: now planned as phase 2 (see PROBLEM.md),
     after ticket 07.
 
@@ -40,7 +39,8 @@ The landing page follows the reference design, minus these pieces:
 - **Apprentices seeing earnings or other staff's account details.**
 - **Email invites**: would need a paid email service; phase 2 uses an
   invite code instead.
-- **Inventory**: still its own future ticket.
+- **Suppliers and purchase orders**: inventory (tickets 27–29) records
+  restocks, but not who they were bought from or what's on order.
 - **Notification bell** and **workspace switcher** in the top bar.
 - **"Preview workspace" banner**: not needed, jobs are saved in Supabase.
 - **"Need a hand?"** help box in the sidebar.

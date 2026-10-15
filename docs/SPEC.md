@@ -98,6 +98,11 @@ least one real apprentice. Customers never log in; they only view a
    **Notifications**, **Analytics**, **Staff** (the staff list, each one's "Can revise
    estimates" switch, **Add staff** and **Remove**) and **Shop settings**
    (the shop name, their own name and contact, and their password).
+11. **Inventory** (tickets 27–29; top bar, owner and staff): the parts
+   catalog (SKU, name, stock, low-stock level; cost for the owner only),
+   low-stock flags, restocks and adjustments (owner), the stock history,
+   and the most used parts for Today / 7 / 30 days. Job detail gains
+   **Parts used**, which deducts stock; the tracking page lists them.
 10. **Analytics** and **Reports** (owner only; their own pages in the
    top bar, ticket 26): Today, the last 7 or 30 days (Reports also a
    whole month); statistics with smooth line charts beneath. Reports
@@ -173,6 +178,22 @@ least one real apprentice. Customers never log in; they only view a
   for e-wallet and card, never for cash; shop-only) and `paid_at` (set
   by the database). A record only: no money moves through the app.
 
+**`parts`** (ticket 27): `id`, `shop_id`, `sku` (unique in the shop), `name`,
+`quantity` (changed only by stock movements), `low_stock_at`, `active`.
+Read: the shop. Write: the owner. Delete: nobody (archive instead).
+
+**`part_costs`**: `part_id`, `cost`. Owner only, read and write: kept
+apart from `parts` so staff can't read costs.
+
+**`stock_movements`**: `part_id`, `change` (+/−), `reason` (restock,
+adjustment, used, returned), `job_id`, `note`, `created_by`,
+`created_at`. Read: the shop. Insert: the owner (restock, adjustment);
+"used" and "returned" are made by the database from `job_parts`.
+Update/delete: nobody.
+
+**`job_parts`** (ticket 28): `job_id`, `part_id`, `quantity`. Read: the
+shop. Insert/delete: the owner or the job's handler.
+
 **`answer_estimate`** and **`request_cancellation`** (database
 functions): anyone with a tracking code may call them. Each does only
 its one job, on that one job, and only while the job is not finished.
@@ -241,5 +262,6 @@ Phase 2 (only shown if finished and tested in time):
 - A full activity history log (phase 2 records only "Quoted by" and
   "Handled by")
 - More than one shop per owner, or one person in several shops
-- Inventory, intake photos, receipts, warranty (see `docs/LATER.md`)
+- Intake photos, receipts, warranty, suppliers and purchase orders (see
+  `docs/LATER.md`)
 - Online payments: payment is recorded by hand at pickup
