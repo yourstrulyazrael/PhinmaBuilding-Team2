@@ -5,9 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 
 export type SetupState = { error?: string };
 
-// Both ways in save the person's name and contact first, then call a
-// database function: start_shop makes them owner of a new shop,
-// join_shop makes them an apprentice of an existing one.
+// Saves the person's name and contact, then start_shop makes them the
+// owner of a new shop. Staff never come here: the owner creates their
+// accounts already inside the shop (ticket 22).
 
 export async function startShop(_prev: SetupState, formData: FormData): Promise<SetupState> {
   const shopName = String(formData.get("shop_name") ?? "").trim();
@@ -15,15 +15,9 @@ export async function startShop(_prev: SetupState, formData: FormData): Promise<
   return saveDetailsThen(formData, "start_shop", { shop_name: shopName });
 }
 
-export async function joinShop(_prev: SetupState, formData: FormData): Promise<SetupState> {
-  const code = String(formData.get("invite_code") ?? "").trim();
-  if (!code) return { error: "Enter the invite code from the shop owner." };
-  return saveDetailsThen(formData, "join_shop", { invite_code: code });
-}
-
 async function saveDetailsThen(
   formData: FormData,
-  fn: "start_shop" | "join_shop",
+  fn: "start_shop",
   args: Record<string, string>,
 ): Promise<SetupState> {
   const displayName = String(formData.get("display_name") ?? "").trim();
@@ -45,8 +39,8 @@ async function saveDetailsThen(
   if (detailsError) return { error: "Couldn't save your details. Please try again." };
 
   const { error } = await supabase.rpc(fn, args);
-  // These functions' own messages ("That invite code does not match any
-  // shop…") are written for people, so they are safe to show.
+  // start_shop's own messages ("You are already in a shop.") are
+  // written for people, so they are safe to show.
   if (error) return { error: error.message };
 
   redirect("/");

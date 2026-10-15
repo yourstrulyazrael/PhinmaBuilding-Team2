@@ -24,7 +24,7 @@ export default function LoginPage() {
         <CardHeader>
           <CardTitle>{isSignup ? "Create an account" : "Sign in"}</CardTitle>
           <CardDescription>
-            For the technician only. Customers do not need an account.
+            For the shop owner and staff. Staff: use the email and password your owner gave you. Customers don&apos;t need an account.
           </CardDescription>
         </CardHeader>
         <CardContent>

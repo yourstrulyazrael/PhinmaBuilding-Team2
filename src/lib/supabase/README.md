@@ -2,8 +2,10 @@
 
 - `client.ts` — use in files that start with `"use client"`
 - `server.ts` — use in server components, route handlers, server actions
+- `temporary.ts` — only for the owner creating a staff account: acts as
+  the new account without touching the owner's login
 
-Both use the **anon key**. That is correct and safe.
+All three use the **anon key**. That is correct and safe.
 
 ## The one rule
 

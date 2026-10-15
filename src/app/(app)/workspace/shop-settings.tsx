@@ -1,59 +1,84 @@
-import { KeyRound, Settings2, Store } from "lucide-react";
-import type { MyShop } from "@/lib/shop";
-import { Button } from "@/components/ui/button";
+import { KeyRound, Settings2, Store, UserPlus, UsersRound } from "lucide-react";
+import type { MyShop, Role } from "@/lib/shop";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DetailsForm } from "../details/details-form";
-import { makeNewInviteCode } from "./actions";
 import { ShopNameForm } from "./shop-name-form";
+import { AddStaffForm, ChangePasswordForm } from "./staff-forms";
 
-// Everyone can edit their own name and number. Only the owner gets the
-// shop name and invite code (RLS hides the code from everyone else
-// anyway: inviteCode is null for an apprentice).
+export type StaffMember = { id: string; name: string; contact: string; role: Role };
+
+// Everyone can edit their own name, number and password. Only the owner
+// gets the shop name, Add staff and the Staff list.
 export function ShopSettings({
   shop,
   displayName,
   contactNumber,
-  inviteCode,
+  staff,
 }: {
   shop: MyShop;
   displayName: string;
   contactNumber: string;
-  inviteCode: string | null;
+  staff: StaffMember[];
 }) {
+  const owner = shop.role === "owner";
+
   return (
     <div className="flex flex-col gap-4">
-      {shop.role === "owner" && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base text-tertiary">
-              <Store className="size-4" aria-hidden />
-              Your shop
-            </CardTitle>
-            <CardDescription>Shown on every claim slip and tracking page, with your number.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex max-w-md flex-col gap-6">
-            <ShopNameForm shopId={shop.id} name={shop.name} />
+      {owner && (
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base text-tertiary">
+                <Store className="size-4" aria-hidden />
+                Your shop
+              </CardTitle>
+              <CardDescription>Shown on every claim slip and tracking page, with your number.</CardDescription>
+            </CardHeader>
+            <CardContent className="max-w-md">
+              <ShopNameForm shopId={shop.id} name={shop.name} />
+            </CardContent>
+          </Card>
 
-            <div className="flex flex-col gap-2">
-              <p className="flex items-center gap-2 text-sm font-medium">
-                <KeyRound className="size-4" aria-hidden />
-                Invite code
-              </p>
-              <p className="w-fit rounded-[var(--radius)] border border-dashed border-border bg-muted px-4 py-2 font-mono text-xl tracking-[0.3em] text-tertiary">
-                {inviteCode ?? "––––––––"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Give this to a new apprentice. They choose &quot;Join a shop&quot; after signing up and type it in.
-                Make a new code when someone leaves, so the old one stops working.
-              </p>
-              <form action={makeNewInviteCode}>
-                <Button type="submit" variant="secondary" size="sm">
-                  Make a new code
-                </Button>
-              </form>
-            </div>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base text-tertiary">
+                <UserPlus className="size-4" aria-hidden />
+                Add staff
+              </CardTitle>
+              <CardDescription>Create an account for someone who works in your shop.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AddStaffForm />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base text-tertiary">
+                <UsersRound className="size-4" aria-hidden />
+                Staff
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                  {staff.length}
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="divide-y divide-border border-t border-border">
+                {staff.map((m) => (
+                  <li key={m.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-3 text-sm">
+                    <span className="font-medium">{m.name}</span>
+                    <span className="flex items-center gap-3 text-muted-foreground">
+                      {m.contact}
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+                        {m.role === "owner" ? "Owner" : "Staff"}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </>
       )}
 
       <Card>
@@ -63,13 +88,28 @@ export function ShopSettings({
             My details
           </CardTitle>
           <CardDescription>
-            {shop.role === "owner"
+            {owner
               ? "Your name and number. Customers see your number on every claim slip and tracking page."
               : "Your name and number, seen by your shopmates."}
           </CardDescription>
         </CardHeader>
         <CardContent className="max-w-md">
           <DetailsForm displayName={displayName} contactNumber={contactNumber} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base text-tertiary">
+            <KeyRound className="size-4" aria-hidden />
+            Password
+          </CardTitle>
+          <CardDescription>
+            {owner ? "Change the password you sign in with." : "Replace the temporary password your shop owner gave you."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="max-w-md">
+          <ChangePasswordForm />
         </CardContent>
       </Card>
     </div>

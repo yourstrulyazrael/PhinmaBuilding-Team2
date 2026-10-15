@@ -33,13 +33,14 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // RLS: only ever this shop's jobs, and this person's own details. The
-  // invite code comes back only for the owner.
-  const [{ data, error }, { data: technician }, shop, { data: invite }] = await Promise.all([
+  // RLS: only ever this shop's jobs and members, and this person's own
+  // details plus their shopmates' names.
+  const [{ data, error }, { data: technician }, shop, { data: members }, { data: people }] = await Promise.all([
     supabase.from("jobs").select("*"),
     supabase.from("technicians").select("display_name, contact_number").eq("id", user.id).maybeSingle(),
     getMyShop(supabase, user.id),
-    supabase.from("shop_invites").select("code").maybeSingle(),
+    supabase.from("shop_members").select("technician_id, role, joined_at").order("joined_at"),
+    supabase.from("technicians").select("id, display_name, contact_number"),
   ]);
   if (error) throw error;
   const jobs = (data ?? []) as Job[];
@@ -97,7 +98,15 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
           shop={shop}
           displayName={technician?.display_name ?? ""}
           contactNumber={technician?.contact_number ?? ""}
-          inviteCode={invite?.code ?? null}
+          staff={(members ?? []).map((m) => {
+            const person = people?.find((p) => p.id === m.technician_id);
+            return {
+              id: m.technician_id,
+              name: person?.display_name ?? "Unknown",
+              contact: person?.contact_number ?? "",
+              role: m.role,
+            };
+          })}
         />
       )}
 
