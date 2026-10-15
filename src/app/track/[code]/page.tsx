@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AlarmClock, CalendarDays, Phone } from "lucide-react";
+import { AlarmClock, CalendarDays, CircleCheck, Phone } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { createClient } from "@/lib/supabase/server";
 import { STATUSES, formatDate, formatPeso, isFinished, isTrackingCode, todayInManila, type Status } from "@/lib/jobs";
@@ -46,8 +46,10 @@ type TrackedJob = {
  * login. It can only see what the get_tracking_page database function
  * hands back for this one tracking code.
  */
-export default async function TrackingPage({ params }: PageProps<"/track/[code]">) {
+export default async function TrackingPage({ params, searchParams }: PageProps<"/track/[code]">) {
   const { code } = await params;
+  // Set after the customer answers a revised quote (ticket 52).
+  const answered = (await searchParams).answered;
 
   let job: TrackedJob | null = null;
   if (isTrackingCode(code)) {
@@ -60,6 +62,7 @@ export default async function TrackingPage({ params }: PageProps<"/track/[code]"
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
       <Logo name={job?.shop_name ?? "Zenith Repair"} />
 
+      {job && (answered === "approved" || answered === "declined") && <AnswerThanks answer={answered} />}
       {job ? <JobStatus job={job} code={code} /> : <NotFound />}
     </main>
   );
@@ -266,5 +269,37 @@ function JobStatus({ job, code }: { job: TrackedJob; code: string }) {
         <CancelRequestForm code={code} />
       ))}
     </>
+  );
+}
+
+// "Thank you" after answering a revised quote (ticket 52), so the
+// customer knows it went through.
+function AnswerThanks({ answer }: { answer: "approved" | "declined" }) {
+  const approved = answer === "approved";
+  return (
+    <div
+      role="status"
+      className={cn(
+        "flex items-start gap-3 rounded-[var(--radius)] border p-4 shadow-card",
+        approved
+          ? "border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/50"
+          : "border-border bg-card",
+      )}
+    >
+      <CircleCheck
+        className={cn("mt-0.5 size-5 shrink-0", approved ? "text-emerald-700 dark:text-emerald-300" : "text-muted-foreground")}
+        aria-hidden
+      />
+      <div className="flex flex-col gap-0.5">
+        <p className="font-medium text-tertiary">
+          {approved ? "Thank you! You approved the revised quote." : "Got it. You declined the revised quote."}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {approved
+            ? "The shop has been told and will carry on with your repair."
+            : "The shop has been told and will contact you about what to do next."}
+        </p>
+      </div>
+    </div>
   );
 }

@@ -6,6 +6,7 @@ import { RevealLabel, revealItem } from "@/components/reveal-label";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { signOut } from "../login/actions";
 import { AccountLink, NavLinks, NotificationsLink } from "./nav-links";
+import { ShopLive } from "./shop-live";
 import { getMe, getNotifications, getShop, getUser } from "@/lib/session";
 
 /**
@@ -50,6 +51,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       </header>
 
       <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+
+      {/* Customer answers arrive live (ticket 52). */}
+      <ShopLive shopId={shop.id} userId={user.id} isOwner={shop.role === "owner"} />
     </div>
   );
 }

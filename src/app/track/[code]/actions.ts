@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isTrackingCode } from "@/lib/jobs";
 
@@ -27,7 +28,9 @@ export async function answerEstimate(code: string, approve: boolean, reason = ""
   // The function's own messages are written for customers.
   if (error) return { error: error.message };
   revalidatePath(`/track/${code}`);
-  return {};
+  // Back to their page with a "thank you" that says what they chose
+  // (ticket 52), instead of the question just disappearing.
+  redirect(`/track/${code}?answered=${approve ? "approved" : "declined"}`);
 }
 
 export async function requestCancellation(code: string, reason: string): Promise<CustomerActionResult> {
