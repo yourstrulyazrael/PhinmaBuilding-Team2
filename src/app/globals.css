@@ -113,6 +113,8 @@
   --animate-menu-in: menu-in 120ms ease-out;
   /* …and fades back out when it closes (ticket 65). */
   --animate-menu-out: menu-out 120ms ease-in forwards;
+  /* A ✓ that pops in after copying (ticket 81). */
+  --animate-pop: pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 body {
@@ -252,10 +254,81 @@ body {
   }
 }
 
+@keyframes pop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+
 @keyframes menu-out {
   to {
     opacity: 0;
     transform: translateY(-4px) scale(0.98);
+  }
+}
+
+/* Micro-interactions (ticket 81) ------------------------------------------
+
+   .card-lift: a card that is a link (summary cards). Put it on the Card
+   inside a <Link className="group">: it rises 2px with a deeper shadow
+   and a hint of green border on hover or keyboard focus, and settles
+   when pressed. */
+.card-lift {
+  transition:
+    transform 180ms cubic-bezier(0.2, 0, 0, 1),
+    box-shadow 180ms cubic-bezier(0.2, 0, 0, 1),
+    border-color 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+.group:hover > .card-lift,
+.group:focus-visible > .card-lift {
+  transform: translateY(-2px);
+  border-color: color-mix(in oklab, var(--ring) 40%, transparent);
+  box-shadow:
+    0 2px 4px rgb(20 33 61 / 0.06),
+    0 14px 30px -12px rgb(20 33 61 / 0.22);
+}
+.group:active > .card-lift {
+  transform: translateY(0) scale(0.99);
+}
+
+/* Arrows and chevrons in a link or button nudge forward on hover: "this
+   goes somewhere". */
+a .lucide-chevron-right,
+a .lucide-arrow-right,
+a .lucide-arrow-up-right,
+button .lucide-chevron-right {
+  transition: transform 160ms cubic-bezier(0.2, 0, 0, 1);
+}
+a:hover .lucide-chevron-right,
+a:hover .lucide-arrow-right,
+button:hover .lucide-chevron-right {
+  transform: translateX(2px);
+}
+a:hover .lucide-arrow-up-right {
+  transform: translate(2px, -2px);
+}
+
+/* Text links: the underline fades in rather than snapping on. In the
+   base layer, so a link that is always underlined (a class) keeps it. */
+@layer base {
+  a[href]:not(:hover) {
+    text-decoration-color: transparent;
+  }
+  a[href].underline:not(:hover) {
+    text-decoration-color: currentColor;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .group:hover > .card-lift,
+  .group:focus-visible > .card-lift,
+  .group:active > .card-lift,
+  a:hover .lucide-chevron-right,
+  a:hover .lucide-arrow-right,
+  a:hover .lucide-arrow-up-right,
+  button:hover .lucide-chevron-right {
+    transform: none;
   }
 }
 

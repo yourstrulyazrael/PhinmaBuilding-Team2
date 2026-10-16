@@ -71,7 +71,7 @@ export function MobileNav({ isOwner }: { isOwner: boolean }) {
 
 function tabClass(active: boolean) {
   return cn(
-    "relative flex h-14 w-full flex-col items-center justify-center gap-0.5 rounded-inner",
+    "relative flex h-14 w-full flex-col items-center justify-center gap-0.5 rounded-inner transition-[color,transform] active:scale-95 motion-reduce:active:scale-100",
     active ? "text-nav-active" : "text-muted-foreground active:bg-muted",
     // A short bar above the current one.
     active && "before:absolute before:top-0 before:h-0.5 before:w-8 before:rounded-full before:bg-nav-active",

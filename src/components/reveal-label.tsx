@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
  * readers still read it. On a phone (no hover) only the icon shows.
  */
 export const revealItem =
-  "group/reveal relative flex size-9 shrink-0 items-center justify-center rounded-xl text-sm font-medium md:size-10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  "group/reveal relative flex size-9 shrink-0 items-center justify-center rounded-xl text-sm font-medium md:size-10 transition-[color,background-color,box-shadow,transform] active:scale-90 motion-reduce:active:scale-100 [&>svg]:transition-transform hover:[&>svg]:scale-110 motion-reduce:hover:[&>svg]:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 export function RevealLabel({
   children,

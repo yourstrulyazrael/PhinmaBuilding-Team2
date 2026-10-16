@@ -211,7 +211,7 @@ export function NotificationsList({
           const key = g === "delays" ? "repairs" : g;
           return (
             <Link key={g} href={`/notifications?show=${key}`} scroll={false} className="group rounded-[var(--radius)]">
-              <Card className={cn("flex items-center gap-3 p-4 transition-[border-color,box-shadow] group-hover:border-ring/40 group-hover:shadow-lg", show === key && "border-ring/50 ring-2 ring-ring/20")}>
+              <Card className={cn("card-lift flex items-center gap-3 p-4", show === key && "border-ring/50 ring-2 ring-ring/20")}>
                 <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-full", TONES[n ? look.tone : "neutral"])}>
                   <look.icon className="size-4" aria-hidden />
                 </span>

@@ -18,11 +18,15 @@ import {
 import { RevealLabel, revealItem } from "@/components/reveal-label";
 import { cn } from "@/lib/utils";
 import { visibleLinks } from "./nav-links";
-import { searchRepairs, type RepairHit } from "./search-actions";
+import { searchRepairs, type SearchResults } from "./search-actions";
+import { STATUS_DOTS } from "@/lib/jobs";
 
 type Item = {
   id: string;
-  group: "Repairs" | "Actions" | "Go to";
+  group: "Customers" | "Repairs" | "Actions" | "Go to";
+  // Typed text in label/hint is highlighted (ticket 80).
+  highlight?: boolean;
+  dot?: string; // a status colour dot
   label: string;
   hint?: string;
   icon: LucideIcon;
@@ -96,6 +100,8 @@ export function CommandPalette({ isOwner }: { isOwner: boolean }) {
 
   return (
     <>
+      {/* Laptops: a search box in the top bar (ticket 80). Smaller
+          screens: an icon. Both open the same search. */}
       <button
         type="button"
         onClick={() => {
@@ -104,7 +110,21 @@ export function CommandPalette({ isOwner }: { isOwner: boolean }) {
         }}
         aria-keyshortcuts="Control+K Meta+K"
         aria-haspopup="dialog"
-        className={cn(revealItem, "text-muted-foreground hover:bg-muted hover:text-foreground")}
+        className="group hidden h-10 w-56 items-center gap-2 rounded-full border border-input bg-muted/40 px-3.5 text-sm text-muted-foreground shadow-xs hover:border-ring/40 hover:bg-card hover:text-foreground lg:flex xl:w-72"
+      >
+        <Search className="size-4 transition-transform group-hover:scale-110 motion-reduce:transform-none" aria-hidden />
+        <span className="flex-1 truncate text-left">Search repairs, customers…</span>
+        <kbd className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[11px]">{mod} K</kbd>
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setHelp(false);
+          setOpen(true);
+        }}
+        aria-keyshortcuts="Control+K Meta+K"
+        aria-haspopup="dialog"
+        className={cn(revealItem, "text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden")}
       >
         <Search className="size-[18px] shrink-0 md:size-5" aria-hidden />
         <RevealLabel shortcut={`${mod} K`}>Search &amp; commands</RevealLabel>
@@ -150,7 +170,7 @@ function Palette({
   go: (href: string) => void;
 }) {
   const [query, setQuery] = useState("");
-  const [hits, setHits] = useState<RepairHit[]>([]);
+  const [hits, setHits] = useState<SearchResults>({ repairs: [], customers: [] });
   const [searching, startSearch] = useTransition();
   const [active, setActive] = useState(0);
   const input = useRef<HTMLInputElement>(null);
@@ -189,14 +209,37 @@ function Palette({
     const q = query.trim();
     const words = q.toLowerCase().split(/\s+/).filter(Boolean);
     const matches = (text: string) => words.every((w) => text.toLowerCase().includes(w));
-    const repairs: Item[] = (q ? hits : []).map((h) => ({
+    const found = q ? hits : { repairs: [], customers: [] };
+    // A customer opens all their repairs on the Overview.
+    const customers: Item[] = found.customers.map((c) => ({
+      id: `customer-${c.key}`,
+      group: "Customers",
+      label: c.name,
+      hint: `${c.phone} · ${c.repairs} repair${c.repairs === 1 ? "" : "s"}, latest ${c.lastDevice}`,
+      icon: UserRound,
+      highlight: true,
+      run: () => go(`/?tab=all&q=${encodeURIComponent(c.phone.replace(/\D/g, "") || c.name)}#jobs`),
+    }));
+    const repairs: Item[] = found.repairs.map((h) => ({
       id: `repair-${h.id}`,
       group: "Repairs",
       label: `${h.device} · ${h.customer}`,
-      hint: `${h.number} · ${h.status}`,
+      hint: `${h.number} · ${h.phone} · ${h.statusLabel}`,
       icon: Smartphone,
+      highlight: true,
+      dot: STATUS_DOTS[h.status],
       run: () => go(`/jobs/${h.id}`),
     }));
+    // More than fit here: the full list on the Overview.
+    if (found.repairs.length >= 8) {
+      repairs.push({
+        id: "all-results",
+        group: "Repairs",
+        label: `See every repair matching “${q}”`,
+        icon: Search,
+        run: () => go(`/?tab=all&q=${encodeURIComponent(q)}#jobs`),
+      });
+    }
     const actions: Item[] = [
       { id: "new", group: "Actions", label: "New repair", hint: "Check in a phone", icon: Smartphone, shortcut: "N", run: () => go("/jobs/new") },
       { id: "customer", group: "Actions", label: "Find a customer", hint: "Customers and their repairs", icon: UsersRound, run: () => go("/workspace") },
@@ -215,7 +258,7 @@ function Palette({
       { id: "page-notifications", group: "Go to", label: "Notifications", icon: Bell, run: () => go("/notifications") },
       { id: "page-account", group: "Go to", label: "Account", icon: UserRound, run: () => go("/account") },
     ];
-    return [...repairs, ...[...actions, ...pages].filter((it) => matches(`${it.label} ${it.hint ?? ""}`))];
+    return [...customers, ...repairs, ...[...actions, ...pages].filter((it) => matches(`${it.label} ${it.hint ?? ""}`))];
   }, [query, hits, isOwner, go, onHelp]);
 
   const current = Math.min(active, Math.max(0, items.length - 1));
@@ -283,9 +326,9 @@ function Palette({
                 onChange={(e) => {
                   setQuery(e.target.value);
                   setActive(0);
-                  if (!e.target.value.trim()) setHits([]);
+                  if (!e.target.value.trim()) setHits({ repairs: [], customers: [] });
                 }}
-                placeholder="Search repairs, or type a command…"
+                placeholder="Repair no., customer, phone, device, or a command…"
                 className="h-14 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground focus-visible:outline-none"
                 maxLength={100}
                 autoComplete="off"
@@ -324,8 +367,15 @@ function Palette({
                     >
                       <Icon className={cn("size-4", i === current ? "text-primary" : "text-muted-foreground")} aria-hidden />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate font-medium">{it.label}</span>
-                        {it.hint && <span className="block truncate text-xs text-muted-foreground">{it.hint}</span>}
+                        <span className="block truncate font-medium">
+                          {it.highlight ? <Highlight text={it.label} query={query} /> : it.label}
+                        </span>
+                        {it.hint && (
+                          <span className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+                            {it.dot && <span aria-hidden className={cn("size-1.5 shrink-0 rounded-full", it.dot)} />}
+                            <span className="truncate">{it.highlight ? <Highlight text={it.hint} query={query} /> : it.hint}</span>
+                          </span>
+                        )}
                       </span>
                       {it.shortcut && <Kbd>{it.shortcut}</Kbd>}
                       {i === current && <CornerDownLeft className="size-3.5 text-muted-foreground" aria-hidden />}
@@ -390,5 +440,33 @@ function Kbd({ children }: { children: React.ReactNode }) {
     <kbd className="inline-flex min-w-5 items-center justify-center rounded border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
       {children}
     </kbd>
+  );
+}
+
+// The typed words, marked where they appear (ticket 80). Phone digits
+// match even with spaces in between, like the search itself.
+function Highlight({ text, query }: { text: string; query: string }) {
+  const words = query.trim().split(/\s+/).filter((w) => w.length > 0);
+  if (words.length === 0) return <>{text}</>;
+  const pattern = words
+    .map((w) => {
+      const digits = w.replace(/\D/g, "");
+      if (digits.length >= 3 && digits.length === w.replace(/[\s()+-]/g, "").length) return digits.split("").join("[\\s-]?");
+      return w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    })
+    .join("|");
+  const parts = text.split(new RegExp(`(${pattern})`, "gi"));
+  return (
+    <>
+      {parts.map((part, i) =>
+        i % 2 === 1 ? (
+          <mark key={i} className="rounded-sm bg-primary/15 px-0.5 text-foreground">
+            {part}
+          </mark>
+        ) : (
+          part
+        ),
+      )}
+    </>
   );
 }

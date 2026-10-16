@@ -154,7 +154,7 @@ export function Menu({
                 onPointerEnter={() => setActive(i)}
                 onClick={() => pick(i)}
                 className={cn(
-                  "flex h-9 cursor-pointer select-none items-center gap-2.5 rounded-inner px-2.5",
+                  "flex h-9 cursor-pointer select-none items-center gap-2.5 rounded-inner px-2.5 transition-[background-color,transform] active:scale-[0.98] motion-reduce:active:scale-100",
                   i === active && "bg-muted",
                 )}
               >

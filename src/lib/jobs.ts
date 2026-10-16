@@ -160,14 +160,27 @@ export function repairNumber(id: string) {
   return `ZR-${id.replace(/-/g, "").slice(0, 8).toUpperCase()}`;
 }
 
+// Search by any mix of device, problem, customer, contact number and
+// repair number (ticket 80): every word must match somewhere. Phone
+// numbers match however they're typed ("09171234567" finds
+// "0917 123 4567", "+63 917…" too), and repair numbers with or without
+// the dash ("ZR3F9A" finds ZR-3F9A1C2B).
 export function searchJobs(jobs: Job[], query: string) {
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
   if (words.length === 0) return jobs;
+  const digits = (s: string) => s.replace(/\D/g, "");
   return jobs.filter((job) => {
-    const text = [job.device, job.problem, job.customer_name, job.customer_phone, repairNumber(job.id)]
+    const number = repairNumber(job.id).toLowerCase();
+    const text = [job.device, job.problem, job.customer_name, job.customer_phone, number, number.replace("-", "")]
       .join(" ")
       .toLowerCase();
-    return words.every((word) => text.includes(word));
+    const phone = digits(job.customer_phone);
+    return words.every((word) => {
+      if (text.includes(word)) return true;
+      const d = digits(word);
+      // Phone digits, ignoring spaces and dashes; "+63 917" also matches "0917".
+      return d.length >= 3 && d.length === word.replace(/[\s()+-]/g, "").length && (phone.includes(d) || phone.includes(d.replace(/^63/, "0")) || `63${phone.replace(/^0/, "")}`.includes(d));
+    });
   });
 }
 

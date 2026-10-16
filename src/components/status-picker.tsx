@@ -162,7 +162,7 @@ export function StatusPicker({
               disabled={pending || asking}
               onClick={() => change(s.value)}
               className={cn(
-                "flex h-11 items-center justify-center gap-1.5 rounded-[var(--radius)] border px-3 text-sm font-medium transition-colors disabled:cursor-wait",
+                "flex h-11 items-center justify-center gap-1.5 rounded-[var(--radius)] border px-3 text-sm font-medium transition-[background-color,border-color,color,transform] active:scale-[0.97] disabled:cursor-wait motion-reduce:active:scale-100",
                 active && !cancel && "border-primary bg-primary text-primary-foreground",
                 active && cancel && "border-destructive bg-destructive text-destructive-foreground",
                 !active && "border-border bg-card hover:bg-muted",

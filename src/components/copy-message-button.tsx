@@ -29,7 +29,7 @@ export function CopyMessageButton({
 
   return (
     <Button type="button" variant="secondary" size="sm" onClick={onClick} className="w-fit">
-      {copied ? <Check className="size-4" aria-hidden /> : <Copy className="size-4" aria-hidden />}
+      {copied ? <Check className="size-4 animate-pop" aria-hidden /> : <Copy className="size-4" aria-hidden />}
       {copied ? "Copied" : label}
     </Button>
   );

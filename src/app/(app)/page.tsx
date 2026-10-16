@@ -291,7 +291,7 @@ function StatCard({
 }) {
   return (
     <Link href={href} className="group rounded-[var(--radius)]">
-    <Card className="flex h-full flex-col gap-2 p-3 transition-[border-color,box-shadow,transform] duration-150 group-hover:-translate-y-0.5 group-hover:border-ring/40 group-hover:shadow-lg motion-reduce:transform-none md:gap-3 md:p-5">
+    <Card className="card-lift flex h-full flex-col gap-2 p-3 md:gap-3 md:p-5">
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs text-muted-foreground md:text-sm">{label}</p>
         <span className={cn("hidden size-8 shrink-0 items-center justify-center rounded-full sm:flex", TONES[tone])}>
@@ -361,7 +361,7 @@ function JobList({ jobs, viewer, bulk = false }: { jobs: Job[]; viewer: Viewer; 
         </thead>
         <tbody>
           {jobs.map((job) => (
-            <tr key={job.id} className="border-b border-border last:border-0 has-[:checked]:bg-primary/5">
+            <tr key={job.id} className="border-b border-border transition-colors last:border-0 hover:bg-muted/40 has-[:checked]:bg-primary/5">
               {bulk && (
                 <td className="py-4 pl-6 pr-0 align-middle">
                   <SelectBox id={job.id} label={job.device} />

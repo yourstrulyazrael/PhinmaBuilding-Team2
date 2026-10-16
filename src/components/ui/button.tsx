@@ -5,11 +5,13 @@ import { cn } from "@/lib/utils";
 const buttonVariants = cva(
   // Ticket 48: rounder, a soft shadow on filled buttons, a slight press
   // on click, and a soft green focus glow instead of a hard ring.
-  "inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius)] text-sm font-medium transition-[background-color,border-color,box-shadow,color,transform] duration-150 active:scale-[0.98] focus-visible:ring-4 focus-visible:ring-ring/20 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100",
+  // Ticket 81: filled and outlined buttons rise 1px on hover (with a
+  // slightly deeper shadow) and settle back when pressed.
+  "inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius)] text-sm font-medium transition-[background-color,border-color,box-shadow,color,transform] duration-150 hover:-translate-y-px active:translate-y-0 active:scale-[0.98] focus-visible:ring-4 focus-visible:ring-ring/20 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-sm shadow-primary/25 hover:bg-primary/90",
+        default: "bg-primary text-primary-foreground shadow-sm shadow-primary/25 hover:bg-primary/90 hover:shadow-md hover:shadow-primary/30",
         secondary:
           "border border-border bg-card text-secondary-foreground shadow-xs hover:border-ring/40 hover:bg-muted",
         outline:

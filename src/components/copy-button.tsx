@@ -49,7 +49,7 @@ export function CopyButton({ text, what, className }: { text: string; what: stri
         className,
       )}
     >
-      {done ? <Check className="size-3.5 text-primary" aria-hidden /> : <Copy className="size-3.5" aria-hidden />}
+      {done ? <Check className="size-3.5 animate-pop text-primary" aria-hidden /> : <Copy className="size-3.5" aria-hidden />}
     </button>
   );
 }
