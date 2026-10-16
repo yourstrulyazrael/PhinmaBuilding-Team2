@@ -203,6 +203,38 @@ official receipt.
 9. **Not in a shop**: a removed apprentice sees "You're not in a shop"
    and is told to ask a shop owner.
 
+### Getting around and feedback (tickets 66–71)
+
+The look follows **docs/DESIGN.md** (one set of tokens, spacing, type,
+icons, focus rings; "reduce motion" respected everywhere).
+
+- **Breadcrumbs** on every page below Overview, e.g. Overview › Repairs ›
+  Repair ZR-3F9A1C2B. A repair's **number** is `ZR-` plus the first 8
+  characters of its id: the same on the repair page, receipt and search.
+- **Command palette** (Ctrl+K / ⌘K, or the search button): find a
+  repair by device, customer, contact no. or number; jump to any page;
+  New repair, Find a customer, Record a payment. **Shortcuts** when not
+  typing: `/` search, `N` new repair, `?` the list; Alt+1…6 pages.
+- **Toasts** confirm actions. **Undo** where it can be reversed: status
+  change, part removed, reassigned, inline edit, bulk change, draft
+  discarded. **Try again** where it failed: status, uploads, saves,
+  copying. A page that fails to load offers Try again.
+- **Overview:** the three summary cards open their lists; a 7-day KPI
+  strip (completed, revenue for the owner / checked in for staff,
+  turnaround) vs the week before; **Recent activity** (from
+  `job_events`); quick actions; tick boxes for **bulk** status change
+  and (owner) reassign; the tab, sort and staff filter are **remembered**
+  on the browser (a cookie with those three values only).
+- **Repair page:** a progress **stepper**; an **action bar** at the
+  bottom once the Status card scrolls away (status, Record payment, copy
+  tracking link); **inline editing** (owner: device, problem, customer
+  name, contact no.; anyone who can change it: estimated completion
+  date); **copy** buttons for the repair number, contact no. and
+  tracking link.
+- **New repair** keeps an **autosaved draft** in this browser until the
+  repair is saved or the draft is discarded.
+- **Loading:** each page shows a skeleton in its own shape.
+
 ## Data
 
 **`shops`**: one row per shop.
@@ -304,6 +336,12 @@ Anyone may listen on such channels; nobody may send.
 **Moving phase 1 data:** a one-time step makes each existing account the
 owner of its own shop (named after them) and moves its jobs in, with
 `handled_by` and `quoted_by` set to that owner.
+
+**`job_events`** (ticket 69, sql/031): a history row whenever a repair is
+checked in, changes status, is paid for, is reassigned, or the customer
+answers a revised quote: who (empty = the customer), what, when. Written
+only by a database trigger; read by the shop's members; nobody can
+change or delete it.
 
 **Privacy:** customer names and phones are visible only to members of
 the shop that holds the job. Apprentices see each job's prices; the

@@ -51,7 +51,7 @@ export function JobSearch({
 
   return (
     <Form action="/" scroll={false} className="flex flex-col gap-2 px-4 pt-4 sm:flex-row md:px-6" role="search">
-      {tab !== "mine" && <input type="hidden" name="tab" value={tab} />}
+      <input type="hidden" name="tab" value={tab} />
       {/* Kept when on My jobs, so it's still there on the other tabs. */}
       {tab === "mine" && staff && <input type="hidden" name="staff" value={staff} />}
 
@@ -142,7 +142,8 @@ export function JobSearch({
 // defaults are left out.
 function href(tab: string, sort: Sort, q: string, staff: string) {
   const params = new URLSearchParams();
-  if (tab !== "mine") params.set("tab", tab);
+  // Always named, so plain "/" can mean "my remembered view" (ticket 71).
+  params.set("tab", tab);
   if (sort !== SORTS[0].value) params.set("sort", sort);
   if (q) params.set("q", q);
   if (staff) params.set("staff", staff);

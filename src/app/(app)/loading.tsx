@@ -1,31 +1,26 @@
-/**
- * Shown the instant a page in the app is clicked, while its data loads
- * (Next.js shows this file automatically). The top bar stays put; this
- * fills the page area with soft placeholder shapes, so a click always
- * responds straight away.
- */
+import { Bone, SkeletonCard, SkeletonHeader, SkeletonPage, SkeletonTable } from "@/components/skeleton";
+
+// The Overview's shape while it loads (ticket 71). Next.js shows a
+// folder's loading.tsx the instant a link is clicked; pages without their
+// own use this one.
 export default function Loading() {
   return (
-    <main
-      aria-busy="true"
-      aria-label="Loading"
-      className="mx-auto flex w-full max-w-[120rem] flex-col gap-4 px-4 py-6 md:px-8 md:py-10 2xl:px-12"
-    >
-      <div className="flex flex-col gap-2">
-        <Bone className="h-4 w-32" />
-        <Bone className="h-8 w-64" />
-        <Bone className="h-4 w-80 max-w-full" />
-      </div>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+    <SkeletonPage>
+      <SkeletonHeader actions={3} />
+      <div className="grid grid-cols-3 gap-3 md:gap-4">
         {[0, 1, 2].map((i) => (
-          <Bone key={i} className="h-24" />
+          <Bone key={i} className="h-24 md:h-32" />
         ))}
       </div>
-      <Bone className="h-96" />
-    </main>
+      <div className="grid gap-3 sm:grid-cols-3 md:gap-4">
+        {[0, 1, 2].map((i) => (
+          <Bone key={i} className="h-28" />
+        ))}
+      </div>
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <SkeletonTable rows={6} />
+        <SkeletonCard lines={6} />
+      </div>
+    </SkeletonPage>
   );
-}
-
-function Bone({ className }: { className: string }) {
-  return <div className={`animate-pulse rounded-[var(--radius)] bg-muted motion-reduce:animate-none ${className}`} />;
 }

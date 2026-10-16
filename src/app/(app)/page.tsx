@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AlarmClock, Ban, CalendarDays, ChevronRight, CircleCheck, Clock, CreditCard, Plus, QrCode, Smartphone, UsersRound, Wrench, X } from "lucide-react";
 import { formatDate, formatPeso, isFinished, parseSort, searchJobs, sortJobs, todayInManila, type Job } from "@/lib/jobs";
@@ -14,6 +15,9 @@ import { HandledBy } from "@/components/handled-by";
 import { StatusBadge } from "@/components/status-badge";
 import { getMe, getNames, getShop, getSupabase, getUser } from "@/lib/session";
 import { ActivityFeed, KpiStrip, type JobEvent } from "./overview-panels";
+import { RememberFilters } from "./remember-filters";
+import { BulkProvider, SelectAll, SelectBox } from "./bulk-select";
+import { FILTERS_COOKIE, unpackFilters } from "@/lib/overview-filters";
 
 // "My jobs" (the phones you handle) comes first and is the default
 // (ticket 13); "All jobs" is the whole shop.
@@ -56,7 +60,15 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
   if (error) throw error;
   const jobs = (data ?? []) as Job[];
 
-  const params = await searchParams;
+  const fromAddress = await searchParams;
+  // Remembered filters (ticket 71): plain "/" (the top bar, the logo)
+  // opens the tab, sort and staff filter you used last, kept in a small
+  // cookie on this browser. Any filter in the address wins, and is
+  // remembered in turn. The search itself is never remembered.
+  const named = ["tab", "q", "sort", "staff"].some((k) => k in fromAddress);
+  const params: Record<string, string | string[] | undefined> = named
+    ? fromAddress
+    : { ...fromAddress, ...unpackFilters((await cookies()).get(FILTERS_COOKIE)?.value) };
   const tab = TABS.find((t) => t.key === params.tab)?.key ?? "mine";
   const q = typeof params.q === "string" ? params.q.trim().slice(0, 100) : "";
   const sort = parseSort(params.sort);
@@ -106,15 +118,21 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
   // Picked up and cancelled jobs (only yours, on My jobs).
   const done = matches.filter((j) => isFinished(j.status) && (tab !== "mine" || j.handled_by === user.id));
 
+  // Bulk actions (ticket 71): the open repairs on screen this person may
+  // change. Warranty returns are left out (they go back one at a time).
+  const selectable = shown
+    .filter((j) => canChange(j, viewer) && !isFinished(j.status) && j.status !== "warranty")
+    .map((j) => ({ id: j.id, status: j.status, handledBy: j.handled_by }));
+
   // Keeps the search, sort and staff filter when switching tabs.
   function tabHref(key: (typeof TABS)[number]["key"], keepSearch = true) {
     const query = new URLSearchParams();
-    if (key !== "mine") query.set("tab", key);
+    // Always named, so plain "/" can mean "my remembered view" (ticket 71).
+    query.set("tab", key);
     if (q && keepSearch) query.set("q", q);
     if (sort !== "promised") query.set("sort", sort);
     if (staff) query.set("staff", staff);
-    const s = query.toString();
-    return s ? `/?${s}` : "/";
+    return `/?${query.toString()}`;
   }
 
   return (
@@ -144,6 +162,7 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
       />
 
       {justCancelled && <CancelledNotice device={justCancelled} />}
+      <RememberFilters tab={tab} sort={sort} staff={staff} />
 
       {(lateCount > 0 || dueTodayCount > 0) && (
         <Link
@@ -173,6 +192,7 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
       <KpiStrip jobs={jobs} today={today} isOwner={viewer.isOwner} />
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+      <BulkProvider jobs={selectable} people={viewer.isOwner ? staffOptions : null}>
       <Card id="jobs" className="scroll-mt-24 overflow-hidden">
         <div className="flex flex-col gap-1 px-4 pt-5 md:px-6">
           <h2 className="flex items-center gap-2 text-lg font-semibold text-tertiary">
@@ -211,7 +231,7 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
         {shown.length === 0 ? (
           <EmptyState tab={tab} q={q} clearHref={tabHref(tab, false)} />
         ) : (
-          <JobList jobs={shown} viewer={viewer} />
+          <JobList jobs={shown} viewer={viewer} bulk />
         )}
 
         {(tab === "all" || tab === "mine") && done.length > 0 && (
@@ -224,6 +244,7 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
           </details>
         )}
       </Card>
+      </BulkProvider>
 
       <ActivityFeed
         events={(eventRows ?? []) as unknown as JobEvent[]}
@@ -315,7 +336,8 @@ function EmptyState({ tab, q, clearHref }: { tab: string; q: string; clearHref: 
 }
 
 // A table on tablet and laptop, a stack of cards on a phone.
-function JobList({ jobs, viewer }: { jobs: Job[]; viewer: Viewer }) {
+// `bulk`: tick boxes for bulk actions (ticket 71), inside a BulkProvider.
+function JobList({ jobs, viewer, bulk = false }: { jobs: Job[]; viewer: Viewer; bulk?: boolean }) {
   const today = todayInManila();
 
   return (
@@ -323,7 +345,12 @@ function JobList({ jobs, viewer }: { jobs: Job[]; viewer: Viewer }) {
       <table className="hidden w-full text-sm md:table">
         <thead>
           <tr className="border-b border-border text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-            <th className="px-6 py-3 font-medium">Device &amp; issue</th>
+            {bulk && (
+              <th className="w-10 py-3 pl-6 pr-0 font-medium">
+                <SelectAll />
+              </th>
+            )}
+            <th className={cn("py-3 pr-6 font-medium", bulk ? "pl-3" : "pl-6")}>Device &amp; issue</th>
             <th className="px-3 py-3 font-medium">Customer</th>
             <th className="px-3 py-3 font-medium">Handled by</th>
             <th className="px-3 py-3 font-medium">Status</th>
@@ -334,8 +361,13 @@ function JobList({ jobs, viewer }: { jobs: Job[]; viewer: Viewer }) {
         </thead>
         <tbody>
           {jobs.map((job) => (
-            <tr key={job.id} className="border-b border-border last:border-0">
-              <td className="px-6 py-4">
+            <tr key={job.id} className="border-b border-border last:border-0 has-[:checked]:bg-primary/5">
+              {bulk && (
+                <td className="py-4 pl-6 pr-0 align-middle">
+                  <SelectBox id={job.id} label={job.device} />
+                </td>
+              )}
+              <td className={cn("py-4 pr-6", bulk ? "pl-3" : "pl-6")}>
                 <div className="flex items-center gap-3">
                   <DeviceIcon />
                   <div className="min-w-0">
@@ -369,7 +401,12 @@ function JobList({ jobs, viewer }: { jobs: Job[]; viewer: Viewer }) {
 
       <ul className="divide-y divide-border md:hidden">
         {jobs.map((job) => (
-          <li key={job.id} className="flex gap-3 px-4 py-4">
+          <li key={job.id} className="flex gap-3 px-4 py-4 has-[:checked]:bg-primary/5">
+            {bulk && (
+              <span className="flex h-9 items-center">
+                <SelectBox id={job.id} label={job.device} />
+              </span>
+            )}
             <DeviceIcon />
             <div className="flex min-w-0 flex-1 flex-col gap-1.5">
               <div className="flex items-start justify-between gap-2">
