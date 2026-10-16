@@ -16,8 +16,7 @@ dropdown from the spec, left over from ticket 14.
       or to a removed staff member
 - [x] After reassigning, the repair shows the new "Handled by"; the new
       person can edit it and the old one now sees it read-only
-- [x] Picked-up repairs can still be reassigned (cancelled ones are closed,
-      ticket 51),
-      so the history is right, but the customer's tracking page does not
-      change
+- [x] Picked-up repairs can still be reassigned, so the history is right
+      (cancelled ones are closed, ticket 51); the tracking page shows the
+      new technician
 - [ ] Works on the live URL

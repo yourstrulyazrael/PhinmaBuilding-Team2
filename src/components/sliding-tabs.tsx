@@ -155,7 +155,7 @@ export function SlidingTabs({
         ref={pillRef}
         aria-hidden
         className={cn(
-          "pointer-events-none absolute left-0 top-0 rounded-[calc(var(--radius)-4px)] opacity-0 will-change-transform [transform-origin:0_0]",
+          "pointer-events-none absolute left-0 top-0 rounded-inner opacity-0 will-change-transform [transform-origin:0_0]",
           style.pill,
         )}
       />
@@ -174,7 +174,7 @@ export function SlidingTabs({
             scroll={false}
             aria-current={key === active ? "page" : undefined}
             className={cn(
-              "relative z-10 flex items-center justify-center gap-2 rounded-[calc(var(--radius)-4px)] px-3 py-1.5 text-sm font-medium",
+              "relative z-10 flex items-center justify-center gap-2 rounded-inner px-3 py-1.5 text-sm font-medium",
               "transition-colors duration-[420ms] ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
               stretch && "flex-1 sm:flex-none",
               on ? style.on : style.off,

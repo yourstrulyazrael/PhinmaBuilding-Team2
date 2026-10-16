@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 const buttonVariants = cva(
   // Ticket 48: rounder, a soft shadow on filled buttons, a slight press
   // on click, and a soft green focus glow instead of a hard ring.
-  "inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius)] text-sm font-medium transition-[background-color,border-color,box-shadow,color,transform] duration-150 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/25 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100",
+  "inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius)] text-sm font-medium transition-[background-color,border-color,box-shadow,color,transform] duration-150 active:scale-[0.98] focus-visible:ring-4 focus-visible:ring-ring/20 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100",
   {
     variants: {
       variant: {

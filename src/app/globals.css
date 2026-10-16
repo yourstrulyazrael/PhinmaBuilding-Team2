@@ -29,7 +29,10 @@
   --highlight: #2563c9;
   /* The page you are on, in the top bar: forest green here, blue in dark. */
   --nav-active: #1f5f3f;
+  /* Radius scale (ticket 66, see docs/DESIGN.md): cards and buttons use
+     --radius; things inside a card (menu rows, chips) use the smaller one. */
   --radius: 0.875rem;
+  --radius-inner: calc(var(--radius) - 4px);
   /* Soft, layered depth for cards (ticket 48): navy-tinted, never grey. */
   --card-shadow: 0 1px 2px rgb(20 33 61 / 0.05), 0 6px 20px -8px rgb(20 33 61 / 0.12);
   /* Chart lines (validated colour-blind safe on the white card, ticket 26). */
@@ -102,6 +105,7 @@
   --color-highlight: var(--highlight);
   --color-nav-active: var(--nav-active);
   --radius-base: var(--radius);
+  --radius-inner: var(--radius-inner);
   --shadow-card: var(--card-shadow);
   --font-sans: var(--font-geist), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -120,6 +124,31 @@ body {
     var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+}
+
+/* A very faint dot grid behind every page (ticket 66), fading out as it
+   goes down so it never fights the content. Fixed, so it doesn't scroll,
+   and behind everything. Not printed. */
+@media screen {
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: radial-gradient(color-mix(in oklab, var(--foreground) 9%, transparent) 1px, transparent 1.2px);
+    background-size: 22px 22px;
+    mask-image: linear-gradient(to bottom, black, transparent 70%);
+  }
+}
+
+/* One icon style everywhere (ticket 66): every icon (lucide) gets the
+   same line weight and never squashes in a tight row. Sizes follow the
+   scale in docs/DESIGN.md: size-3.5 in chips, size-4 in buttons and
+   text, size-5 in the top bar. */
+.lucide {
+  stroke-width: 1.75;
+  flex-shrink: 0;
 }
 
 /* The navbar's gliding highlight is in place (ticket 59): the active
@@ -161,6 +190,15 @@ body {
   select:disabled,
   input:disabled {
     cursor: not-allowed;
+  }
+
+  /* A clear focus ring for keyboard users on anything that can take
+     focus (ticket 66): a 2px outline in the brand green, a little away
+     from the edge. Only for the keyboard (focus-visible), never after a
+     mouse click. Buttons and fields draw their own soft glow instead. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
   }
 
   /* Every button, link and field eases between states instead of
@@ -211,6 +249,21 @@ body {
   to {
     opacity: 0;
     transform: translateY(-4px) scale(0.98);
+  }
+}
+
+/* Reduce motion (ticket 66): when the device asks for less movement,
+   every animation and transition in the app finishes at once - the
+   skeleton shimmer, menus, pills, toasts, the page glow. Things still
+   change, they just don't move. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
