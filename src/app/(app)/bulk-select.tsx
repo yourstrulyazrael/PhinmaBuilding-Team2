@@ -184,7 +184,7 @@ function BulkBar({
       aria-hidden={!show}
       inert={!show}
       className={cn(
-        "fixed inset-x-0 bottom-4 z-30 flex justify-center px-4 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] print:hidden",
+        "fixed inset-x-0 bottom-[calc(1rem+var(--mobile-nav,0px))] z-30 flex justify-center px-4 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] print:hidden",
         show ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-[150%] opacity-0",
       )}
     >

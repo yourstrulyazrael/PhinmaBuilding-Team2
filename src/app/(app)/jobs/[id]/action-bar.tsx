@@ -62,7 +62,7 @@ export function ActionBar({
       aria-hidden={!show}
       inert={!show}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 shadow-[0_-8px_24px_-12px_rgb(0_0_0/0.18)] backdrop-blur transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] print:hidden",
+        "fixed inset-x-0 bottom-[var(--mobile-nav,0px)] z-30 border-t border-border bg-card/95 shadow-[0_-8px_24px_-12px_rgb(0_0_0/0.18)] backdrop-blur transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] print:hidden",
         show ? "translate-y-0" : "translate-y-full",
       )}
     >

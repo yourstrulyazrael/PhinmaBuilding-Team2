@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 
@@ -6,6 +6,10 @@ import "./globals.css";
 // time and serves it from our own site: no request to Google from the
 // browser. Falls back to the system font while it loads.
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
+
+// Phones (ticket 77): use the whole screen, so the bottom tab bar can sit
+// above the iPhone home bar (env(safe-area-inset-bottom) in the CSS).
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 export const metadata: Metadata = {
   title: "Zenith Repair",

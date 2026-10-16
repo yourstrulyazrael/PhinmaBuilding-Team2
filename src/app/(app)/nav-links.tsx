@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Bell, Boxes, ChartColumn, LayoutDashboard, Plus, Star, Users } from "lucide-react";
 import { RevealLabel, revealItem } from "@/components/reveal-label";
 import { cn } from "@/lib/utils";
+import { inSection } from "@/lib/nav";
 
 // ownerOnly links (the shop's earnings) are left out for staff; the pages
 // themselves also send staff away.
@@ -49,10 +50,11 @@ export function NavLinks({ isOwner }: { isOwner: boolean }) {
     // bell, account and sign out off the screen. (No tooltips there to clip.)
     <nav
       aria-label="Main"
-      className="flex min-w-0 items-center gap-1 max-sm:overflow-x-auto max-sm:[scrollbar-width:none] sm:gap-1.5 md:gap-2"
+      className="flex min-w-0 items-center gap-1 max-sm:hidden sm:gap-1.5 md:gap-2"
     >
       {links.map(({ href, label, icon: Icon }, i) => {
-        const active = pathname === href;
+        // Inner pages count too: a repair lights up Overview (ticket 78).
+        const active = inSection(href, pathname);
         return (
           <Link
             key={href}
@@ -331,7 +333,12 @@ export function NavGlide() {
         { duration: GLIDE_MS, easing: EASE },
       );
     };
-    const current = () => row.querySelector<HTMLElement>('[data-nav-item][aria-current="page"]');
+    // On a phone the page buttons are hidden (the bottom bar has them,
+    // ticket 77): no button on screen means no pill.
+    const current = () => {
+      const el = row.querySelector<HTMLElement>('[data-nav-item][aria-current="page"]');
+      return el && el.offsetParent !== null ? el : null;
+    };
 
     // The page changed: glide to its button (or fade out if none).
     place(current(), true);

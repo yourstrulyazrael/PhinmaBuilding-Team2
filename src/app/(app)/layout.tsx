@@ -8,6 +8,7 @@ import { signOut } from "../login/actions";
 import { AccountLink, NavGlide, NavLinks, NotificationsLink } from "./nav-links";
 import { ShopLive } from "./shop-live";
 import { CommandPalette } from "./command-palette";
+import { MobileNav } from "./mobile-nav";
 import { CurrencyProvider } from "@/components/currency";
 import { ToastProvider } from "@/components/toast";
 import { getMe, getNotifications, getShop, getUser } from "@/lib/session";
@@ -61,7 +62,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           </div>
         </header>
   
-        <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+        {/* On phones, room at the bottom for the tab bar (ticket 77). */}
+        <div className="flex min-w-0 flex-1 flex-col pb-[var(--mobile-nav,0px)]">{children}</div>
+        <MobileNav isOwner={shop.role === "owner"} />
   
         {/* Customer answers arrive live (ticket 52). */}
         <ShopLive shopId={shop.id} userId={user.id} isOwner={shop.role === "owner"} />

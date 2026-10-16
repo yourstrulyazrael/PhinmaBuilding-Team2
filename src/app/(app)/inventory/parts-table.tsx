@@ -221,7 +221,39 @@ export function PartsTable({ parts, costs, isOwner }: { parts: Part[]; costs: Re
               : "No parts match."}
           </p>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          {/* Phones (ticket 77): one card per part instead of a wide table. */}
+          <ul className="divide-y divide-border border-t border-border md:hidden">
+            {visible.map((p) => (
+              <li key={p.id} className={cn("flex items-start gap-3 px-4 py-3.5", !p.active && "opacity-60")}>
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius)] bg-muted text-primary">
+                  <Package className="size-5" aria-hidden />
+                </span>
+                <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold">
+                        {p.name}
+                        {!p.active && <span className="ml-2 text-xs font-normal text-muted-foreground">(archived)</span>}
+                      </p>
+                      <p className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
+                        <Barcode className="size-3" aria-hidden />
+                        {p.sku}
+                        {p.category && <span className="font-sans text-primary"> · {p.category}</span>}
+                      </p>
+                    </div>
+                    {isOwner && <PartRowActions part={p} cost={costs[p.id] ?? 0} />}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                    <StockPill part={p} />
+                    <span className="font-mono tabular-nums">{money(Number(p.retail_price ?? 0))}</span>
+                    {isOwner && <span className="text-xs text-muted-foreground">cost {money(costs[p.id] ?? 0)}</span>}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="bg-muted/40 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -269,6 +301,7 @@ export function PartsTable({ parts, costs, isOwner }: { parts: Part[]; costs: Re
               </tbody>
             </table>
           </div>
+          </>
         )}
 
         {rows.length > shown && (

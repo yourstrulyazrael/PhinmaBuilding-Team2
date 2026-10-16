@@ -284,6 +284,14 @@ body {
   animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Phones (ticket 77): the height of the bottom tab bar, so pages, toasts
+   and the repair action bar keep clear of it. 0 on bigger screens. */
+@media screen and (max-width: 639.98px) {
+  :root {
+    --mobile-nav: calc(4rem + env(safe-area-inset-bottom));
+  }
+}
+
 /* Big screens: scale the whole app up a little, so text, buttons and
    spacing aren't tiny on a 1920×1080 monitor. Everything is sized in
    rem, so this one setting grows it all in proportion. Phones and
