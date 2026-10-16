@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useOptimistic, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, ImagePlus, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -65,7 +65,7 @@ function Side({
   kind,
   shopId,
   jobId,
-  photos,
+  photos: saved,
   editable,
   onView,
 }: {
@@ -80,6 +80,8 @@ function Side({
   const toast = useToast();
   const input = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
+  // A deleted photo disappears at once (ticket 76); back if it fails.
+  const [photos, hide] = useOptimistic(saved, (current: JobPhoto[], path: string) => current.filter((p) => p.path !== path));
   const [error, setError] = useState<string>();
   const [deleting, setDeleting] = useState<string | null>(null);
   const full = photos.length >= MAX_PER_SIDE;
@@ -123,6 +125,8 @@ function Side({
   function remove(path: string) {
     setError(undefined);
     startTransition(async () => {
+      hide(path);
+      setDeleting(null);
       const { error: delError } = await createClient().storage.from(BUCKET).remove([path]);
       if (delError) {
         setError(delError.message);

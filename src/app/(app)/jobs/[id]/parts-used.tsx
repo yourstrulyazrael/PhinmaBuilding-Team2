@@ -2,14 +2,17 @@
 
 import { useMoney } from "@/components/currency";
 
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { useActionState, useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { Plus, X } from "lucide-react";
 import { addJobPart, removeJobPart, type ActionResult } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/toast";
 
-export type UsedPart = { id: string; partId: string; name: string; sku: string; quantity: number; unitPrice: number };
+// pending: shown before the server has saved it (ticket 76).
+export type UsedPart = { id: string; partId: string; name: string; sku: string; quantity: number; unitPrice: number; pending?: boolean };
+
+type Change = { type: "remove"; id: string } | { type: "add"; part: UsedPart };
 export type PickablePart = { id: string; name: string; sku: string; quantity: number; price: number };
 
 /**
@@ -19,6 +22,10 @@ export type PickablePart = { id: string; name: string; sku: string; quantity: nu
  *
  * Toasts (ticket 67): "Part added"; after removing, "Undo" records it
  * again (taking it back out of stock); a failed removal offers "Try again".
+ *
+ * Optimistic (ticket 76): an added part appears at once (faded until
+ * saved) and a removed one disappears at once. If the server says no,
+ * the list snaps back and the error shows.
  */
 export function PartsUsed({
   jobId,
@@ -36,6 +43,22 @@ export function PartsUsed({
   const [removing, startRemove] = useTransition();
   const [removeError, setRemoveError] = useState<string>();
   const toast = useToast();
+  const [list, change] = useOptimistic(used, (current: UsedPart[], c: Change) =>
+    c.type === "remove" ? current.filter((u) => u.id !== c.id) : [...current, c.part],
+  );
+
+  // Show the new part straight away, then send the form.
+  function add(data: FormData) {
+    const part = parts.find((p) => p.id === data.get("part_id"));
+    const quantity = Number(data.get("quantity"));
+    if (part && Number.isInteger(quantity) && quantity > 0) {
+      change({
+        type: "add",
+        part: { id: `pending-${part.id}`, partId: part.id, name: part.name, sku: part.sku, quantity, unitPrice: part.price, pending: true },
+      });
+    }
+    formAction(data);
+  }
 
   // A toast each time the Add form saves.
   const shown = useRef(state);
@@ -48,6 +71,7 @@ export function PartsUsed({
   function remove(u: UsedPart) {
     startRemove(async () => {
       setRemoveError(undefined);
+      change({ type: "remove", id: u.id });
       const result = await removeJobPart(u.id, jobId);
       if (result.error) {
         setRemoveError(result.error);
@@ -75,19 +99,19 @@ export function PartsUsed({
 
   return (
     <div className="flex flex-col gap-4">
-      {used.length === 0 ? (
+      {list.length === 0 ? (
         <p className="text-sm text-muted-foreground">No parts recorded yet.</p>
       ) : (
         <ul className="divide-y divide-border rounded-[var(--radius)] border border-border">
-          {used.map((u) => (
-            <li key={u.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+          {list.map((u) => (
+            <li key={u.id} className={`flex items-center justify-between gap-3 px-3 py-2 text-sm ${u.pending ? "opacity-60" : ""}`}>
               <span>
                 <span className="font-medium">{u.name}</span>
                 {u.quantity > 1 && <span className="text-muted-foreground"> ×{u.quantity}</span>}
                 <span className="ml-2 font-mono text-xs text-muted-foreground">{u.sku}</span>
               </span>
               <span className="ml-auto tabular-nums text-muted-foreground">{money(u.unitPrice * u.quantity)}</span>
-              {editable && (
+              {editable && !u.pending && (
                 <button
                   type="button"
                   disabled={removing}
@@ -104,7 +128,7 @@ export function PartsUsed({
           <li className="flex items-center justify-between gap-3 bg-muted/50 px-3 py-2 text-sm">
             <span className="font-medium">Parts total</span>
             <span className="font-semibold tabular-nums">
-              {money(used.reduce((sum, u) => sum + u.unitPrice * u.quantity, 0))}
+              {money(list.reduce((sum, u) => sum + u.unitPrice * u.quantity, 0))}
             </span>
           </li>
         </ul>
@@ -115,7 +139,7 @@ export function PartsUsed({
         (parts.length === 0 ? (
           <p className="text-sm text-muted-foreground">No parts in the catalog yet. The owner adds them in Inventory.</p>
         ) : (
-          <form action={formAction} className="flex flex-wrap items-end gap-2">
+          <form action={add} className="flex flex-wrap items-end gap-2">
             <label className="flex min-w-48 flex-1 flex-col gap-1.5 text-sm font-medium">
               Part
               <select
