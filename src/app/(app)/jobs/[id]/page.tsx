@@ -1,12 +1,34 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { AlarmClock, Camera, ExternalLink, Lock, Package, PackageCheck, Phone, QrCode, ReceiptText, Smartphone, ThumbsDown, ThumbsUp, TrendingUp } from "lucide-react";
+import {
+  Activity,
+  AlarmClock,
+  Banknote,
+  Camera,
+  CircleCheck,
+  ClipboardList,
+  EyeOff,
+  Lock,
+  MessageSquareQuote,
+  NotebookPen,
+  Package,
+  PackageCheck,
+  Phone,
+  QrCode,
+  ReceiptText,
+  Smartphone,
+  ThumbsDown,
+  ThumbsUp,
+  TrendingUp,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
 import { formatDate, formatPeso, isFinished, paymentLabel, repairNumber, todayInManila, type Job } from "@/lib/jobs";
-import { currentPrice, isLate, labourPrice, partsTotal, warrantyEnd } from "@/lib/workspace";
+import { currentPrice, isLate, labourPrice, manilaDate, partsTotal, warrantyEnd } from "@/lib/workspace";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { StatusPicker } from "@/components/status-picker";
 import { CopyMessageButton } from "@/components/copy-message-button";
 import { trackingUrl } from "@/lib/tracking-url";
@@ -24,6 +46,7 @@ import { ProposalDecision, ProposeEstimate } from "./estimate-proposal";
 import { getShop, getSupabase, getUser, getNames } from "@/lib/session";
 import { InlineEdit } from "./inline-edit";
 import { ActionBar } from "./action-bar";
+import { ShareMenu } from "./share-menu";
 import { RepairStepper } from "@/components/repair-stepper";
 import { CopyButton } from "@/components/copy-button";
 
@@ -127,8 +150,20 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
     </section>
   );
 
+  const readyText = readyMessage(job, shop ?? { name: "", address: "", hours: "" }, url);
+  const people = (memberRows ?? [])
+    .filter((m) => !m.removed_at)
+    .map((m) => ({
+      id: m.technician_id as string,
+      name: (m.technician_id === user.id ? "You" : nameOf(m.technician_id, viewer)) + (m.role === "owner" ? " (owner)" : ""),
+    }));
+
+  // The page: a slim header, any alerts, then two columns on a wide
+  // screen. Left: the work (progress, the update for the customer,
+  // photos). Right: the facts (customer, price, details, review). On a
+  // phone it is one column.
   return (
-    <main className={cn("mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 py-6 md:px-8 md:py-10", editable && "pb-28 md:pb-28")}>
+    <main className={cn("mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-6 md:px-8 md:py-10", editable && "pb-28 md:pb-28")}>
       <PageHeader
         crumbs={[{ label: "Repairs", href: "/?tab=all" }, { label: `Repair ${number}` }]}
         eyebrow={
@@ -139,11 +174,15 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
         }
         icon={Smartphone}
         title={<InlineEdit jobId={job.id} field="device" label="device" value={job.device} canEdit={ownerEdits} maxLength={100} inputClassName="text-xl font-semibold md:text-xl" />}
-        description={<InlineEdit jobId={job.id} field="problem" label="problem" value={job.problem} canEdit={ownerEdits} multiline maxLength={500} />}
+        description={
+          <div className="flex flex-col gap-3">
+            <InlineEdit jobId={job.id} field="problem" label="problem" value={job.problem} canEdit={ownerEdits} multiline maxLength={500} />
+            <StatusBadge status={job.status} className="w-fit px-3 py-1 text-sm" />
+          </div>
+        }
         actions={
           <>
-            <CopyMessageButton message={updateMessage(job, url)} />
-            <CopyMessageButton message={url} label="Copy tracking link" what="Tracking link" />
+            <ShareMenu message={updateMessage(job, url)} url={url} trackingPath={`/track/${job.tracking_code}`} />
             <Link href={`/jobs/${job.id}/slip`} className={buttonVariants({ variant: "secondary", size: "sm" })}>
               <QrCode className="size-4" aria-hidden />
               Claim slip
@@ -155,28 +194,21 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
                 Receipt
               </Link>
             )}
-            <Link
-              href={`/track/${job.tracking_code}`}
-              target="_blank"
-              className={buttonVariants({ variant: "secondary", size: "sm" })}
-            >
-              <ExternalLink className="size-4" aria-hidden />
-              Customer view
-            </Link>
           </>
         }
       />
 
+      {/* Alerts: only what needs doing now. */}
       {!editable && (
-        <p
-          role="status"
-          className="flex items-center gap-2 rounded-[var(--radius)] border border-border bg-muted px-4 py-3 text-sm"
-        >
-          <Lock className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-          <span>
-            Handled by <span className="font-medium">{handler}</span>. Only {handler} or the shop owner can change it.
-          </span>
-        </p>
+        <Notice tone="muted" icon={Lock}>
+          {cancelled ? (
+            <>This repair was cancelled, so it&apos;s closed: nothing on it can be changed.</>
+          ) : (
+            <>
+              Handled by <span className="font-medium">{handler}</span>. Only {handler} or the shop owner can change it.
+            </>
+          )}
+        </Notice>
       )}
 
       {editable && job.cancel_requested_at && !isFinished(job.status) && (
@@ -184,344 +216,322 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
       )}
 
       {late && (
-        <div
-          role="status"
-          className="flex flex-col gap-3 rounded-[var(--radius)] border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/50"
+        <Notice
+          tone="amber"
+          icon={AlarmClock}
+          title="This repair is late"
+          action={<CopyMessageButton label="Copy delay message" message={delayMessage(job, url)} />}
         >
-          <div className="flex items-start gap-3">
-            <AlarmClock className="mt-0.5 size-5 shrink-0 text-amber-700 dark:text-amber-300" aria-hidden />
-            <div className="flex flex-col gap-1">
-              <p className="font-medium text-amber-800 dark:text-amber-200">This repair is late</p>
-              <p className="text-sm text-muted-foreground">
-                Its estimated completion date was {formatDate(job.promised_date)}. The customer&apos;s tracking page now shows an
-                apology. Let them know, and set a new estimated completion date below.
-              </p>
-            </div>
-          </div>
-          <CopyMessageButton label="Copy delay message" message={delayMessage(job, url)} />
-        </div>
+          It was due {formatDate(job.promised_date)}. The customer&apos;s page shows an apology; let them know and set a new date.
+        </Notice>
       )}
 
       {/* Marked ready: the message to send, one tap away (ticket 56). */}
       {job.status === "ready_for_pickup" && (
-        <div
-          role="status"
-          className="flex flex-col gap-3 rounded-[var(--radius)] border border-emerald-300 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950/50"
+        <Notice
+          tone="green"
+          icon={PackageCheck}
+          title="Ready for pickup: tell the customer"
+          action={<CopyMessageButton label="Copy ready message" message={readyText} />}
         >
-          <div className="flex items-start gap-3">
-            <PackageCheck className="mt-0.5 size-5 shrink-0 text-emerald-700 dark:text-emerald-300" aria-hidden />
-            <div className="flex min-w-0 flex-col gap-1">
-              <p className="font-medium text-emerald-800 dark:text-emerald-200">Ready for pickup: tell the customer</p>
-              <p className="whitespace-pre-line rounded-[var(--radius)] border border-emerald-200 bg-card p-3 text-sm dark:border-emerald-900">
-                {readyMessage(job, shop ?? { name: "", address: "", hours: "" }, url)}
-              </p>
-              {!shop?.hours && viewer.isOwner && (
-                <p className="text-xs text-muted-foreground">
-                  Tip: add your opening hours on Account and they&apos;ll be in this message.
-                </p>
-              )}
-            </div>
-          </div>
-          <CopyMessageButton label="Copy ready message" message={readyMessage(job, shop ?? { name: "", address: "", hours: "" }, url)} />
-        </div>
+          <details className="group">
+            <summary className="w-fit text-sm hover:text-foreground">
+              <span className="mr-1 inline-block transition-transform group-open:rotate-90">›</span>
+              Preview the message
+            </summary>
+            <p className="mt-2 whitespace-pre-line rounded-inner border border-emerald-200 bg-card p-3 text-sm text-foreground dark:border-emerald-900">
+              {readyText}
+            </p>
+            {!shop?.hours && viewer.isOwner && (
+              <p className="mt-2 text-xs">Tip: add your opening hours on Account and they&apos;ll be in this message.</p>
+            )}
+          </details>
+        </Notice>
       )}
 
-      <Card id="status-card" className="scroll-mt-24">
-        <CardHeader>
-          <CardTitle className="text-base text-tertiary">Status</CardTitle>
-          {editable && <CardDescription>Tap to change. The customer&apos;s page updates straight away.</CardDescription>}
-          {cancelled && (
-            <CardDescription>This repair was cancelled, so it&apos;s closed: nothing on it can be changed.</CardDescription>
-          )}
-        </CardHeader>
-        <CardContent className="flex flex-col gap-6">
-          {/* How far along it is (ticket 70). */}
-          <RepairStepper status={job.status} />
-          {editable ? (
-            <StatusPicker jobId={job.id} status={job.status} variant="buttons" price={currentPrice(job)} device={job.device} />
-          ) : (
-            <StatusBadge status={job.status} className="px-3 py-1 text-sm" />
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="pt-6">
-          <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm">
-            <dt className="text-muted-foreground">Handled by</dt>
-            <dd>
-              {/* The owner can hand it to someone else (ticket 44);
-                  everyone else just sees who has it. */}
-              {viewer.isOwner && !cancelled ? (
-                <ReassignSelect
-                  jobId={job.id}
-                  handledBy={job.handled_by}
-                  people={(memberRows ?? [])
-                    .filter((m) => !m.removed_at)
-                    .map((m) => ({
-                      id: m.technician_id as string,
-                      name:
-                        (m.technician_id === user.id ? "You" : nameOf(m.technician_id, viewer)) +
-                        (m.role === "owner" ? " (owner)" : ""),
-                    }))}
-                />
-              ) : (
-                <HandledBy id={job.handled_by} viewer={viewer} />
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        {/* --- The work --------------------------------------------------- */}
+        <div className="flex min-w-0 flex-col gap-5">
+          <Card id="status-card" className="scroll-mt-24">
+            <Section
+              icon={Activity}
+              title="Progress"
+              description={editable ? "Tap a status to change it. The customer's page updates straight away." : undefined}
+            >
+              {/* How far along it is (ticket 70). */}
+              <RepairStepper status={job.status} />
+              {editable && (
+                <div className="border-t border-border pt-5">
+                  <StatusPicker jobId={job.id} status={job.status} variant="buttons" price={currentPrice(job)} device={job.device} />
+                </div>
               )}
-            </dd>
-            <dt className="text-muted-foreground">Quoted by</dt>
-            <dd>{job.quoted_by === user.id ? "You" : nameOf(job.quoted_by, viewer)}</dd>
-            <dt className="text-muted-foreground">Customer</dt>
-            <dd className="font-medium">
-              <InlineEdit jobId={job.id} field="customer_name" label="customer name" value={job.customer_name} canEdit={ownerEdits} maxLength={100} />
-            </dd>
-            <dt className="text-muted-foreground">Contact No.</dt>
-            <dd className="flex flex-wrap items-center gap-1">
-              <InlineEdit
-                jobId={job.id}
-                field="customer_phone"
-                label="contact number"
-                type="tel"
-                value={job.customer_phone}
-                canEdit={ownerEdits}
-                maxLength={40}
-                display={
-                  <a href={`tel:${job.customer_phone.replace(/[^\d+]/g, "")}`} className="inline-flex items-center gap-1.5 font-medium text-primary underline-offset-4 hover:underline">
-                    <Phone className="size-3.5" aria-hidden />
-                    {job.customer_phone}
-                  </a>
-                }
-              />
-              <CopyButton text={job.customer_phone} what="Contact number" />
-            </dd>
-            {/* Labour (quote, then any revised estimate) + parts = total
-                (ticket 47). */}
-            <dt className="text-muted-foreground">Initial quote</dt>
-            <dd className="font-medium tabular-nums">
-              {formatPeso(job.initial_quote)}
-            </dd>
-            {job.revised_estimate !== null && (
-              <>
-                <dt className="text-muted-foreground">Revised quote</dt>
-                <dd className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium tabular-nums">
-                    {formatPeso(job.revised_estimate)}
-                  </span>
-                  <EstimateAnswer job={job} />
-                </dd>
-              </>
-            )}
-            <dt className="text-muted-foreground">Parts</dt>
-            <dd className="tabular-nums">
-              {partsTotal(job) > 0 ? formatPeso(partsTotal(job)) : <span className="text-muted-foreground">(None used, no additional charges.)</span>}
-            </dd>
-            <dt className="font-medium text-tertiary">Total</dt>
-            <dd className="font-semibold tabular-nums text-tertiary">{formatPeso(currentPrice(job))}</dd>
-            {job.amount_paid !== null && (
-              <>
-                <dt className="text-muted-foreground">Paid</dt>
-                <dd className="font-medium">
-                  {formatPeso(job.amount_paid)} by {paymentLabel(job.payment_method)}
-                  {job.payment_ref && <span className="font-normal text-muted-foreground"> (ref …{job.payment_ref})</span>}
-                  {job.paid_at && <span className="font-normal text-muted-foreground"> on {formatDateTime(job.paid_at)}</span>}
-                </dd>
-              </>
-            )}
-            {/* Warranty from pickup (ticket 57). */}
-            {warrantyUntil && (
-              <>
-                <dt className="text-muted-foreground">Warranty</dt>
-                <dd>
-                  {warrantyUntil >= todayInManila() ? (
+            </Section>
+          </Card>
+
+          {/* Everything the customer sees about the work: answers and
+              proposals, the update form, a revised estimate (ticket 39)
+              and the parts used (ticket 28). */}
+          <Card>
+            <Section icon={NotebookPen} title="Update for the customer" description="Shown on their tracking page, with the names of the parts used.">
+              {/* The customer declined the revised estimate (tickets 41–42). */}
+              {job.estimate_status === "declined" && job.revised_estimate !== null && (
+                <Callout
+                  tone="red"
+                  icon={ThumbsDown}
+                  title={
                     <>
-                      {shop?.warrantyDays} days, until <span className="font-medium">{formatDate(warrantyUntil)}</span>
+                      The customer declined the revised quote of <span className="tabular-nums">{formatPeso(job.revised_estimate)}</span>
+                    </>
+                  }
+                  meta={job.estimate_answered_at ? formatDateTime(job.estimate_answered_at) : undefined}
+                >
+                  {job.estimate_decline_reason ? (
+                    <>
+                      <span className="text-muted-foreground">Their reason: </span>&ldquo;{job.estimate_decline_reason}&rdquo;
                     </>
                   ) : (
-                    <span className="text-muted-foreground">Ended {formatDate(warrantyUntil)}</span>
+                    <span className="text-muted-foreground">No reason given.</span>
                   )}
-                </dd>
-              </>
-            )}
-            <dt className="text-muted-foreground">Estimated completion date</dt>
-            <dd>
-              <InlineEdit
-                jobId={job.id}
-                field="promised_date"
-                label="estimated completion date"
-                type="date"
-                value={job.promised_date}
-                display={formatDate(job.promised_date)}
-                canEdit={editable}
-              />
-            </dd>
-            {review && (
-              <>
-                <dt className="text-muted-foreground">Review</dt>
-                <dd className="flex flex-col gap-1">
-                  <span className="flex items-center gap-2">
-                    <Stars rating={review.rating} />
-                    <span className="text-xs text-muted-foreground">{formatDateTime(review.created_at)}</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    Contact them to agree what to do next, or set a new revised quote.
                   </span>
-                  {review.comment && <span className="whitespace-pre-line">&ldquo;{review.comment}&rdquo;</span>}
-                </dd>
-              </>
-            )}
-          </dl>
-          <p className="mt-4 text-xs text-muted-foreground">
-            Customer name and phone are private: never on the claim slip or tracking page.
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* One card for everything the customer sees about the work: the
-          update form, the revised estimate (ticket 39) and the parts used
-          (ticket 28). Plain labels, no dividers, so it reads as one form.
-          The owner answers a waiting proposal at the top. */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base text-tertiary">Update for the customer</CardTitle>
-          <CardDescription>Shown on the customer&apos;s tracking page, with the names of the parts used.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-6">
-          {/* The customer declined the revised estimate: what, when and
-              why, in their own words (tickets 41–42). Everyone in the
-              shop sees it, so whoever picks up the phone knows. */}
-          {job.estimate_status === "declined" && job.revised_estimate !== null && (
-            <div className="flex flex-col gap-1 rounded-[var(--radius)] border border-red-300 bg-red-50 p-4 text-sm dark:border-red-900 dark:bg-red-950/50">
-              <p className="flex items-center gap-2 font-medium text-red-800 dark:text-red-200">
-                <ThumbsDown className="size-4" aria-hidden />
-                The customer declined the revised quote of{" "}
-                <span className="tabular-nums">{formatPeso(job.revised_estimate)}</span>
-              </p>
-              {job.estimate_answered_at && (
-                <p className="text-xs text-muted-foreground">{formatDateTime(job.estimate_answered_at)}</p>
+                </Callout>
               )}
-              <p className="mt-1 whitespace-pre-line">
-                {job.estimate_decline_reason ? (
-                  <>
-                    <span className="text-muted-foreground">Their reason: </span>&ldquo;{job.estimate_decline_reason}&rdquo;
-                  </>
-                ) : (
-                  <span className="text-muted-foreground">No reason given.</span>
-                )}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Contact them to agree what to do next, or set a new revised quote.
-              </p>
-            </div>
-          )}
 
-          {/* The owner answered this staff member's proposal (ticket 42):
-              the answer and the owner's note, whatever else has changed. */}
-          {!viewer.isOwner && proposal && proposal.status !== "pending" && proposal.staff_id === user.id && (
-            <div
-              className={cn(
-                "flex flex-col gap-1 rounded-[var(--radius)] border p-4 text-sm",
-                proposal.status === "approved"
-                  ? "border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/50"
-                  : "border-red-300 bg-red-50 dark:border-red-900 dark:bg-red-950/50",
+              {/* The owner answered this staff member's proposal (ticket 42). */}
+              {!viewer.isOwner && proposal && proposal.status !== "pending" && proposal.staff_id === user.id && (
+                <Callout
+                  tone={proposal.status === "approved" ? "green" : "red"}
+                  icon={proposal.status === "approved" ? ThumbsUp : ThumbsDown}
+                  title={
+                    <>
+                      Your owner {proposal.status === "approved" ? "approved" : "rejected"} your proposed quote of{" "}
+                      <span className="tabular-nums">{formatPeso(proposal.amount)}</span>
+                    </>
+                  }
+                  meta={proposal.decided_at ? formatDateTime(proposal.decided_at) : undefined}
+                >
+                  {proposal.owner_note ? (
+                    <>
+                      <span className="text-muted-foreground">Owner&apos;s note: </span>&ldquo;{proposal.owner_note}&rdquo;
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground">No note from the owner.</span>
+                  )}
+                  {proposal.status === "approved" && (
+                    <span className="mt-1 block text-xs text-muted-foreground">The customer is asked to accept the new quote.</span>
+                  )}
+                </Callout>
               )}
-            >
-              <p className="flex items-center gap-2 font-medium text-tertiary">
-                {proposal.status === "approved" ? (
-                  <ThumbsUp className="size-4 text-emerald-700 dark:text-emerald-300" aria-hidden />
-                ) : (
-                  <ThumbsDown className="size-4 text-destructive" aria-hidden />
-                )}
-                Your owner {proposal.status === "approved" ? "approved" : "rejected"} your proposed quote of{" "}
-                <span className="tabular-nums">{formatPeso(proposal.amount)}</span>
-              </p>
-              {proposal.decided_at && (
-                <p className="text-xs text-muted-foreground">{formatDateTime(proposal.decided_at)}</p>
+
+              {viewer.isOwner && proposal?.status === "pending" && !cancelled && (
+                <Callout
+                  tone="blue"
+                  icon={TrendingUp}
+                  title={
+                    <>
+                      {nameOf(proposal.staff_id, viewer)} proposes a revised quote of{" "}
+                      <span className="tabular-nums">{formatPeso(proposal.amount)}</span>
+                    </>
+                  }
+                  meta={`Quote now ${formatPeso(labourPrice(job))} · ${formatDateTime(proposal.created_at)} · approving asks the customer to accept it`}
+                >
+                  <span className="whitespace-pre-line">{proposal.reason}</span>
+                  <div className="mt-3">
+                    <ProposalDecision proposalId={proposal.id} jobId={job.id} />
+                  </div>
+                </Callout>
               )}
-              <p className="mt-1 whitespace-pre-line">
-                {proposal.owner_note ? (
-                  <>
-                    <span className="text-muted-foreground">Owner&apos;s note: </span>&ldquo;{proposal.owner_note}&rdquo;
-                  </>
-                ) : (
-                  <span className="text-muted-foreground">No note from the owner.</span>
-                )}
-              </p>
-              {proposal.status === "approved" && (
-                <p className="mt-1 text-xs text-muted-foreground">The customer is asked to accept the new quote.</p>
+
+              {editable ? (
+                <JobDetailsForm job={job} canReviseEstimate={shop?.canReviseEstimate ?? false} />
+              ) : (
+                <dl className="flex flex-col gap-4 text-sm">
+                  <div>
+                    <dt className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Notes</dt>
+                    <dd className="mt-1 whitespace-pre-line">{job.notes || "–"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Parts replaced</dt>
+                    <dd className="mt-1">{job.parts_replaced || "–"}</dd>
+                  </div>
+                </dl>
               )}
-            </div>
-          )}
 
-          {viewer.isOwner && proposal?.status === "pending" && !cancelled && (
-            <div className="flex flex-col gap-3 rounded-[var(--radius)] border border-highlight/40 bg-highlight/5 p-4 text-sm">
-              <div className="flex flex-col gap-0.5">
-                <p className="flex items-center gap-2 font-medium text-tertiary">
-                  <TrendingUp className="size-4 text-highlight" aria-hidden />
-                  {nameOf(proposal.staff_id, viewer)} proposes a revised quote of{" "}
-                  <span className="tabular-nums">{formatPeso(proposal.amount)}</span>
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Quote now {formatPeso(labourPrice(job))} · {formatDateTime(proposal.created_at)} · approving asks the
-                  customer to accept it
-                </p>
-              </div>
-              <p className="whitespace-pre-line">{proposal.reason}</p>
-              <ProposalDecision proposalId={proposal.id} jobId={job.id} />
-            </div>
-          )}
-
-          {editable ? (
-            <JobDetailsForm job={job} canReviseEstimate={shop?.canReviseEstimate ?? false} />
-          ) : (
-            <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm">
-              <dt className="text-muted-foreground">Notes</dt>
-              <dd className="whitespace-pre-line">{job.notes || "–"}</dd>
-              <dt className="text-muted-foreground">Parts replaced</dt>
-              <dd>{job.parts_replaced || "–"}</dd>
-            </dl>
-          )}
-
-          {/* Staff who propose a revised estimate get its fields here,
-              then Parts used, then "Send to owner" last (ticket 39).
-              Everyone else just gets Parts used. */}
-          {!viewer.isOwner && editable && !(shop?.canReviseEstimate ?? false) && !isFinished(job.status) ? (
-            <ProposeEstimate
-              jobId={job.id}
-              current={labourPrice(job)}
-              last={
-                proposal
-                  ? {
-                      amount: Number(proposal.amount),
-                      reason: proposal.reason,
-                      status: proposal.status,
-                      ownerNote: proposal.owner_note,
-                      sentOn: formatDateTime(proposal.created_at),
+              <div className="border-t border-border pt-5">
+                {/* Staff who propose a revised estimate get its fields,
+                    then Parts used, then "Send to owner" last (ticket 39). */}
+                {!viewer.isOwner && editable && !(shop?.canReviseEstimate ?? false) && !isFinished(job.status) ? (
+                  <ProposeEstimate
+                    jobId={job.id}
+                    current={labourPrice(job)}
+                    last={
+                      proposal
+                        ? {
+                            amount: Number(proposal.amount),
+                            reason: proposal.reason,
+                            status: proposal.status,
+                            ownerNote: proposal.owner_note,
+                            sentOn: formatDateTime(proposal.created_at),
+                          }
+                        : null
                     }
-                  : null
-              }
-            >
-              {partsUsed}
-            </ProposeEstimate>
-          ) : (
-            partsUsed
-          )}
-        </CardContent>
-      </Card>
+                  >
+                    {partsUsed}
+                  </ProposeEstimate>
+                ) : (
+                  partsUsed
+                )}
+              </div>
+            </Section>
+          </Card>
 
-      {shop && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base text-tertiary">
-              <Camera className="size-4" aria-hidden />
-              Before &amp; after photos
-            </CardTitle>
-            <CardDescription>
-              The device as it came in, and as it goes out. Only your shop sees these.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <JobPhotos shopId={shop.id} jobId={job.id} photos={photos} editable={editable} />
-          </CardContent>
-        </Card>
-      )}
-      {/* Always-there actions once the Status card scrolls away (ticket 70). */}
+          {shop && (
+            <Card>
+              <Section icon={Camera} title="Before & after photos" description="The device as it came in, and as it goes out. Only your shop sees these.">
+                <JobPhotos shopId={shop.id} jobId={job.id} photos={photos} editable={editable} />
+              </Section>
+            </Card>
+          )}
+        </div>
+
+        {/* --- The facts ----------------------------------------------------- */}
+        <aside className="flex flex-col gap-5">
+          <Card>
+            <Section icon={UserRound} title="Customer" compact>
+              <div className="flex flex-col gap-1">
+                <span className="text-base font-semibold">
+                  <InlineEdit jobId={job.id} field="customer_name" label="customer name" value={job.customer_name} canEdit={ownerEdits} maxLength={100} />
+                </span>
+                <span className="flex flex-wrap items-center gap-1 text-sm">
+                  <InlineEdit
+                    jobId={job.id}
+                    field="customer_phone"
+                    label="contact number"
+                    type="tel"
+                    value={job.customer_phone}
+                    canEdit={ownerEdits}
+                    maxLength={40}
+                    display={
+                      <a
+                        href={`tel:${job.customer_phone.replace(/[^\d+]/g, "")}`}
+                        className="inline-flex items-center gap-1.5 font-medium text-primary underline-offset-4 hover:underline"
+                      >
+                        <Phone className="size-3.5" aria-hidden />
+                        {job.customer_phone}
+                      </a>
+                    }
+                  />
+                  <CopyButton text={job.customer_phone} what="Contact number" />
+                </span>
+              </div>
+              <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                <EyeOff className="mt-0.5 size-3.5" aria-hidden />
+                Private: never on the claim slip or tracking page.
+              </p>
+            </Section>
+          </Card>
+
+          {/* Labour (quote, then any revised estimate) + parts = total (ticket 47). */}
+          <Card>
+            <Section icon={Banknote} title="Price" compact>
+              <dl className="flex flex-col gap-2.5 text-sm">
+                <Row label="Initial quote">
+                  <span className={cn("tabular-nums", job.revised_estimate !== null && "text-muted-foreground line-through")}>
+                    {formatPeso(job.initial_quote)}
+                  </span>
+                </Row>
+                {job.revised_estimate !== null && (
+                  <Row label="Revised quote">
+                    <span className="flex flex-col items-end gap-1">
+                      <span className="font-medium tabular-nums">{formatPeso(job.revised_estimate)}</span>
+                      <EstimateAnswer job={job} />
+                    </span>
+                  </Row>
+                )}
+                <Row label="Parts">
+                  {partsTotal(job) > 0 ? (
+                    <span className="tabular-nums">{formatPeso(partsTotal(job))}</span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">(None used, no additional charges.)</span>
+                  )}
+                </Row>
+                <div className="flex items-baseline justify-between gap-3 border-t border-border pt-3">
+                  <dt className="font-medium text-tertiary">Total</dt>
+                  <dd className="text-xl font-semibold tabular-nums text-tertiary">{formatPeso(currentPrice(job))}</dd>
+                </div>
+              </dl>
+              {job.amount_paid !== null && (
+                <div className="flex items-start gap-2 rounded-inner bg-emerald-50 px-3 py-2.5 text-sm dark:bg-emerald-950/50">
+                  <CircleCheck className="mt-0.5 size-4 text-emerald-700 dark:text-emerald-300" aria-hidden />
+                  <span>
+                    <span className="font-medium">
+                      Paid {formatPeso(job.amount_paid)} by {paymentLabel(job.payment_method)}
+                    </span>
+                    {job.payment_ref && <span className="text-muted-foreground"> (ref …{job.payment_ref})</span>}
+                    {job.paid_at && <span className="block text-xs text-muted-foreground">{formatDateTime(job.paid_at)}</span>}
+                  </span>
+                </div>
+              )}
+            </Section>
+          </Card>
+
+          <Card>
+            <Section icon={ClipboardList} title="Details" compact>
+              <dl className="flex flex-col gap-2.5 text-sm">
+                <Row label="Handled by">
+                  {/* The owner can hand it to someone else (ticket 44). */}
+                  {viewer.isOwner && !cancelled ? (
+                    <ReassignSelect jobId={job.id} handledBy={job.handled_by} people={people} />
+                  ) : (
+                    <HandledBy id={job.handled_by} viewer={viewer} />
+                  )}
+                </Row>
+                <Row label="Quoted by">{job.quoted_by === user.id ? "You" : nameOf(job.quoted_by, viewer)}</Row>
+                <Row label="Drop-off date">{formatDate(manilaDate(job.created_at))}</Row>
+                <Row label="Est. completion">
+                  <InlineEdit
+                    jobId={job.id}
+                    field="promised_date"
+                    label="estimated completion date"
+                    type="date"
+                    value={job.promised_date}
+                    display={<span className={cn(late && "font-medium text-destructive")}>{formatDate(job.promised_date)}</span>}
+                    canEdit={editable}
+                  />
+                </Row>
+                {/* Warranty from pickup (ticket 57). */}
+                {warrantyUntil && (
+                  <Row label="Warranty">
+                    {warrantyUntil >= todayInManila() ? (
+                      <span>
+                        Until <span className="font-medium">{formatDate(warrantyUntil)}</span>
+                        <span className="block text-xs text-muted-foreground">{shop?.warrantyDays} days</span>
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">Ended {formatDate(warrantyUntil)}</span>
+                    )}
+                  </Row>
+                )}
+              </dl>
+            </Section>
+          </Card>
+
+          {review && (
+            <Card>
+              <Section icon={MessageSquareQuote} title="Customer review" compact>
+                <span className="flex items-center justify-between gap-2">
+                  <Stars rating={review.rating} />
+                  <span className="text-xs text-muted-foreground">{formatDateTime(review.created_at)}</span>
+                </span>
+                {review.comment && <p className="whitespace-pre-line text-sm">&ldquo;{review.comment}&rdquo;</p>}
+              </Section>
+            </Card>
+          )}
+        </aside>
+      </div>
+
+      {/* Always-there actions once the Progress card scrolls away (ticket 70). */}
       {editable && (
         <ActionBar
           watch="status-card"
@@ -534,6 +544,124 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
         />
       )}
     </main>
+  );
+}
+
+// A card's heading and body, the same in every card on this page.
+function Section({
+  icon: Icon,
+  title,
+  description,
+  compact = false,
+  children,
+}: {
+  icon: LucideIcon;
+  title: string;
+  description?: string;
+  compact?: boolean; // the narrower sidebar cards
+  children: React.ReactNode;
+}) {
+  return (
+    <section className={cn("flex flex-col", compact ? "gap-4 p-5" : "gap-5 p-5 md:p-6")}>
+      <div className="flex flex-col gap-1">
+        <h2 className="flex items-center gap-2.5 text-base font-semibold text-tertiary">
+          <span className="flex size-7 items-center justify-center rounded-inner bg-primary/10 text-primary">
+            <Icon className="size-4" aria-hidden />
+          </span>
+          {title}
+        </h2>
+        {description && <p className="text-sm text-muted-foreground">{description}</p>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+// "Label ........ value" in the sidebar cards.
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <dt className="shrink-0 text-muted-foreground">{label}</dt>
+      <dd className="flex min-w-0 justify-end text-right">{children}</dd>
+    </div>
+  );
+}
+
+const NOTICE_TONES = {
+  muted: { box: "border-border bg-muted", icon: "text-muted-foreground", title: "" },
+  amber: {
+    box: "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/50",
+    icon: "text-amber-700 dark:text-amber-300",
+    title: "text-amber-800 dark:text-amber-200",
+  },
+  green: {
+    box: "border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/50",
+    icon: "text-emerald-700 dark:text-emerald-300",
+    title: "text-emerald-800 dark:text-emerald-200",
+  },
+};
+
+// A banner above the columns: icon, title, a line of text, and a button
+// on the right (underneath on a phone).
+function Notice({
+  tone,
+  icon: Icon,
+  title,
+  action,
+  children,
+}: {
+  tone: keyof typeof NOTICE_TONES;
+  icon: LucideIcon;
+  title?: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const look = NOTICE_TONES[tone];
+  return (
+    <div role="status" className={cn("flex flex-wrap items-start gap-3 rounded-[var(--radius)] border px-4 py-3", look.box)}>
+      <Icon className={cn("mt-0.5 size-5 shrink-0", look.icon)} aria-hidden />
+      <div className="flex min-w-0 flex-1 basis-60 flex-col gap-0.5 text-sm">
+        {title && <p className={cn("font-medium", look.title)}>{title}</p>}
+        <div className={title ? "text-muted-foreground" : undefined}>{children}</div>
+      </div>
+      {action && <div className="shrink-0 self-center">{action}</div>}
+    </div>
+  );
+}
+
+const CALLOUT_TONES = {
+  red: { box: "border-red-300 bg-red-50 dark:border-red-900 dark:bg-red-950/50", icon: "text-destructive" },
+  green: {
+    box: "border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/50",
+    icon: "text-emerald-700 dark:text-emerald-300",
+  },
+  blue: { box: "border-highlight/40 bg-highlight/5", icon: "text-highlight" },
+};
+
+// A message inside the update card: a proposal, or an answer to one.
+function Callout({
+  tone,
+  icon: Icon,
+  title,
+  meta,
+  children,
+}: {
+  tone: keyof typeof CALLOUT_TONES;
+  icon: LucideIcon;
+  title: React.ReactNode;
+  meta?: string;
+  children: React.ReactNode;
+}) {
+  const look = CALLOUT_TONES[tone];
+  return (
+    <div className={cn("flex flex-col gap-1 rounded-[var(--radius)] border p-4 text-sm", look.box)}>
+      <p className="flex items-start gap-2 font-medium text-tertiary">
+        <Icon className={cn("mt-0.5 size-4 shrink-0", look.icon)} aria-hidden />
+        <span>{title}</span>
+      </p>
+      {meta && <p className="pl-6 text-xs text-muted-foreground">{meta}</p>}
+      <div className="mt-1 pl-6">{children}</div>
+    </div>
   );
 }
 

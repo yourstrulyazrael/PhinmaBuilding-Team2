@@ -66,7 +66,7 @@ export function ActionBar({
         show ? "translate-y-0" : "translate-y-full",
       )}
     >
-      <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center gap-2 px-4 py-3 md:px-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-2 px-4 py-3 md:px-8">
         <span className="mr-auto flex min-w-0 items-center gap-1">
           <span className="truncate text-sm">
             <span className="font-mono text-xs text-muted-foreground">{number}</span>
