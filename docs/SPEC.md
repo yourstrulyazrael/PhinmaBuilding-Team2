@@ -34,6 +34,23 @@ more rights. We design and test around our teammate (the owner) and at
 least one real apprentice. Customers never log in; they only view a
 **tracking page**.
 
+**Roles** (ticket 83, supabase/sql/032), most authority first:
+
+| | Owner (admin) | Lead technician | Staff |
+|---|---|---|---|
+| Add repairs, work on the ones they handle | ✓ | ✓ | ✓ |
+| Work on **any** repair; correct device/customer details | ✓ | ✓ | – |
+| Set revised quotes directly | ✓ | ✓ | if allowed |
+| Approve staff's proposed quotes and quote-permission requests | ✓ | ✓ | – |
+| Reassign repairs (one or in bulk) | ✓ | ✓ | – |
+| See the team (Workspace › Staff) | ✓ | ✓ | – |
+| Add **Staff** | ✓ | ✓ | – |
+| Add a **Lead**; promote / demote | ✓ | – | – |
+| Edit people, reset passwords, remove people | ✓ | – | – |
+| Reports & earnings, store settings, inventory catalog, all reviews | ✓ | – | – |
+
+The database enforces every row (`i_lead_my_shop()` = owner or lead).
+
 ## User stories
 1. As a technician, I want to add a repair job with the customer's
    details, device, problem, initial quote and promised date, and hand

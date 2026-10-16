@@ -1,13 +1,27 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type Role = "owner" | "apprentice";
+// Three roles (ticket 83), most authority first. "apprentice" is Staff.
+export type Role = "owner" | "lead" | "apprentice";
+
+export const ROLE_LABELS: Record<Role, string> = {
+  owner: "Owner",
+  lead: "Lead technician",
+  apprentice: "Staff",
+};
+
+// The owner or a lead technician: works on any repair, answers staff's
+// quote proposals and requests, reassigns repairs, adds Staff. The
+// database has the same rule (i_lead_my_shop, supabase/sql/032).
+export function isManager(role: Role | undefined | null) {
+  return role === "owner" || role === "lead";
+}
 
 export type MyShop = {
   id: string;
   name: string;
   role: Role;
-  // May set the revised estimate: always for the owner; for staff, if
-  // the owner allowed it (ticket 23).
+  // May set the revised estimate: always for the owner and leads; for
+  // staff, if allowed (tickets 23, 83).
   canReviseEstimate: boolean;
   ownerName: string;
   ownerContact: string;
@@ -69,7 +83,7 @@ export async function getMyShop(supabase: SupabaseClient, userId: string): Promi
     id: shop.id,
     name: shop.name,
     role: membership.role,
-    canReviseEstimate: membership.role === "owner" || membership.can_revise_estimate === true,
+    canReviseEstimate: isManager(membership.role) || membership.can_revise_estimate === true,
     ownerName: shop.owner?.display_name ?? "",
     ownerContact,
     address: shop.address ?? "",

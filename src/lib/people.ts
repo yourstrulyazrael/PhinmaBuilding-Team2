@@ -9,6 +9,8 @@ import type { Job } from "@/lib/jobs";
 export type Viewer = {
   id: string;
   isOwner: boolean;
+  // Owner or lead technician (ticket 83): may change any repair.
+  canManage: boolean;
   names: Record<string, string>; // technician id -> display name
 };
 
@@ -18,10 +20,10 @@ export async function loadNames(supabase: SupabaseClient): Promise<Record<string
   return Object.fromEntries((data ?? []).map((p) => [p.id as string, p.display_name as string]));
 }
 
-// The same rule the database enforces: the owner can change any job;
-// staff only the jobs they handle.
+// The same rule the database enforces: the owner and lead technicians
+// can change any job; staff only the jobs they handle.
 export function canChange(job: Pick<Job, "handled_by">, viewer: Viewer) {
-  return viewer.isOwner || job.handled_by === viewer.id;
+  return viewer.canManage || job.handled_by === viewer.id;
 }
 
 export function nameOf(id: string, viewer: Viewer) {

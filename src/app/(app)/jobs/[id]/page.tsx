@@ -44,6 +44,7 @@ import { JobPhotos, type JobPhoto } from "./job-photos";
 import { Stars } from "@/components/stars";
 import { ProposalDecision, ProposeEstimate } from "./estimate-proposal";
 import { getShop, getSupabase, getUser, getNames } from "@/lib/session";
+import { isManager } from "@/lib/shop";
 import { InlineEdit } from "./inline-edit";
 import { ActionBar } from "./action-bar";
 import { ShareMenu } from "./share-menu";
@@ -108,7 +109,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
 
   // Staff can only change the phones they handle; for anyone else's job
   // this page is read-only (the database enforces the same rule).
-  const viewer: Viewer = { id: user.id, isOwner: shop?.role === "owner", names };
+  const viewer: Viewer = { id: user.id, isOwner: shop?.role === "owner", canManage: isManager(shop?.role), names };
   // A cancelled repair is closed for good (ticket 51): read-only for
   // everyone, and the database refuses changes too.
   const cancelled = job.status === "cancelled";
@@ -134,7 +135,8 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
   const number = repairNumber(job.id);
   // Inline editing (ticket 70): the owner corrects device, problem and
   // customer details; whoever may change the repair can move the date.
-  const ownerEdits = viewer.isOwner && !cancelled;
+  // (The owner and lead technicians, ticket 83.)
+  const ownerEdits = viewer.canManage && !cancelled;
 
   // Parts used, inside "Update for the customer" (ticket 28).
   const partsUsed = (
@@ -155,7 +157,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
     .filter((m) => !m.removed_at)
     .map((m) => ({
       id: m.technician_id as string,
-      name: (m.technician_id === user.id ? "You" : nameOf(m.technician_id, viewer)) + (m.role === "owner" ? " (owner)" : ""),
+      name: (m.technician_id === user.id ? "You" : nameOf(m.technician_id, viewer)) + (m.role === "owner" ? " (owner)" : m.role === "lead" ? " (lead)" : ""),
     }));
 
   // The page: a slim header, any alerts, then two columns on a wide
@@ -299,24 +301,24 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
               )}
 
               {/* The owner answered this staff member's proposal (ticket 42). */}
-              {!viewer.isOwner && proposal && proposal.status !== "pending" && proposal.staff_id === user.id && (
+              {!viewer.canManage && proposal && proposal.status !== "pending" && proposal.staff_id === user.id && (
                 <Callout
                   tone={proposal.status === "approved" ? "green" : "red"}
                   icon={proposal.status === "approved" ? ThumbsUp : ThumbsDown}
                   title={
                     <>
-                      Your owner {proposal.status === "approved" ? "approved" : "rejected"} your proposed quote of{" "}
-                      <span className="tabular-nums">{formatPeso(proposal.amount)}</span>
+                      Your proposed quote of{" "}
+                      <span className="tabular-nums">{formatPeso(proposal.amount)}</span> was {proposal.status === "approved" ? "approved" : "rejected"}
                     </>
                   }
                   meta={proposal.decided_at ? formatDateTime(proposal.decided_at) : undefined}
                 >
                   {proposal.owner_note ? (
                     <>
-                      <span className="text-muted-foreground">Owner&apos;s note: </span>&ldquo;{proposal.owner_note}&rdquo;
+                      <span className="text-muted-foreground">Their note: </span>&ldquo;{proposal.owner_note}&rdquo;
                     </>
                   ) : (
-                    <span className="text-muted-foreground">No note from the owner.</span>
+                    <span className="text-muted-foreground">No note.</span>
                   )}
                   {proposal.status === "approved" && (
                     <span className="mt-1 block text-xs text-muted-foreground">The customer is asked to accept the new quote.</span>
@@ -324,7 +326,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
                 </Callout>
               )}
 
-              {viewer.isOwner && proposal?.status === "pending" && !cancelled && (
+              {viewer.canManage && proposal?.status === "pending" && !cancelled && (
                 <Callout
                   tone="blue"
                   icon={TrendingUp}
@@ -361,7 +363,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
               <div className="border-t border-border pt-5">
                 {/* Staff who propose a revised estimate get its fields,
                     then Parts used, then "Send to owner" last (ticket 39). */}
-                {!viewer.isOwner && editable && !(shop?.canReviseEstimate ?? false) && !isFinished(job.status) ? (
+                {!viewer.canManage && editable && !(shop?.canReviseEstimate ?? false) && !isFinished(job.status) ? (
                   <ProposeEstimate
                     jobId={job.id}
                     current={labourPrice(job)}
@@ -481,7 +483,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
               <dl className="flex flex-col gap-2.5 text-sm">
                 <Row label="Handled by">
                   {/* The owner can hand it to someone else (ticket 44). */}
-                  {viewer.isOwner && !cancelled ? (
+                  {viewer.canManage && !cancelled ? (
                     <ReassignSelect jobId={job.id} handledBy={job.handled_by} people={people} />
                   ) : (
                     <HandledBy id={job.handled_by} viewer={viewer} />

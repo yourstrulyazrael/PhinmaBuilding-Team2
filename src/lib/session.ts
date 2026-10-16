@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { getMyShop } from "@/lib/shop";
+import { getMyShop, isManager } from "@/lib/shop";
 import { setRequestCurrency } from "@/lib/money";
 import { loadNames } from "@/lib/people";
 import { todayInManila, type Job } from "@/lib/jobs";
@@ -62,7 +62,9 @@ export const getNotifications = cache(async () => {
   const shop = await getShop();
   if (!shop) return { alerts: [], lowStock: [], requests: 0, proposals: [], answers: [] as OwnerAnswer[], reviews: [] as NewReview[], keys: [] as string[] };
 
-  const owner = shop.role === "owner";
+  // The owner or a lead technician (ticket 83): they answer staff's
+  // proposals and requests, so they get those notifications.
+  const owner = isManager(shop.role);
   // Staff: the owner's answers to their proposals and requests from the
   // last two days (ticket 42). RLS only returns their own.
   const since = new Date(Date.now() - 2 * 86_400_000).toISOString();

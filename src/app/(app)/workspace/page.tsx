@@ -1,3 +1,4 @@
+import { isManager } from "@/lib/shop";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Briefcase, Clock, UserCog, UsersRound } from "lucide-react";
@@ -49,7 +50,8 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
   if (tabParam === "settings") redirect("/account");
   // Notifications moved to the bell in the top bar (ticket 38).
   if (tabParam === "notifications") redirect("/notifications");
-  const tabs = TABS.filter((t) => !t.ownerOnly || shop?.role === "owner");
+  // The Staff tab: the owner and lead technicians (ticket 83).
+  const tabs = TABS.filter((t) => !t.ownerOnly || isManager(shop?.role));
   const tab = tabs.find((t) => t.key === tabParam)?.key ?? "customers";
   // The owner's Staff tab also shows each person's email and sign-ins
   // (ticket 36). Only fetched there; the database refuses anyone else.
@@ -73,7 +75,7 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
   // Requests to revise estimates waiting for the owner (ticket 37), for
   // the Staff tab and its badge. RLS only shows the owner their shop's.
   const { data: requestRows } =
-    shop?.role === "owner"
+    isManager(shop?.role)
       ? await supabase
           .from("estimate_requests")
           .select("id, staff_id, reason, created_at")
@@ -129,6 +131,7 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
       {tab === "customers" && <CustomersTab jobs={jobs} />}
       {tab === "staff" && (
         <StaffTab
+          isOwner={shop?.role === "owner"}
           requests={requests}
           // Removed people (ticket 37) are no longer listed.
           staff={(members ?? []).filter((m) => !m.removed_at).map((m) => {

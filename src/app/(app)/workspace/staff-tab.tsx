@@ -1,5 +1,5 @@
 import { Hand, Mail, Phone, ShieldCheck, Star, UsersRound, Wrench } from "lucide-react";
-import type { Role } from "@/lib/shop";
+import { ROLE_LABELS, type Role } from "@/lib/shop";
 import { formatDate } from "@/lib/jobs";
 import { manilaDate } from "@/lib/workspace";
 import { Card } from "@/components/ui/card";
@@ -32,7 +32,9 @@ export type EstimateRequest = { id: string; staffName: string; reason: string; c
  * rating) and a ⋮ menu for Edit, Reset password, Take back quotes and
  * Remove, each in its own pop-up. Add staff is a button in the header.
  */
-export function StaffTab({ staff, requests }: { staff: StaffMember[]; requests: EstimateRequest[] }) {
+// isOwner: the owner manages everyone (⋮ menu) and can add a Lead; a
+// lead technician sees the team, answers requests and adds Staff (ticket 83).
+export function StaffTab({ staff, requests, isOwner }: { staff: StaffMember[]; requests: EstimateRequest[]; isOwner: boolean }) {
   return (
     <div className="flex flex-col gap-5">
       {requests.length > 0 && (
@@ -76,7 +78,7 @@ export function StaffTab({ staff, requests }: { staff: StaffMember[]; requests: 
           </h2>
           <p className="text-sm text-muted-foreground">Everyone who can sign in to your shop.</p>
         </div>
-        <AddStaffButton />
+        <AddStaffButton allowLead={isOwner} />
       </div>
 
       <ul className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
@@ -91,7 +93,7 @@ export function StaffTab({ staff, requests }: { staff: StaffMember[]; requests: 
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <span className="truncate font-semibold text-tertiary">{m.name}</span>
                     <span className="flex flex-wrap gap-1.5">
-                      <Chip tone={m.role === "owner" ? "primary" : "muted"}>{m.role === "owner" ? "Owner" : "Staff"}</Chip>
+                      <Chip tone={m.role === "owner" ? "primary" : m.role === "lead" ? "blue" : "muted"}>{ROLE_LABELS[m.role]}</Chip>
                       {m.role === "apprentice" && m.canReviseEstimate && (
                         <Chip tone="blue">
                           <ShieldCheck className="size-3" aria-hidden />
@@ -100,8 +102,9 @@ export function StaffTab({ staff, requests }: { staff: StaffMember[]; requests: 
                       )}
                     </span>
                   </div>
-                  {m.role === "apprentice" && (
+                  {isOwner && m.role !== "owner" && (
                     <StaffMenu
+                      role={m.role}
                       staffId={m.id}
                       name={m.name}
                       contact={m.contact}
@@ -118,15 +121,18 @@ export function StaffTab({ staff, requests }: { staff: StaffMember[]; requests: 
                 </div>
 
                 {/* Three numbers */}
-                <dl className="mx-5 my-4 grid grid-cols-3 divide-x divide-border rounded-inner border border-border text-center">
+                <dl className={cn("mx-5 my-4 grid divide-x divide-border rounded-inner border border-border text-center", isOwner ? "grid-cols-3" : "grid-cols-2")}>
                   <Stat icon={Wrench} label="Open" value={String(m.openJobs)} />
                   <Stat icon={Wrench} label="Total" value={String(m.totalJobs)} />
+                  {/* Ratings: the owner sees everyone's; a lead only their own (RLS). */}
+                  {isOwner && (
                   <Stat
                     icon={Star}
                     label={m.rating ? `${m.rating.count} review${m.rating.count === 1 ? "" : "s"}` : "No reviews"}
                     value={average === null ? "–" : average.toFixed(1)}
                     highlight={average !== null && average >= 4.5}
                   />
+                  )}
                 </dl>
 
                 <p className="mt-auto border-t border-border px-5 py-3 text-xs text-muted-foreground">

@@ -9,7 +9,9 @@ import { FieldError, PHONE_HINT, PHONE_PATTERN, useFormValidation } from "@/comp
 
 // The owner fills this in to create a staff member's account (ticket 22).
 // In a pop-up (ticket 74): onAdded closes it once the account exists.
-export function AddStaffForm({ onAdded }: { onAdded?: (name: string) => void }) {
+// allowLead: the owner chooses Staff or Lead technician (ticket 83);
+// a lead technician can only add Staff, so they see no choice.
+export function AddStaffForm({ onAdded, allowLead = false }: { onAdded?: (name: string) => void; allowLead?: boolean }) {
   const [state, formAction, pending] = useActionState<AddStaffState, FormData>(addStaff, {});
   const told = useRef(state);
   useEffect(() => {
@@ -22,6 +24,25 @@ export function AddStaffForm({ onAdded }: { onAdded?: (name: string) => void }) 
   return (
     // A new key after each success empties the form for the next person.
     <form key={state.added ?? "new"} action={formAction} {...v.formProps} className="flex flex-col gap-4">
+      {allowLead && (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-2 text-sm font-medium">Role</legend>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {ROLE_CHOICES.map((r) => (
+              <label
+                key={r.value}
+                className="flex cursor-pointer items-start gap-3 rounded-[var(--radius)] border border-border p-3 text-sm transition-colors hover:border-ring/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+              >
+                <input type="radio" name="staff_role" value={r.value} defaultChecked={r.value === "apprentice"} className="mt-0.5 accent-[var(--primary)]" />
+                <span className="flex flex-col gap-0.5">
+                  <span className="font-medium">{r.label}</span>
+                  <span className="text-xs text-muted-foreground">{r.hint}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
           <Label htmlFor="staff_name">Name</Label>
@@ -76,3 +97,12 @@ export function AddStaffForm({ onAdded }: { onAdded?: (name: string) => void }) 
   );
 }
 
+
+const ROLE_CHOICES = [
+  { value: "apprentice", label: "Staff", hint: "Works on the repairs they handle." },
+  {
+    value: "lead",
+    label: "Lead technician",
+    hint: "Works on any repair, approves staff's revised quotes, reassigns repairs and adds staff.",
+  },
+] as const;

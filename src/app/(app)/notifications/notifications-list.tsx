@@ -62,7 +62,7 @@ const GROUPS: Record<GroupKey, { title: string; hint: string; icon: LucideIcon; 
   delays: { title: "Delayed repairs", hint: "Late, due soon, or stuck waiting for parts.", icon: AlarmClock, tone: "amber" },
   waiting: { title: "Waiting on the customer", hint: "Ready to collect, or a revised quote to accept.", icon: UserRound, tone: "green" },
   stock: { title: "Low stock", hint: "Parts at or below their low-stock level.", icon: PackageX, tone: "amber" },
-  updates: { title: "Updates", hint: "New reviews and your owner's answers, from the last two days.", icon: MessageSquareText, tone: "blue" },
+  updates: { title: "Updates", hint: "New reviews and answers to what you sent, from the last two days.", icon: MessageSquareText, tone: "blue" },
 };
 
 // The filter tabs: which groups each one shows.
@@ -189,9 +189,9 @@ export function NotificationsList({
       tone: a.approved ? "green" : "red",
       title:
         a.kind === "proposal"
-          ? `Your owner ${a.approved ? "approved" : "rejected"} your ${formatPeso(a.amount)} quote for ${a.device}`
-          : `Your owner ${a.approved ? "approved" : "rejected"} your request to revise quotes`,
-      detail: a.note ? <>Owner&apos;s note: &ldquo;{a.note}&rdquo;</> : "No note from the owner.",
+          ? `Your ${formatPeso(a.amount)} quote for ${a.device} was ${a.approved ? "approved" : "rejected"}`
+          : `Your request to revise quotes was ${a.approved ? "approved" : "rejected"}`,
+      detail: a.note ? <>Their note: &ldquo;{a.note}&rdquo;</> : "No note.",
       meta: a.kind === "proposal" && a.approved ? "The customer is being asked to accept it." : undefined,
     });
   }

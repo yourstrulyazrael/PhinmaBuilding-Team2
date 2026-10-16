@@ -9,6 +9,7 @@ import { AccountLink, NavGlide, NavLinks, NotificationsLink } from "./nav-links"
 import { ShopLive } from "./shop-live";
 import { CommandPalette } from "./command-palette";
 import { MobileNav } from "./mobile-nav";
+import { isManager } from "@/lib/shop";
 import { CurrencyProvider } from "@/components/currency";
 import { ToastProvider } from "@/components/toast";
 import { getMe, getNotifications, getShop, getUser } from "@/lib/session";
@@ -67,7 +68,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         <MobileNav isOwner={shop.role === "owner"} />
   
         {/* Customer answers arrive live (ticket 52). */}
-        <ShopLive shopId={shop.id} userId={user.id} isOwner={shop.role === "owner"} />
+        <ShopLive shopId={shop.id} userId={user.id} isOwner={isManager(shop.role)} />
       </div>
       </ToastProvider>
     </CurrencyProvider>

@@ -181,7 +181,7 @@ export function EstimateRequestForm() {
   const [state, formAction, pending] = useActionState<FormState, FormData>(requestEstimatePermission, {});
   return (
     <CheckedForm action={formAction} className="flex flex-col gap-4">
-      <Field id="reason" label="Why do you need it?" hint="10 to 500 characters. Your owner reads this before deciding.">
+      <Field id="reason" label="Why do you need it?" hint="10 to 500 characters. Your owner or a lead technician reads this before deciding.">
         <Textarea
           id="reason"
           name="reason"

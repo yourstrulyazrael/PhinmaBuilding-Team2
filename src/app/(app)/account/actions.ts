@@ -149,5 +149,5 @@ export async function requestEstimatePermission(_prev: FormState, formData: Form
 
   revalidatePath("/account");
   revalidatePath("/workspace");
-  return { saved: true, message: "Sent. Your owner will approve or reject it." };
+  return { saved: true, message: "Sent. Your owner or a lead technician will approve or reject it." };
 }

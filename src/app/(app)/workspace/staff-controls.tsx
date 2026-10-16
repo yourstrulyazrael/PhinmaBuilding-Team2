@@ -1,12 +1,13 @@
 "use client";
 
 import { useActionState, useOptimistic, useState, useTransition } from "react";
-import { Check, CircleCheck, KeyRound, MoreHorizontal, Pencil, ShieldOff, UserMinus, UserPlus, X } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, Check, CircleCheck, KeyRound, MoreHorizontal, Pencil, ShieldOff, UserMinus, UserPlus, X } from "lucide-react";
 import {
   decideEstimateRequest,
   removeStaff,
   resetStaffPassword,
   revokeEstimatePermission,
+  setMemberRole,
   updateStaff,
   type EditStaffState,
   type ResetPasswordState,
@@ -29,12 +30,14 @@ type Dialog = "edit" | "password" | "remove" | null;
 // Take back quotes, Remove. Each opens its own pop-up, so the card itself
 // stays tidy. Quote permission is granted by approving their request.
 export function StaffMenu({
+  role,
   staffId,
   name,
   contact,
   openJobs,
   canReviseEstimate,
 }: {
+  role: "lead" | "apprentice";
   staffId: string;
   name: string;
   contact: string;
@@ -57,6 +60,21 @@ export function StaffMenu({
     });
   }
 
+  // Promote to lead technician, or back to staff (owner only, ticket 83).
+  function changeRole(to: "lead" | "apprentice") {
+    startTransition(async () => {
+      const result = await setMemberRole(staffId, to);
+      toast(
+        result.error
+          ? { kind: "error", title: "Couldn't change their role", description: result.error, action: { label: "Try again", onClick: () => changeRole(to) } }
+          : {
+              title: to === "lead" ? `${name} is now a lead technician` : `${name} is now staff`,
+              action: { label: "Undo", onClick: () => changeRole(to === "lead" ? "apprentice" : "lead") },
+            },
+      );
+    });
+  }
+
   return (
     <>
       <Menu
@@ -67,7 +85,10 @@ export function StaffMenu({
         items={[
           { label: "Edit details", icon: Pencil, onSelect: () => setDialog("edit") },
           { label: "Reset password", icon: KeyRound, onSelect: () => setDialog("password") },
-          ...(canReviseEstimate ? [{ label: "Take back quotes", icon: ShieldOff, onSelect: revoke }] : []),
+          role === "apprentice"
+            ? { label: "Make lead", icon: ArrowUpCircle, onSelect: () => changeRole("lead") }
+            : { label: "Make staff", icon: ArrowDownCircle, onSelect: () => changeRole("apprentice") },
+          ...(role === "apprentice" && canReviseEstimate ? [{ label: "Take back quotes", icon: ShieldOff, onSelect: revoke }] : []),
           { label: "Remove from shop", icon: UserMinus, onSelect: () => setDialog("remove") },
         ]}
       />
@@ -96,7 +117,8 @@ export function StaffMenu({
 
 // "Add staff" in the Staff header (ticket 74): the form in a pop-up,
 // which closes with a toast once the account is made.
-export function AddStaffButton() {
+// allowLead: only the owner may add a lead technician (ticket 83).
+export function AddStaffButton({ allowLead }: { allowLead: boolean }) {
   const [open, setOpen] = useState(false);
   const toast = useToast();
   return (
@@ -107,6 +129,7 @@ export function AddStaffButton() {
       </Button>
       <Modal open={open} onClose={() => setOpen(false)} title="Add staff" description="Create an account for someone who works in your shop." wide>
         <AddStaffForm
+          allowLead={allowLead}
           onAdded={(who) => {
             setOpen(false);
             toast({ title: `${who} was added`, description: "Give them their email and temporary password." });

@@ -1,3 +1,4 @@
+import { ROLE_LABELS } from "@/lib/shop";
 import { redirect } from "next/navigation";
 import { Calculator, KeyRound, Mail, Receipt, Star, Store, UserRound } from "lucide-react";
 import { formatDate } from "@/lib/jobs";
@@ -54,7 +55,7 @@ export default async function AccountPage() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-6 md:py-10">
       <PageHeader
-        eyebrow={owner ? "Owner" : "Staff"}
+        eyebrow={ROLE_LABELS[shop.role]}
         icon={UserRound}
         title="Account"
         crumbs={[{ label: "Account" }]}
@@ -97,25 +98,26 @@ export default async function AccountPage() {
         <DetailsForm displayName={me?.display_name ?? ""} contactNumber={me?.contact_number ?? ""} />
       </Section>
 
-      {!owner && (
+      {/* Only Staff ask: owners and lead technicians already can (ticket 83). */}
+      {shop.role === "apprentice" && (
         <Section
           icon={Calculator}
           title="Revised quotes"
-          description="Setting a revised quote changes what the customer is asked to pay, so it needs your owner's OK."
+          description="Setting a revised quote changes what the customer is asked to pay, so it needs an OK from your owner or a lead technician."
         >
           {shop.canReviseEstimate ? (
             <p className="text-sm">
               <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">Approved</span>{" "}
               You can set revised quotes on the repairs you handle.
               {lastRequest?.status === "approved" && lastRequest.owner_note && (
-                <span className="mt-1 block text-muted-foreground">Owner&apos;s note: {lastRequest.owner_note}</span>
+                <span className="mt-1 block text-muted-foreground">Their note: {lastRequest.owner_note}</span>
               )}
             </p>
           ) : lastRequest?.status === "pending" ? (
             <div className="flex flex-col gap-2 text-sm">
               <p>
                 <span className="rounded-full bg-highlight/15 px-2 py-0.5 text-xs font-medium text-highlight">Waiting</span>{" "}
-                Sent {formatDate(manilaDate(lastRequest.created_at))}. Your owner will approve or reject it.
+                Sent {formatDate(manilaDate(lastRequest.created_at))}. Your owner or a lead technician will approve or reject it.
               </p>
               <p className="whitespace-pre-line text-muted-foreground">&ldquo;{lastRequest.reason}&rdquo;</p>
             </div>
@@ -127,12 +129,12 @@ export default async function AccountPage() {
                     <span className="font-medium">Not approved</span>
                     {lastRequest.decided_at && ` on ${formatDate(manilaDate(lastRequest.decided_at))}`}.
                   </p>
-                  {lastRequest.owner_note && <p className="text-muted-foreground">Owner&apos;s note: {lastRequest.owner_note}</p>}
+                  {lastRequest.owner_note && <p className="text-muted-foreground">Their note: {lastRequest.owner_note}</p>}
                   <p className="text-xs text-muted-foreground">You can ask again with a new reason.</p>
                 </div>
               )}
               {lastRequest?.status === "approved" && (
-                <p className="text-sm text-muted-foreground">Your owner has taken this permission back. You can ask again.</p>
+                <p className="text-sm text-muted-foreground">This permission was taken back. You can ask again.</p>
               )}
               <EstimateRequestForm />
             </div>

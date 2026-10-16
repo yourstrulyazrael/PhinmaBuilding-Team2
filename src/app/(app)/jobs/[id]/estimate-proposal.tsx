@@ -26,7 +26,7 @@ const FORM_ID = "propose-estimate";
 /**
  * Staff's revised estimate, under "Update for the customer" (ticket 39):
  * the amount and why, shown straight away; then `children` (Parts used);
- * then "Send to owner" at the very end of the card.
+ * then "Send for approval" at the very end of the card.
  *
  * Parts used has its own form, and forms can't sit inside each other, so
  * the button lives outside this one and points at it with form="…".
@@ -56,7 +56,7 @@ export function ProposeEstimate({
         <div className="flex flex-col gap-1 text-sm">
           <p className="font-medium">Revised quote</p>
           <p className="text-muted-foreground">
-            <span className="font-medium text-highlight">Waiting for your owner:</span> you proposed{" "}
+            <span className="font-medium text-highlight">Waiting for approval:</span> you proposed{" "}
             <span className="tabular-nums">{money(last.amount)}</span> on {last.sentOn}.
           </p>
           <p className="whitespace-pre-line text-xs text-muted-foreground">&ldquo;{last.reason}&rdquo;</p>
@@ -67,7 +67,7 @@ export function ProposeEstimate({
   }
 
   // Spaced as one column (ticket 79): the revised quote, Parts used, then
-  // "Send to owner" on its own row under a line, so it can't run into
+  // "Send for approval" on its own row under a line, so it can't run into
   // the parts' Add button and it's clear it sends the revised quote.
   return (
     <div className="flex flex-col gap-6">
@@ -98,7 +98,7 @@ export function ProposeEstimate({
             placeholder="e.g. Opened it up: the charging port is also damaged and needs replacing."
           />
           <p className="text-xs text-muted-foreground">
-            10 to 500 characters. Goes to your owner to approve; the customer is asked only after that.
+            10 to 500 characters. Goes to your owner or a lead technician to approve; the customer is asked only after that.
           </p>
         </div>
       </form>
@@ -106,7 +106,7 @@ export function ProposeEstimate({
       {children}
 
       <div className="flex flex-col items-end gap-2 border-t border-border pt-4">
-        <p className="self-start text-xs text-muted-foreground">Sends the revised quote above to your owner.</p>
+        <p className="self-start text-xs text-muted-foreground">Sends the revised quote above for approval.</p>
         {state.error && (
           <p role="alert" className="text-sm text-destructive">
             {state.error}
@@ -114,7 +114,7 @@ export function ProposeEstimate({
         )}
         <Button type="submit" form={FORM_ID} disabled={pending}>
           <Send className="size-4" aria-hidden />
-          {pending ? "Sending…" : "Send to owner"}
+          {pending ? "Sending…" : "Send for approval"}
         </Button>
       </div>
     </div>

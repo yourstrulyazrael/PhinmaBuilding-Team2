@@ -16,6 +16,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { getMe, getNames, getShop, getSupabase, getUser } from "@/lib/session";
 import { ActivityFeed, KpiStrip, type JobEvent } from "./overview-panels";
 import { RememberFilters } from "./remember-filters";
+import { isManager } from "@/lib/shop";
 import { BulkProvider, SelectAll, SelectBox } from "./bulk-select";
 import { FILTERS_COOKIE, unpackFilters } from "@/lib/overview-filters";
 
@@ -56,7 +57,7 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
   // The layout already sends anyone without a shop to Set up; this is a
   // safety net in case that ever changes.
   if (!technician) redirect("/setup");
-  const viewer: Viewer = { id: user.id, isOwner: shop?.role === "owner", names };
+  const viewer: Viewer = { id: user.id, isOwner: shop?.role === "owner", canManage: isManager(shop?.role), names };
   if (error) throw error;
   const jobs = (data ?? []) as Job[];
 
@@ -192,7 +193,7 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
       <KpiStrip jobs={jobs} today={today} isOwner={viewer.isOwner} />
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-      <BulkProvider jobs={selectable} people={viewer.isOwner ? staffOptions : null}>
+      <BulkProvider jobs={selectable} people={viewer.canManage ? staffOptions : null}>
       <Card id="jobs" className="scroll-mt-24 overflow-hidden">
         <div className="flex flex-col gap-1 px-4 pt-5 md:px-6">
           <h2 className="flex items-center gap-2 text-lg font-semibold text-tertiary">
