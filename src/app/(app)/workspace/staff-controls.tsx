@@ -18,6 +18,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AddStaffForm } from "./staff-forms";
+import { FieldError, PHONE_HINT, PHONE_PATTERN, useFormValidation } from "@/components/form-validation";
 
 // The owner's controls on the Staff tab (tickets 37, 46, 74). "use client"
 // because they open, confirm and show results without a page reload.
@@ -118,6 +119,7 @@ export function AddStaffButton() {
 
 function EditStaffForm({ staffId, name, contact, onDone }: { staffId: string; name: string; contact: string; onDone: () => void }) {
   const [state, formAction, pending] = useActionState<EditStaffState, FormData>(updateStaff.bind(null, staffId), {});
+  const v = useFormValidation(); // errors under each field (ticket 75)
   // Right after Save: a green ✓ "Details saved", then Close.
   if (state.saved && !pending) {
     return (
@@ -133,14 +135,26 @@ function EditStaffForm({ staffId, name, contact, onDone }: { staffId: string; na
     );
   }
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} {...v.formProps} className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <Label htmlFor={`name-${staffId}`}>Name</Label>
-        <Input id={`name-${staffId}`} name="display_name" defaultValue={name} maxLength={80} required />
+        <Input id={`name-${staffId}`} name="display_name" defaultValue={name} maxLength={80} required {...v.field("display_name")} />
+        <FieldError name="display_name" error={v.errors.display_name} />
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor={`contact-${staffId}`}>Contact number</Label>
-        <Input id={`contact-${staffId}`} name="contact_number" type="tel" defaultValue={contact} maxLength={40} required />
+        <Input
+          id={`contact-${staffId}`}
+          name="contact_number"
+          type="tel"
+          defaultValue={contact}
+          maxLength={40}
+          pattern={PHONE_PATTERN}
+          title={PHONE_HINT}
+          required
+          {...v.field("contact_number")}
+        />
+        <FieldError name="contact_number" error={v.errors.contact_number} />
       </div>
       {state.error && (
         <p role="alert" className="text-sm text-destructive">
@@ -167,6 +181,7 @@ function ResetPasswordForm({ staffId, name, onDone }: { staffId: string; name: s
     resetStaffPassword.bind(null, staffId),
     {},
   );
+  const v = useFormValidation(); // errors under each field (ticket 75)
   if (state.done && !pending) {
     return (
       <div className="flex flex-col gap-3 text-sm">
@@ -185,7 +200,7 @@ function ResetPasswordForm({ staffId, name, onDone }: { staffId: string; name: s
     );
   }
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} {...v.formProps} className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <Label htmlFor={`password-${staffId}`}>New temporary password</Label>
         <Input
@@ -198,7 +213,9 @@ function ResetPasswordForm({ staffId, name, onDone }: { staffId: string; name: s
           maxLength={72}
           placeholder="At least 8 characters"
           required
+          {...v.field("new_password")}
         />
+        <FieldError name="new_password" error={v.errors.new_password} />
         <p className="text-xs text-muted-foreground">
           Their old password stops working and they&apos;re signed out on every device. Give them this one in person
           or by message.

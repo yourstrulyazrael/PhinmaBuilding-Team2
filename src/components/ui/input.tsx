@@ -15,6 +15,8 @@ export function Input({
         // Ticket 48: a soft green glow and border on focus.
         "focus-visible:border-ring focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/25",
         "disabled:cursor-not-allowed disabled:opacity-50",
+        // Ticket 75: a field with an error gets a red outline.
+        "aria-invalid:border-destructive aria-invalid:focus-visible:ring-destructive/20",
         className,
       )}
       {...props}

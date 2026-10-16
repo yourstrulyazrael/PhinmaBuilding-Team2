@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/toast";
+import { FieldError, useFormValidation } from "@/components/form-validation";
 
 // Everything here is shown to the customer on their tracking page.
 // The revised estimate box only appears for the owner and staff the
@@ -21,6 +22,7 @@ export function JobDetailsForm({ job, canReviseEstimate }: { job: Job; canRevise
     updateJobDetails.bind(null, job.id),
     {},
   );
+  const v = useFormValidation(); // errors under each field (ticket 75)
   // "Saved" as a toast (ticket 67).
   const toast = useToast();
   const shown = useRef(state);
@@ -31,7 +33,7 @@ export function JobDetailsForm({ job, canReviseEstimate }: { job: Job; canRevise
   }, [state, toast]);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} {...v.formProps} className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <Label htmlFor="notes">Diagnosis / repair notes</Label>
         <Textarea
@@ -66,7 +68,9 @@ export function JobDetailsForm({ job, canReviseEstimate }: { job: Job; canRevise
             step="0.01"
             defaultValue={job.revised_estimate ?? ""}
             placeholder="Leave empty if unchanged"
+            {...v.field("revised_estimate")}
           />
+          <FieldError name="revised_estimate" error={v.errors.revised_estimate} />
         </div>
         )}
         <div className="flex flex-col gap-2">
@@ -77,7 +81,9 @@ export function JobDetailsForm({ job, canReviseEstimate }: { job: Job; canRevise
             type="date"
             defaultValue={job.promised_date}
             required
+            {...v.field("promised_date")}
           />
+          <FieldError name="promised_date" error={v.errors.promised_date} />
         </div>
       </div>
       {state.error && (

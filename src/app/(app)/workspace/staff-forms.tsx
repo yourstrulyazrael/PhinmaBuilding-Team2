@@ -5,6 +5,7 @@ import { addStaff, type AddStaffState } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FieldError, PHONE_HINT, PHONE_PATTERN, useFormValidation } from "@/components/form-validation";
 
 // The owner fills this in to create a staff member's account (ticket 22).
 // In a pop-up (ticket 74): onAdded closes it once the account exists.
@@ -16,22 +17,26 @@ export function AddStaffForm({ onAdded }: { onAdded?: (name: string) => void }) 
     told.current = state;
     if (state.added) onAdded?.(state.added);
   }, [state, onAdded]);
+  const v = useFormValidation(); // errors under each field (ticket 75)
 
   return (
     // A new key after each success empties the form for the next person.
-    <form key={state.added ?? "new"} action={formAction} className="flex flex-col gap-4">
+    <form key={state.added ?? "new"} action={formAction} {...v.formProps} className="flex flex-col gap-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
           <Label htmlFor="staff_name">Name</Label>
-          <Input id="staff_name" name="display_name" maxLength={80} placeholder="e.g. Jun Reyes" required />
+          <Input id="staff_name" name="display_name" maxLength={80} placeholder="e.g. Jun Reyes" required {...v.field("display_name")} />
+          <FieldError name="display_name" error={v.errors.display_name} />
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="staff_contact">Contact number</Label>
-          <Input id="staff_contact" name="contact_number" type="tel" maxLength={40} placeholder="e.g. 0917 123 4567" required />
+          <Input id="staff_contact" name="contact_number" type="tel" maxLength={40} pattern={PHONE_PATTERN} title={PHONE_HINT} placeholder="e.g. 0917 123 4567" required {...v.field("contact_number")} />
+          <FieldError name="contact_number" error={v.errors.contact_number} />
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="staff_email">Email (their login)</Label>
-          <Input id="staff_email" name="email" type="email" autoComplete="off" placeholder="e.g. jun@example.com" required />
+          <Input id="staff_email" name="email" type="email" autoComplete="off" placeholder="e.g. jun@example.com" required {...v.field("email")} />
+          <FieldError name="email" error={v.errors.email} />
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="staff_password">Temporary password</Label>
@@ -43,7 +48,9 @@ export function AddStaffForm({ onAdded }: { onAdded?: (name: string) => void }) 
             minLength={8}
             placeholder="At least 8 characters"
             required
+            {...v.field("password")}
           />
+          <FieldError name="password" error={v.errors.password} />
         </div>
       </div>
       <p className="text-xs text-muted-foreground">

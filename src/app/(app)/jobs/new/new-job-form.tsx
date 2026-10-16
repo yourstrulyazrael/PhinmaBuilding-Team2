@@ -5,6 +5,7 @@ import { useMoney } from "@/components/currency";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { FileClock, Trash2 } from "lucide-react";
 import { useToast } from "@/components/toast";
+import { FieldError, PHONE_HINT, PHONE_PATTERN, useFormValidation } from "@/components/form-validation";
 import { createJob, type NewJobState } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +48,9 @@ export function NewJobForm({ today }: { today: string }) {
   const saveTimer = useRef<number | undefined>(undefined);
   // The draft while the form is being sent; put back if saving fails.
   const sending = useRef<Draft | null>(null);
+  // Errors under each field (ticket 75).
+  const v = useFormValidation();
+  const fieldProps = (name: string) => ({ ...v.field(name), error: v.errors[name] });
 
   function fill(values: Draft["values"]) {
     const el = form.current;
@@ -73,10 +77,14 @@ export function NewJobForm({ today }: { today: string }) {
 
   // Saving failed: the form was cleared, so refill it and keep the draft.
   useEffect(() => {
-    if (!state.error || !sending.current) return;
+    if (!state.error) return;
+    // The server says which box is wrong: show it there.
+    if (state.field) v.setError(state.field, state.error);
+    if (!sending.current) return;
     fill(sending.current.values);
     writeDraft(sending.current);
     sending.current = null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- v.setError is stable
   }, [state]);
 
   useEffect(() => () => window.clearTimeout(saveTimer.current), []);
@@ -114,8 +122,16 @@ export function NewJobForm({ today }: { today: string }) {
     <form
       ref={form}
       action={formAction}
-      onInput={onInput}
-      onSubmit={() => {
+      noValidate
+      onBlur={v.formProps.onBlur}
+      onInput={(e) => {
+        v.formProps.onInput(e);
+        onInput();
+      }}
+      onSubmit={(e) => {
+        // Anything wrong: stop here, show it under the field.
+        v.formProps.onSubmit(e);
+        if (e.defaultPrevented) return;
         // Sent: the draft is done with, unless saving fails (see above).
         window.clearTimeout(saveTimer.current);
         sending.current = current();
@@ -139,21 +155,24 @@ export function NewJobForm({ today }: { today: string }) {
       )}
       <fieldset className="grid gap-4 sm:grid-cols-2">
         <legend className="mb-3 text-sm font-semibold text-tertiary">Customer</legend>
-        <Field label="Customer name" name="customer_name" maxLength={100} autoComplete="off" placeholder="e.g. Juan Dela Cruz" />
+        <Field label="Customer name" name="customer_name" maxLength={100} autoComplete="off" placeholder="e.g. Juan Dela Cruz" {...fieldProps("customer_name")} />
         <Field
           label="Customer Contact No."
           name="customer_phone"
           type="tel"
           inputMode="tel"
           maxLength={40}
+          pattern={PHONE_PATTERN}
+          title={PHONE_HINT}
           autoComplete="off"
           placeholder="e.g. 0917 123 4567"
+          {...fieldProps("customer_phone")}
         />
       </fieldset>
 
       <fieldset className="grid gap-4 sm:grid-cols-2">
         <legend className="mb-3 text-sm font-semibold text-tertiary">Repair</legend>
-        <Field label="Device" name="device" maxLength={100} placeholder="e.g. iPhone 12" />
+        <Field label="Device" name="device" maxLength={100} placeholder="e.g. iPhone 12" {...fieldProps("device")} />
         <Field
           label={`Initial quote (${symbol})`}
           name="initial_quote"
@@ -162,6 +181,7 @@ export function NewJobForm({ today }: { today: string }) {
           min={0}
           step="0.01"
           placeholder="e.g. 1500"
+          {...fieldProps("initial_quote")}
         />
         <div className="flex flex-col gap-2 sm:col-span-2">
           <Label htmlFor="problem">Problem</Label>
@@ -172,12 +192,14 @@ export function NewJobForm({ today }: { today: string }) {
             rows={3}
             placeholder="e.g. Cracked screen, touch still works"
             required
+            {...v.field("problem")}
           />
+          <FieldError name="problem" error={v.errors.problem} />
         </div>
-        <Field label="Estimated completion date" name="promised_date" type="date" min={today} />
+        <Field label="Estimated completion date" name="promised_date" type="date" min={today} {...fieldProps("promised_date")} />
       </fieldset>
 
-      {state.error && (
+      {state.error && !state.field && (
         <p role="alert" className="text-sm text-destructive">
           {state.error}
         </p>
@@ -203,12 +225,14 @@ export function NewJobForm({ today }: { today: string }) {
 function Field({
   label,
   name,
+  error,
   ...props
-}: { label: string; name: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+}: { label: string; name: string; error?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div className="flex flex-col gap-2">
       <Label htmlFor={name}>{label}</Label>
       <Input id={name} name={name} required {...props} />
+      <FieldError name={name} error={error} />
     </div>
   );
 }

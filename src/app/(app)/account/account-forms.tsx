@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { cloneElement, createContext, isValidElement, useActionState, useContext, useEffect } from "react";
 import {
   changeEmail,
   changePassword,
@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/toast";
 import { CURRENCIES, currencySymbol } from "@/lib/money";
+import { FieldError, PHONE_HINT, PHONE_PATTERN, useFormValidation } from "@/components/form-validation";
 
 // The forms on the Account page (ticket 34). "use client" because each
 // shows "Saving…" and the result without reloading the page.
@@ -41,7 +42,7 @@ export function ShopDetailsForm({
 }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(saveShopDetails.bind(null, shopId), {});
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <CheckedForm action={formAction} className="flex flex-col gap-4">
       <Field id="shop_name" label="Shop name">
         <Input id="shop_name" name="shop_name" defaultValue={name} maxLength={80} required />
       </Field>
@@ -49,7 +50,7 @@ export function ShopDetailsForm({
         <Input id="address" name="address" defaultValue={address} maxLength={200} placeholder="e.g. Stall 12, Gaisano Mall, Iloilo City" />
       </Field>
       <Field id="phone" label="Shop phone" hint="Optional. Customers call this; if empty, they call your own number.">
-        <Input id="phone" name="phone" type="tel" defaultValue={phone} maxLength={40} placeholder="e.g. (033) 123 4567" />
+        <Input id="phone" name="phone" type="tel" defaultValue={phone} maxLength={40} pattern={PHONE_PATTERN} title={PHONE_HINT} placeholder="e.g. (033) 123 4567" />
       </Field>
       <Field id="hours" label="Opening hours" hint={"Optional. Goes in the \"ready for pickup\" message."}>
         <Input id="hours" name="hours" defaultValue={hours} maxLength={120} placeholder="e.g. Mon–Sat, 9 AM–6 PM" />
@@ -92,7 +93,7 @@ export function ShopDetailsForm({
       </Field>
       <Result state={state} pending={pending} />
       <Submit pending={pending}>Save store details</Submit>
-    </form>
+    </CheckedForm>
   );
 }
 
@@ -100,7 +101,7 @@ export function ShopDetailsForm({
 export function SlipNoteForm({ shopId, note }: { shopId: string; note: string }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(saveSlipNote.bind(null, shopId), {});
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <CheckedForm action={formAction} className="flex flex-col gap-4">
       <Field id="slip_note" label="Note at the bottom of the claim slip" hint="Optional, up to 500 characters. Leave empty for no note.">
         <Textarea
           id="slip_note"
@@ -113,7 +114,7 @@ export function SlipNoteForm({ shopId, note }: { shopId: string; note: string })
       </Field>
       <Result state={state} pending={pending} />
       <Submit pending={pending}>Save claim slip</Submit>
-    </form>
+    </CheckedForm>
   );
 }
 
@@ -121,16 +122,16 @@ export function SlipNoteForm({ shopId, note }: { shopId: string; note: string })
 export function DetailsForm({ displayName, contactNumber }: { displayName: string; contactNumber: string }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(saveDetails, {});
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <CheckedForm action={formAction} className="flex flex-col gap-4">
       <Field id="display_name" label="Account name">
         <Input id="display_name" name="display_name" defaultValue={displayName} maxLength={80} placeholder="e.g. Juan Dela Cruz" required />
       </Field>
       <Field id="contact_number" label="Contact number">
-        <Input id="contact_number" name="contact_number" type="tel" defaultValue={contactNumber} maxLength={40} placeholder="e.g. 0917 123 4567" required />
+        <Input id="contact_number" name="contact_number" type="tel" defaultValue={contactNumber} maxLength={40} pattern={PHONE_PATTERN} title={PHONE_HINT} placeholder="e.g. 0917 123 4567" required />
       </Field>
       <Result state={state} pending={pending} />
       <Submit pending={pending}>Save</Submit>
-    </form>
+    </CheckedForm>
   );
 }
 
@@ -138,7 +139,7 @@ export function DetailsForm({ displayName, contactNumber }: { displayName: strin
 export function EmailForm({ email, pendingEmail }: { email: string; pendingEmail?: string }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(changeEmail, {});
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <CheckedForm action={formAction} className="flex flex-col gap-4">
       <p className="text-sm">
         Signed in as <span className="font-medium">{email}</span>
       </p>
@@ -150,7 +151,7 @@ export function EmailForm({ email, pendingEmail }: { email: string; pendingEmail
       </Field>
       <Result state={state} pending={pending} />
       <Submit pending={pending}>Change email</Submit>
-    </form>
+    </CheckedForm>
   );
 }
 
@@ -158,7 +159,7 @@ export function EmailForm({ email, pendingEmail }: { email: string; pendingEmail
 export function PasswordForm({ isOwner }: { isOwner: boolean }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(changePassword, {});
   return (
-    <form key={state.saved ? "saved" : "form"} action={formAction} className="flex flex-col gap-4">
+    <CheckedForm key={state.saved ? "saved" : "form"} action={formAction} className="flex flex-col gap-4">
       {!isOwner && (
         <p className="text-sm text-muted-foreground">Replace the temporary password your shop owner gave you.</p>
       )}
@@ -166,11 +167,11 @@ export function PasswordForm({ isOwner }: { isOwner: boolean }) {
         <Input id="new_password" name="new_password" type="password" autoComplete="new-password" minLength={8} required />
       </Field>
       <Field id="confirm_password" label="Type it again">
-        <Input id="confirm_password" name="confirm_password" type="password" autoComplete="new-password" minLength={8} required />
+        <Input id="confirm_password" name="confirm_password" type="password" autoComplete="new-password" minLength={8} required onInput={checkMatch} />
       </Field>
       <Result state={state} pending={pending} saved="Password changed." />
       <Submit pending={pending}>Change password</Submit>
-    </form>
+    </CheckedForm>
   );
 }
 
@@ -179,7 +180,7 @@ export function PasswordForm({ isOwner }: { isOwner: boolean }) {
 export function EstimateRequestForm() {
   const [state, formAction, pending] = useActionState<FormState, FormData>(requestEstimatePermission, {});
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <CheckedForm action={formAction} className="flex flex-col gap-4">
       <Field id="reason" label="Why do you need it?" hint="10 to 500 characters. Your owner reads this before deciding.">
         <Textarea
           id="reason"
@@ -193,18 +194,44 @@ export function EstimateRequestForm() {
       </Field>
       <Result state={state} pending={pending} />
       <Submit pending={pending}>Send request</Submit>
-    </form>
+    </CheckedForm>
+  );
+}
+
+// Every form here checks its fields before sending (ticket 75): errors
+// show under the field (Field below), and Save is stopped until fixed.
+const Checks = createContext<ReturnType<typeof useFormValidation> | null>(null);
+
+function CheckedForm({ children, ...props }: React.FormHTMLAttributes<HTMLFormElement> & { action: (data: FormData) => void }) {
+  const v = useFormValidation();
+  return (
+    <Checks.Provider value={v}>
+      <form {...props} {...v.formProps}>
+        {children}
+      </form>
+    </Checks.Provider>
   );
 }
 
 function Field({ id, label, hint, children }: { id: string; label: string; hint?: string; children: React.ReactNode }) {
+  const v = useContext(Checks);
+  // The box gets its red outline and is linked to its message.
+  const box = v && isValidElement(children) ? cloneElement(children as React.ReactElement<Record<string, unknown>>, v.field(id)) : children;
   return (
     <div className="flex flex-col gap-2">
       <Label htmlFor={id}>{label}</Label>
-      {children}
+      {box}
+      <FieldError name={id} error={v?.errors[id]} />
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
+}
+
+// "Type it again" must match the new password.
+function checkMatch(e: React.FormEvent<HTMLInputElement>) {
+  const el = e.currentTarget;
+  const first = (el.form?.elements.namedItem("new_password") as HTMLInputElement | null)?.value ?? "";
+  el.setCustomValidity(el.value && el.value !== first ? "The two passwords don't match." : "");
 }
 
 // Each result is toasted once, even if its form redraws (the password
