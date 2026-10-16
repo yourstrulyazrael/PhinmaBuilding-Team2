@@ -71,7 +71,7 @@ export function NavLinks({ isOwner }: { isOwner: boolean }) {
   );
 }
 
-function visibleLinks(isOwner: boolean) {
+export function visibleLinks(isOwner: boolean) {
   return LINKS.filter((l) => isOwner || !l.ownerOnly);
 }
 

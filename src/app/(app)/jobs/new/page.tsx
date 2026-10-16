@@ -16,7 +16,7 @@ export default async function NewJobPage() {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-10">
       <PageHeader
-        back={{ href: "/", label: "Repair desk" }}
+        crumbs={[{ label: "Repairs", href: "/?tab=all" }, { label: "New repair" }]}
         eyebrow="New repair"
         icon={Plus}
         title="Add a repair"

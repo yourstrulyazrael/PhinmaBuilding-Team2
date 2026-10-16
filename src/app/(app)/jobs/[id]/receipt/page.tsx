@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { LogoMark } from "@/components/logo";
-import { formatDate, formatPeso, paymentLabel, type Job } from "@/lib/jobs";
+import { formatDate, formatPeso, paymentLabel, repairNumber, type Job } from "@/lib/jobs";
 import { currentPrice, labourPrice, manilaDate, partsTotal, warrantyEnd } from "@/lib/workspace";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -47,7 +47,7 @@ export default async function ReceiptPage({ params }: PageProps<"/jobs/[id]/rece
   const days = shop?.warrantyDays ?? 0;
   const warrantyUntil = warrantyEnd(job, days);
   // A short, readable number to quote back to the shop.
-  const number = job.id.replace(/-/g, "").slice(0, 8).toUpperCase();
+  const number = repairNumber(job.id);
   const technician = names[job.handled_by] ?? "";
 
   return (

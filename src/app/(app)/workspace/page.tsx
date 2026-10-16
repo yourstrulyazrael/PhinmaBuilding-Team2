@@ -91,7 +91,7 @@ export default async function WorkspacePage({ searchParams }: PageProps<"/worksp
   return (
     <main className="mx-auto flex w-full max-w-[120rem] flex-col gap-4 px-4 py-6 md:px-8 md:py-10 2xl:px-12">
       <PageHeader
-        back={{ href: "/", label: "Repair desk" }}
+        crumbs={[{ label: "Workspace" }]}
         eyebrow="Your workspace"
         icon={Briefcase}
         title="Workspace tools"

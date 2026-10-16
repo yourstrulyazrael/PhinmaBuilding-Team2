@@ -57,6 +57,7 @@ export default async function AccountPage() {
         eyebrow={owner ? "Owner" : "Staff"}
         icon={UserRound}
         title="Account"
+        crumbs={[{ label: "Account" }]}
         description={owner ? "Your shop, your claim slip and how you sign in." : "Your details and how you sign in."}
       />
 

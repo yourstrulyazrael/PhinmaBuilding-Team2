@@ -10,6 +10,7 @@ import { TrendCharts } from "@/components/trend-charts";
 import { Card } from "@/components/ui/card";
 import { LogoMark } from "@/components/logo";
 import { cn } from "@/lib/utils";
+import { Breadcrumbs } from "@/components/page-header";
 import { ReportToolbar } from "./report-toolbar";
 import { getShop, getSupabase, getUser } from "@/lib/session";
 
@@ -60,6 +61,10 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
     <main className="mx-auto flex w-full max-w-[120rem] flex-col gap-4 px-4 py-6 md:px-8 md:py-10 2xl:px-12 print:max-w-none print:gap-3 print:p-0">
       {/* Landscape paper for the wide jobs table. Only on this page. */}
       <style>{"@page { size: A4 landscape; margin: 12mm; }"}</style>
+
+      <div className="print:hidden">
+        <Breadcrumbs crumbs={[{ label: "Reports & analytics" }]} />
+      </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <PeriodPicker path="/reports" current={period.key} allowMonth />

@@ -72,6 +72,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/invent
         eyebrow={shop?.name ?? "Your shop"}
         icon={Store}
         title="Inventory"
+        crumbs={[{ label: "Inventory" }]}
         description={
           <>
             Keep your parts and stock levels up to date. Stock worth {formatPeso(retailValue)} at retail

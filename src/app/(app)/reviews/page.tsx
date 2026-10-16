@@ -127,6 +127,7 @@ export default async function ReviewsPage({ searchParams }: PageProps<"/reviews"
         eyebrow="Customer feedback"
         icon={MessageSquareText}
         title="Reviews"
+        crumbs={[{ label: "Reviews" }]}
         description={
           owner
             ? "What customers say about each technician after pickup. CSAT is the share of 4–5★ reviews; DSAT the share of 1–2★."

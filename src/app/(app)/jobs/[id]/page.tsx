@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { AlarmClock, Camera, ExternalLink, Lock, Package, PackageCheck, Phone, QrCode, ReceiptText, Smartphone, ThumbsDown, ThumbsUp, TrendingUp } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
-import { formatDate, formatPeso, isFinished, paymentLabel, todayInManila, type Job } from "@/lib/jobs";
+import { formatDate, formatPeso, isFinished, paymentLabel, repairNumber, todayInManila, type Job } from "@/lib/jobs";
 import { currentPrice, isLate, labourPrice, partsTotal, warrantyEnd } from "@/lib/workspace";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -122,8 +122,8 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 py-6 md:px-8 md:py-10">
       <PageHeader
-        back={{ href: "/", label: "Repair jobs" }}
-        eyebrow="Repair job"
+        crumbs={[{ label: "Repairs", href: "/?tab=all" }, { label: `Repair ${repairNumber(job.id)}` }]}
+        eyebrow={`Repair ${repairNumber(job.id)}`}
         icon={Smartphone}
         title={job.device}
         description={job.problem}

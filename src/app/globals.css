@@ -245,6 +245,13 @@ body {
   }
 }
 
+/* The command palette backdrop fades in (ticket 68). */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
 @keyframes menu-out {
   to {
     opacity: 0;

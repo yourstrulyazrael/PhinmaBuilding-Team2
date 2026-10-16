@@ -7,6 +7,7 @@ import { ThemeSwitch } from "@/components/theme-switch";
 import { signOut } from "../login/actions";
 import { AccountLink, NavGlide, NavLinks, NotificationsLink } from "./nav-links";
 import { ShopLive } from "./shop-live";
+import { CommandPalette } from "./command-palette";
 import { CurrencyProvider } from "@/components/currency";
 import { ToastProvider } from "@/components/toast";
 import { getMe, getNotifications, getShop, getUser } from "@/lib/session";
@@ -50,6 +51,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             <NavLinks isOwner={shop.role === "owner"} />
   
             <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-2">
+              {/* Ctrl+K search and the keyboard shortcuts (ticket 68). */}
+              <CommandPalette isOwner={shop.role === "owner"} />
               <ThemeSwitch />
               <NotificationsLink keys={notifications.keys} userId={user.id} />
               <AccountLink name={name} contact={technician?.contact_number} />

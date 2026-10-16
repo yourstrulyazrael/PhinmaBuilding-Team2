@@ -153,11 +153,18 @@ export function parseSort(value: unknown): Sort {
 // Jobs whose device, problem, customer name or phone contain the search
 // words, ignoring upper/lower case. Every word must match somewhere,
 // so "iphone maria" finds Maria's iPhone.
+// The short repair number staff and customers quote (ticket 68), e.g.
+// "ZR-3F9A1C2B": the first 8 characters of the repair's id. Used on the
+// repair page, the receipt, breadcrumbs and in search.
+export function repairNumber(id: string) {
+  return `ZR-${id.replace(/-/g, "").slice(0, 8).toUpperCase()}`;
+}
+
 export function searchJobs(jobs: Job[], query: string) {
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
   if (words.length === 0) return jobs;
   return jobs.filter((job) => {
-    const text = [job.device, job.problem, job.customer_name, job.customer_phone]
+    const text = [job.device, job.problem, job.customer_name, job.customer_phone, repairNumber(job.id)]
       .join(" ")
       .toLowerCase();
     return words.every((word) => text.includes(word));

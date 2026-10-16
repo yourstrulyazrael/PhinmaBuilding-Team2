@@ -17,7 +17,7 @@ export default async function NotificationsPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 md:py-10">
-      <PageHeader eyebrow="Inbox" icon={Bell} title="Notifications" description="What needs you right now, in your shop." />
+      <PageHeader crumbs={[{ label: "Notifications" }]} eyebrow="Inbox" icon={Bell} title="Notifications" description="What needs you right now, in your shop." />
       <NotificationsList
         alerts={alerts}
         me={user.id}

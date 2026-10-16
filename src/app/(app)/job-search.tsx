@@ -65,7 +65,9 @@ export function JobSearch({
           name="q"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder="Search device, problem, customer or contact no."
+          placeholder="Search device, customer, contact no. or repair no. — press /"
+          data-shortcut="search"
+          aria-keyshortcuts="/"
           aria-label="Search repair jobs"
           maxLength={100}
           autoComplete="off"
