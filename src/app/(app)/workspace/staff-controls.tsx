@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
-import { Check, CircleCheck, KeyRound, Pencil, UserMinus, X } from "lucide-react";
+import { useActionState, useOptimistic, useState, useTransition } from "react";
+import { Check, CircleCheck, KeyRound, MoreHorizontal, Pencil, ShieldOff, UserMinus, UserPlus, X } from "lucide-react";
 import {
   decideEstimateRequest,
   removeStaff,
@@ -11,71 +11,108 @@ import {
   type EditStaffState,
   type ResetPasswordState,
 } from "./actions";
-import { Button } from "@/components/ui/button";
+import { Menu } from "@/components/menu";
+import { Modal } from "@/components/modal";
+import { useToast } from "@/components/toast";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AddStaffForm } from "./staff-forms";
 
-// The owner's controls on each staff card (tickets 37 and 46). "use client"
+// The owner's controls on the Staff tab (tickets 37, 46, 74). "use client"
 // because they open, confirm and show results without a page reload.
 
-// Revised estimates: shown, and taken back here; granted only by
-// approving the staff member's request.
-export function EstimateAccess({ staffId, allowed }: { staffId: string; allowed: boolean }) {
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string>();
+type Dialog = "edit" | "password" | "remove" | null;
 
-  if (!allowed) {
-    return <p className="text-xs text-muted-foreground">Can&apos;t revise quotes. They can ask you from their Account page.</p>;
+// Each staff card's ⋮ menu (ticket 74): Edit details, Reset password,
+// Take back quotes, Remove. Each opens its own pop-up, so the card itself
+// stays tidy. Quote permission is granted by approving their request.
+export function StaffMenu({
+  staffId,
+  name,
+  contact,
+  openJobs,
+  canReviseEstimate,
+}: {
+  staffId: string;
+  name: string;
+  contact: string;
+  openJobs: number;
+  canReviseEstimate: boolean;
+}) {
+  const [dialog, setDialog] = useState<Dialog>(null);
+  const [, startTransition] = useTransition();
+  const toast = useToast();
+  const close = () => setDialog(null);
+
+  function revoke() {
+    startTransition(async () => {
+      const result = await revokeEstimatePermission(staffId);
+      toast(
+        result.error
+          ? { kind: "error", title: "Couldn't take it back", description: result.error, action: { label: "Try again", onClick: revoke } }
+          : { title: `${name} can no longer revise quotes`, description: "They can ask again from their Account page." },
+      );
+    });
   }
+
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">Can revise quotes</span>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        disabled={pending}
-        onClick={() =>
-          startTransition(async () => {
-            const result = await revokeEstimatePermission(staffId);
-            setError(result.error);
-          })
-        }
+    <>
+      <Menu
+        label={`Actions for ${name}`}
+        align="end"
+        triggerClassName={buttonVariants({ variant: "ghost", size: "icon", className: "size-9 text-muted-foreground" })}
+        trigger={<MoreHorizontal className="size-4" aria-hidden />}
+        items={[
+          { label: "Edit details", icon: Pencil, onSelect: () => setDialog("edit") },
+          { label: "Reset password", icon: KeyRound, onSelect: () => setDialog("password") },
+          ...(canReviseEstimate ? [{ label: "Take back quotes", icon: ShieldOff, onSelect: revoke }] : []),
+          { label: "Remove from shop", icon: UserMinus, onSelect: () => setDialog("remove") },
+        ]}
+      />
+      <Modal
+        open={dialog === "edit"}
+        onClose={close}
+        title={`Edit ${name}`}
+        description="Their email and password are theirs to change, on their Account page."
       >
-        {pending ? "Taking back…" : "Take back"}
-      </Button>
-      {error && (
-        <p role="alert" className="w-full text-xs text-destructive">
-          {error}
-        </p>
-      )}
-    </div>
+        <EditStaffForm staffId={staffId} name={name} contact={contact} onDone={close} />
+      </Modal>
+      <Modal
+        open={dialog === "password"}
+        onClose={close}
+        title="Reset password"
+        description={`For when ${name} forgets theirs. Nobody can see the old one: it's stored scrambled.`}
+      >
+        <ResetPasswordForm staffId={staffId} name={name} onDone={close} />
+      </Modal>
+      <Modal open={dialog === "remove"} onClose={close} title={`Remove ${name}?`}>
+        <ConfirmRemove staffId={staffId} name={name} openJobs={openJobs} onCancel={close} />
+      </Modal>
+    </>
   );
 }
 
-// Edit and Remove, side by side. Each opens in place.
-export function StaffActions({ staffId, name, contact, openJobs }: { staffId: string; name: string; contact: string; openJobs: number }) {
-  const [mode, setMode] = useState<"idle" | "edit" | "password" | "remove">("idle");
-  const close = () => setMode("idle");
-
-  if (mode === "edit") return <EditStaffForm staffId={staffId} name={name} contact={contact} onDone={close} />;
-  if (mode === "password") return <ResetPasswordForm staffId={staffId} name={name} onDone={close} />;
-  if (mode === "remove") return <ConfirmRemove staffId={staffId} name={name} openJobs={openJobs} onCancel={() => setMode("idle")} />;
+// "Add staff" in the Staff header (ticket 74): the form in a pop-up,
+// which closes with a toast once the account is made.
+export function AddStaffButton() {
+  const [open, setOpen] = useState(false);
+  const toast = useToast();
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Button type="button" variant="secondary" size="sm" onClick={() => setMode("edit")}>
-        <Pencil className="size-3.5" aria-hidden />
-        Edit
+    <>
+      <Button type="button" onClick={() => setOpen(true)}>
+        <UserPlus className="size-4" aria-hidden />
+        Add staff
       </Button>
-      <Button type="button" variant="secondary" size="sm" onClick={() => setMode("password")}>
-        <KeyRound className="size-3.5" aria-hidden />
-        Reset password
-      </Button>
-      <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => setMode("remove")}>
-        <UserMinus className="size-3.5" aria-hidden />
-        Remove
-      </Button>
-    </div>
+      <Modal open={open} onClose={() => setOpen(false)} title="Add staff" description="Create an account for someone who works in your shop." wide>
+        <AddStaffForm
+          onAdded={(who) => {
+            setOpen(false);
+            toast({ title: `${who} was added`, description: "Give them their email and temporary password." });
+          }}
+        />
+      </Modal>
+    </>
   );
 }
 
@@ -89,34 +126,41 @@ function EditStaffForm({ staffId, name, contact, onDone }: { staffId: string; na
           <CircleCheck className="size-4" aria-hidden />
           Details saved
         </p>
-        <Button type="button" variant="ghost" size="sm" onClick={onDone}>Close</Button>
+        <Button type="button" variant="ghost" onClick={onDone}>
+          Close
+        </Button>
       </div>
     );
   }
   return (
-    <form action={formAction} className="flex flex-col gap-3">
-      <div className="flex flex-col gap-1.5">
+    <form action={formAction} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
         <Label htmlFor={`name-${staffId}`}>Name</Label>
         <Input id={`name-${staffId}`} name="display_name" defaultValue={name} maxLength={80} required />
       </div>
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-2">
         <Label htmlFor={`contact-${staffId}`}>Contact number</Label>
         <Input id={`contact-${staffId}`} name="contact_number" type="tel" defaultValue={contact} maxLength={40} required />
       </div>
-      <p className="text-xs text-muted-foreground">
-        Their email and password are theirs to change, on their Account page.
-      </p>
-      {state.error && <p role="alert" className="text-sm text-destructive">{state.error}</p>}
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={pending}>{pending ? "Saving…" : "Save"}</Button>
-        <Button type="button" variant="ghost" size="sm" onClick={() => onDone()}>Cancel</Button>
+      {state.error && (
+        <p role="alert" className="text-sm text-destructive">
+          {state.error}
+        </p>
+      )}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="ghost" onClick={() => onDone()}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={pending}>
+          {pending ? "Saving…" : "Save"}
+        </Button>
       </div>
     </form>
   );
 }
 
 // A new temporary password for someone who forgot theirs (ticket 46).
-// Shown as plain text so the owner can read it back to them; the old
+// Typed as plain text so the owner can read it back to them; the old
 // one is never shown, because nobody can read it.
 function ResetPasswordForm({ staffId, name, onDone }: { staffId: string; name: string; onDone: () => void }) {
   const [state, formAction, pending] = useActionState<ResetPasswordState, FormData>(
@@ -125,25 +169,25 @@ function ResetPasswordForm({ staffId, name, onDone }: { staffId: string; name: s
   );
   if (state.done && !pending) {
     return (
-      <div className="flex flex-col gap-2 rounded-[var(--radius)] bg-muted p-3 text-sm">
-        <p role="status" className="flex items-start gap-1.5">
+      <div className="flex flex-col gap-3 text-sm">
+        <p role="status" className="flex items-start gap-2">
           <CircleCheck className="mt-0.5 size-4 shrink-0 text-emerald-700 dark:text-emerald-300" aria-hidden />
           <span>
-            <span className="font-medium text-emerald-700 dark:text-emerald-300">Password reset.</span> {name} has
-            been signed out everywhere and can now sign in with the new password. Tell them to change it on their
-            Account page.
+            <span className="font-medium text-emerald-700 dark:text-emerald-300">Password reset.</span> {name} has been
+            signed out everywhere and can now sign in with the new password. Tell them to change it on their Account
+            page.
           </span>
         </p>
-        <Button type="button" variant="ghost" size="sm" className="w-fit" onClick={onDone}>
+        <Button type="button" variant="secondary" className="w-fit self-end" onClick={onDone}>
           Close
         </Button>
       </div>
     );
   }
   return (
-    <form action={formAction} className="flex flex-col gap-3">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor={`password-${staffId}`}>New temporary password for {name}</Label>
+    <form action={formAction} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <Label htmlFor={`password-${staffId}`}>New temporary password</Label>
         <Input
           id={`password-${staffId}`}
           name="new_password"
@@ -155,22 +199,22 @@ function ResetPasswordForm({ staffId, name, onDone }: { staffId: string; name: s
           placeholder="At least 8 characters"
           required
         />
+        <p className="text-xs text-muted-foreground">
+          Their old password stops working and they&apos;re signed out on every device. Give them this one in person
+          or by message.
+        </p>
       </div>
-      <p className="text-xs text-muted-foreground">
-        Their old password stops working and they&apos;re signed out on every device. Give them this one in person or
-        by message.
-      </p>
       {state.error && (
         <p role="alert" className="text-sm text-destructive">
           {state.error}
         </p>
       )}
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={pending}>
-          {pending ? "Resetting…" : "Reset password"}
-        </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={() => onDone()} disabled={pending}>
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="ghost" onClick={() => onDone()} disabled={pending}>
           Cancel
+        </Button>
+        <Button type="submit" disabled={pending}>
+          {pending ? "Resetting…" : "Reset password"}
         </Button>
       </div>
     </form>
@@ -182,19 +226,24 @@ function ConfirmRemove({ staffId, name, openJobs, onCancel }: { staffId: string;
   const [error, setError] = useState<string>();
 
   return (
-    <div className="flex flex-col gap-2 rounded-[var(--radius)] bg-destructive/10 p-3 text-sm">
-      <p className="font-medium">Remove {name} from the shop?</p>
-      <p className="text-xs text-muted-foreground">
+    <div className="flex flex-col gap-4 text-sm">
+      <p className="text-muted-foreground">
         They can no longer sign in to your shop.
         {openJobs > 0 && ` Their ${openJobs} open repair${openJobs === 1 ? "" : "s"} move${openJobs === 1 ? "s" : ""} to you.`}{" "}
         Their name stays on past repairs. This can&apos;t be undone: to bring them back, add them again with a new email.
       </p>
-      {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
-      <div className="flex gap-2">
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="ghost" onClick={onCancel} disabled={pending}>
+          Keep {name}
+        </Button>
         <Button
           type="button"
           variant="destructive"
-          size="sm"
           disabled={pending}
           onClick={() =>
             startTransition(async () => {
@@ -203,28 +252,47 @@ function ConfirmRemove({ staffId, name, openJobs, onCancel }: { staffId: string;
             })
           }
         >
+          <UserMinus className="size-4" aria-hidden />
           {pending ? "Removing…" : "Remove"}
-        </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={pending}>
-          Cancel
         </Button>
       </div>
     </div>
   );
 }
 
-// One waiting request: the reason, a note box, Approve and Reject.
-export function RequestDecision({ requestId }: { requestId: string }) {
+// One waiting request: the reason, a note box, Approve and Reject. The
+// answer shows straight away (ticket 76): the card turns into "Approved"
+// or "Rejected" while the server saves; if saving fails, it comes back
+// with the error.
+export function RequestDecision({ requestId, staffName }: { requestId: string; staffName: string }) {
   const [note, setNote] = useState("");
+  const [decided, setDecided] = useOptimistic<"approved" | "rejected" | null>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>();
+  const toast = useToast();
 
   function decide(approve: boolean) {
     setError(undefined);
     startTransition(async () => {
+      setDecided(approve ? "approved" : "rejected");
       const result = await decideEstimateRequest(requestId, approve, note);
-      if (result.error) setError(result.error);
+      if (result.error) {
+        setError(result.error);
+        toast({ kind: "error", title: "Couldn't save your answer", description: result.error, action: { label: "Try again", onClick: () => decide(approve) } });
+      } else {
+        toast({ title: approve ? `${staffName} can now revise quotes` : `Request from ${staffName} rejected` });
+      }
     });
+  }
+
+  if (decided) {
+    return (
+      <p role="status" className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+        {decided === "approved" ? <Check className="size-4 text-primary" aria-hidden /> : <X className="size-4" aria-hidden />}
+        {decided === "approved" ? "Approved" : "Rejected"}
+        {pending && "…"}
+      </p>
+    );
   }
 
   return (
@@ -239,15 +307,19 @@ export function RequestDecision({ requestId }: { requestId: string }) {
         maxLength={300}
         placeholder="e.g. Only for screen repairs, please"
       />
-      {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
-      <div className="flex gap-2">
-        <Button type="button" size="sm" disabled={pending} onClick={() => decide(true)}>
-          <Check className="size-3.5" aria-hidden />
-          Approve
-        </Button>
+      {error && (
+        <p role="alert" className="text-xs text-destructive">
+          {error}
+        </p>
+      )}
+      <div className="flex justify-end gap-2">
         <Button type="button" variant="secondary" size="sm" disabled={pending} onClick={() => decide(false)}>
           <X className="size-3.5" aria-hidden />
           Reject
+        </Button>
+        <Button type="button" size="sm" disabled={pending} onClick={() => decide(true)}>
+          <Check className="size-3.5" aria-hidden />
+          Approve
         </Button>
       </div>
     </div>

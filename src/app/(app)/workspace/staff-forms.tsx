@@ -1,14 +1,21 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { addStaff, type AddStaffState } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 // The owner fills this in to create a staff member's account (ticket 22).
-export function AddStaffForm() {
+// In a pop-up (ticket 74): onAdded closes it once the account exists.
+export function AddStaffForm({ onAdded }: { onAdded?: (name: string) => void }) {
   const [state, formAction, pending] = useActionState<AddStaffState, FormData>(addStaff, {});
+  const told = useRef(state);
+  useEffect(() => {
+    if (state === told.current) return;
+    told.current = state;
+    if (state.added) onAdded?.(state.added);
+  }, [state, onAdded]);
 
   return (
     // A new key after each success empties the form for the next person.
@@ -55,7 +62,7 @@ export function AddStaffForm() {
         </p>
       )}
 
-      <Button type="submit" disabled={pending} className="w-fit">
+      <Button type="submit" disabled={pending} className="w-fit self-end">
         {pending ? "Creating account…" : "Add staff"}
       </Button>
     </form>

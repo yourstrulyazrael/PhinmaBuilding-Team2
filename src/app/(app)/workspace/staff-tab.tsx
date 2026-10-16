@@ -1,11 +1,11 @@
-import { Hand, Mail, Phone, UserPlus, UsersRound } from "lucide-react";
+import { Hand, Mail, Phone, ShieldCheck, Star, UsersRound, Wrench } from "lucide-react";
 import type { Role } from "@/lib/shop";
 import { formatDate } from "@/lib/jobs";
 import { manilaDate } from "@/lib/workspace";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AddStaffForm } from "./staff-forms";
-import { EstimateAccess, RequestDecision, StaffActions } from "./staff-controls";
-import { Stars } from "@/components/stars";
+import { Card } from "@/components/ui/card";
+import { CopyButton } from "@/components/copy-button";
+import { AddStaffButton, RequestDecision, StaffMenu } from "./staff-controls";
+import { cn } from "@/lib/utils";
 
 export type StaffMember = {
   id: string;
@@ -25,144 +25,210 @@ export type StaffMember = {
 // A staff member asking to revise estimates (ticket 37).
 export type EstimateRequest = { id: string; staffName: string; reason: string; createdAt: string };
 
-// The owner's Staff tab: requests waiting for an answer; a card per
-// person with their sign-in email, number, when they joined and last
-// signed in, and the repairs they handle (ticket 36), plus Edit, Remove
-// and their estimate permission (ticket 37); and Add staff (ticket 22).
+/**
+ * The owner's Staff tab (redesigned, ticket 74): requests waiting for an
+ * answer at the top; then one card per person: who they are, how to
+ * reach them (with copy buttons), three numbers (open repairs, total,
+ * rating) and a ⋮ menu for Edit, Reset password, Take back quotes and
+ * Remove, each in its own pop-up. Add staff is a button in the header.
+ */
 export function StaffTab({ staff, requests }: { staff: StaffMember[]; requests: EstimateRequest[] }) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       {requests.length > 0 && (
-        <Card className="border-highlight/40">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base text-tertiary">
+        <Card className="overflow-hidden border-highlight/40">
+          <header className="flex items-center gap-3 border-b border-border px-5 py-4">
+            <span className="flex size-8 items-center justify-center rounded-inner bg-highlight/10 text-highlight">
               <Hand className="size-4" aria-hidden />
-              Requests to revise quotes
-              <span className="rounded-full bg-highlight px-2 py-0.5 text-xs font-medium text-white dark:text-[#0f1729]">
-                {requests.length}
-              </span>
-            </CardTitle>
-            <CardDescription>
-              Approve if the reason is fair: they can then set revised quotes on the repairs they handle. You can
-              take it back any time.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
-              {requests.map((r) => (
-                <li key={r.id} className="flex flex-col gap-3 rounded-[var(--radius)] border border-border p-4 text-sm">
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="font-medium text-tertiary">{r.staffName}</span>
-                    <span className="shrink-0 text-xs text-muted-foreground">{formatDate(manilaDate(r.createdAt))}</span>
-                  </div>
-                  <p className="whitespace-pre-line">{r.reason}</p>
-                  <RequestDecision requestId={r.id} />
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base text-tertiary">
-            <UsersRound className="size-4" aria-hidden />
-            Staff
-            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-              {staff.length}
             </span>
-          </CardTitle>
-          <CardDescription>
-            Everyone who can sign in to your shop. Passwords can&apos;t be shown to anyone: they are stored scrambled.
-            If someone forgets theirs, use Reset password to give them a new one.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ul className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
-            {staff.map((m) => (
-              <li key={m.id} className="flex flex-col gap-3 rounded-[var(--radius)] border border-border p-4 text-sm">
+            <div className="flex flex-col">
+              <h2 className="flex items-center gap-2 font-semibold text-tertiary">
+                Requests to revise quotes
+                <span className="rounded-full bg-highlight px-2 py-0.5 text-xs font-medium text-white dark:text-[#0f1729]">{requests.length}</span>
+              </h2>
+              <p className="text-xs text-muted-foreground">Approve if the reason is fair. You can take it back any time.</p>
+            </div>
+          </header>
+          <ul className="grid gap-px bg-border md:grid-cols-2">
+            {requests.map((r) => (
+              <li key={r.id} className="flex flex-col gap-3 bg-card p-5 text-sm">
                 <div className="flex items-start justify-between gap-3">
-                  <span className="font-medium text-tertiary">{m.name}</span>
-                  <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                    {m.role === "owner" ? "Owner" : "Staff"}
+                  <span className="flex items-center gap-2 font-medium text-tertiary">
+                    <Avatar name={r.staffName} small />
+                    {r.staffName}
                   </span>
+                  <span className="shrink-0 text-xs text-muted-foreground">{formatDate(manilaDate(r.createdAt))}</span>
                 </div>
-
-                <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
-                  <dt className="text-muted-foreground">Email</dt>
-                  <dd className="min-w-0">
-                    {/* Email and number are plain text, not links, so a click
-                        doesn't open a "which app?" prompt. Select to copy. */}
-                    {m.email ? (
-                      <span className="inline-flex max-w-full items-center gap-1.5">
-                        <Mail className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-                        <span className="select-all truncate">{m.email}</span>
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">Run 018 in Supabase to see it</span>
-                    )}
-                  </dd>
-                  <dt className="text-muted-foreground">Contact</dt>
-                  <dd>
-                    {m.contact ? (
-                      <span className="inline-flex items-center gap-1.5">
-                        <Phone className="size-3.5 text-muted-foreground" aria-hidden />
-                        <span className="select-all">{m.contact}</span>
-                      </span>
-                    ) : (
-                      "–"
-                    )}
-                  </dd>
-                  <dt className="text-muted-foreground">Password</dt>
-                  <dd className="text-muted-foreground">Hidden (can&apos;t be viewed; use Reset password)</dd>
-                  <dt className="text-muted-foreground">Joined</dt>
-                  <dd>{formatDate(manilaDate(m.joinedAt))}</dd>
-                  <dt className="text-muted-foreground">Last sign-in</dt>
-                  <dd>{m.lastSignIn ? formatDate(manilaDate(m.lastSignIn)) : m.email ? "Never" : "–"}</dd>
-                  <dt className="text-muted-foreground">Repairs</dt>
-                  <dd>
-                    {m.openJobs} open · {m.totalJobs} in total
-                  </dd>
-                  <dt className="text-muted-foreground">Rating</dt>
-                  <dd className="flex items-center gap-2">
-                    {m.rating ? (
-                      <>
-                        <Stars rating={m.rating.sum / m.rating.count} />
-                        <span className="text-xs text-muted-foreground">
-                          {(m.rating.sum / m.rating.count).toFixed(1)} · {m.rating.count} review{m.rating.count === 1 ? "" : "s"}
-                        </span>
-                      </>
-                    ) : (
-                      <span className="text-muted-foreground">No reviews yet</span>
-                    )}
-                  </dd>
-                </dl>
-
-                {m.role === "apprentice" && (
-                  <div className="flex flex-col gap-3 border-t border-border pt-3">
-                    <EstimateAccess staffId={m.id} allowed={m.canReviseEstimate} />
-                    <StaffActions staffId={m.id} name={m.name} contact={m.contact} openJobs={m.openJobs} />
-                  </div>
-                )}
+                <p className="whitespace-pre-line rounded-inner bg-muted/60 px-3 py-2">&ldquo;{r.reason}&rdquo;</p>
+                <RequestDecision requestId={r.id} staffName={r.staffName} />
               </li>
             ))}
           </ul>
-        </CardContent>
-      </Card>
+        </Card>
+      )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base text-tertiary">
-            <UserPlus className="size-4" aria-hidden />
-            Add staff
-          </CardTitle>
-          <CardDescription>Create an account for someone who works in your shop.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <AddStaffForm />
-        </CardContent>
-      </Card>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-tertiary">
+            <UsersRound className="size-5" aria-hidden />
+            Your team
+            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{staff.length}</span>
+          </h2>
+          <p className="text-sm text-muted-foreground">Everyone who can sign in to your shop.</p>
+        </div>
+        <AddStaffButton />
+      </div>
+
+      <ul className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+        {staff.map((m) => {
+          const average = m.rating ? m.rating.sum / m.rating.count : null;
+          return (
+            <li key={m.id}>
+              <Card className="flex h-full flex-col">
+                {/* Who */}
+                <div className="flex items-start gap-3 p-5 pb-4">
+                  <Avatar name={m.name} />
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <span className="truncate font-semibold text-tertiary">{m.name}</span>
+                    <span className="flex flex-wrap gap-1.5">
+                      <Chip tone={m.role === "owner" ? "primary" : "muted"}>{m.role === "owner" ? "Owner" : "Staff"}</Chip>
+                      {m.role === "apprentice" && m.canReviseEstimate && (
+                        <Chip tone="blue">
+                          <ShieldCheck className="size-3" aria-hidden />
+                          Can revise quotes
+                        </Chip>
+                      )}
+                    </span>
+                  </div>
+                  {m.role === "apprentice" && (
+                    <StaffMenu
+                      staffId={m.id}
+                      name={m.name}
+                      contact={m.contact}
+                      openJobs={m.openJobs}
+                      canReviseEstimate={m.canReviseEstimate}
+                    />
+                  )}
+                </div>
+
+                {/* How to reach them: plain text (no "which app?" prompt), with copy. */}
+                <div className="flex flex-col gap-1 px-5 text-sm">
+                  <ContactLine icon={Mail} value={m.email} what="Email" missing="Run 018 in Supabase to see it" />
+                  <ContactLine icon={Phone} value={m.contact || null} what="Contact number" missing="No number" />
+                </div>
+
+                {/* Three numbers */}
+                <dl className="mx-5 my-4 grid grid-cols-3 divide-x divide-border rounded-inner border border-border text-center">
+                  <Stat icon={Wrench} label="Open" value={String(m.openJobs)} />
+                  <Stat icon={Wrench} label="Total" value={String(m.totalJobs)} />
+                  <Stat
+                    icon={Star}
+                    label={m.rating ? `${m.rating.count} review${m.rating.count === 1 ? "" : "s"}` : "No reviews"}
+                    value={average === null ? "–" : average.toFixed(1)}
+                    highlight={average !== null && average >= 4.5}
+                  />
+                </dl>
+
+                <p className="mt-auto border-t border-border px-5 py-3 text-xs text-muted-foreground">
+                  Joined {formatDate(manilaDate(m.joinedAt))} · Last sign-in{" "}
+                  {m.lastSignIn ? formatDate(manilaDate(m.lastSignIn)) : m.email ? "never" : "–"}
+                </p>
+              </Card>
+            </li>
+          );
+        })}
+      </ul>
+
+      <p className="text-xs text-muted-foreground">
+        Passwords can&apos;t be shown to anyone: they are stored scrambled. If someone forgets theirs, use ⋮ › Reset
+        password to give them a new one.
+      </p>
+    </div>
+  );
+}
+
+// Initials in a circle; the colour is picked from the name, so each
+// person keeps the same one.
+const AVATAR_TONES = [
+  "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
+  "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300",
+  "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
+  "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300",
+  "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300",
+];
+
+function Avatar({ name, small = false }: { name: string; small?: boolean }) {
+  const initials =
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]!.toUpperCase())
+      .join("") || "?";
+  const tone = AVATAR_TONES[[...name].reduce((n, c) => n + c.charCodeAt(0), 0) % AVATAR_TONES.length];
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-full font-semibold",
+        small ? "size-6 text-[10px]" : "size-11 text-sm",
+        tone,
+      )}
+    >
+      {initials}
+    </span>
+  );
+}
+
+function Chip({ tone, children }: { tone: "primary" | "muted" | "blue"; children: React.ReactNode }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
+        tone === "primary" && "bg-primary/10 text-primary",
+        tone === "muted" && "bg-muted text-muted-foreground",
+        tone === "blue" && "bg-highlight/10 text-highlight",
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+function ContactLine({
+  icon: Icon,
+  value,
+  what,
+  missing,
+}: {
+  icon: typeof Mail;
+  value: string | null;
+  what: string;
+  missing: string;
+}) {
+  return (
+    <span className="flex min-w-0 items-center gap-2">
+      <Icon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+      {value ? (
+        <>
+          <span className="min-w-0 select-all truncate">{value}</span>
+          <CopyButton text={value} what={what} className="-my-1 size-6" />
+        </>
+      ) : (
+        <span className="text-muted-foreground">{missing}</span>
+      )}
+    </span>
+  );
+}
+
+function Stat({ icon: Icon, label, value, highlight = false }: { icon: typeof Mail; label: string; value: string; highlight?: boolean }) {
+  return (
+    <div className="flex flex-col-reverse items-center gap-0.5 px-2 py-2.5">
+      <dt className="text-[11px] text-muted-foreground">{label}</dt>
+      <dd className={cn("flex items-center gap-1 text-lg font-semibold tabular-nums text-tertiary", highlight && "text-primary")}>
+        {Icon === Star && value !== "–" && <Star className="size-3.5 fill-amber-400 text-amber-400" aria-hidden />}
+        {value}
+      </dd>
     </div>
   );
 }
