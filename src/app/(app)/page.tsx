@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AlarmClock, Ban, CalendarDays, CircleCheck, Clock, Plus, QrCode, Smartphone, Wrench, X } from "lucide-react";
+import { AlarmClock, Ban, CalendarDays, ChevronRight, CircleCheck, Clock, CreditCard, Plus, QrCode, Smartphone, UsersRound, Wrench, X } from "lucide-react";
 import { formatDate, formatPeso, isFinished, parseSort, searchJobs, sortJobs, todayInManila, type Job } from "@/lib/jobs";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import { canChange, type Viewer } from "@/lib/people";
 import { HandledBy } from "@/components/handled-by";
 import { StatusBadge } from "@/components/status-badge";
 import { getMe, getNames, getShop, getSupabase, getUser } from "@/lib/session";
+import { ActivityFeed, KpiStrip, type JobEvent } from "./overview-panels";
 
 // "My jobs" (the phones you handle) comes first and is the default
 // (ticket 13); "All jobs" is the whole shop.
@@ -34,13 +35,19 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
   // RLS means this only ever returns jobs from the signed-in person's shop,
   // and only their shopmates' names. All at once; the shop and the
   // person's details are shared with the layout (no extra trip).
-  const [{ data, error }, shop, names, technician, { data: memberRows }] = await Promise.all([
+  const [{ data, error }, shop, names, technician, { data: memberRows }, { data: eventRows, error: eventsError }] = await Promise.all([
     supabase.from("jobs").select("*"),
     getShop(),
     getNames(),
     getMe(),
     // The people to filter by (ticket 61): the shop's current members.
     supabase.from("shop_members").select("*").order("joined_at"),
+    // Recent activity (ticket 69), written by the database (sql/031).
+    supabase
+      .from("job_events")
+      .select("id, job_id, actor, kind, detail, created_at, job:jobs(device)")
+      .order("created_at", { ascending: false })
+      .limit(8),
   ]);
   // The layout already sends anyone without a shop to Set up; this is a
   // safety net in case that ever changes.
@@ -118,10 +125,21 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
         title={`${greeting()}, ${technician.display_name}`}
         description="Here's what's happening with your repair jobs today."
         actions={
-          <Link href="/jobs/new" className={buttonVariants()}>
-            <Plus className="size-4" aria-hidden />
-            Add a repair
-          </Link>
+          // Quick actions (ticket 69): the three things done most often.
+          <>
+            <Link href="/workspace" className={buttonVariants({ variant: "secondary" })}>
+              <UsersRound className="size-4" aria-hidden />
+              Find a customer
+            </Link>
+            <Link href="/?tab=ready#jobs" className={buttonVariants({ variant: "secondary" })}>
+              <CreditCard className="size-4" aria-hidden />
+              Record a payment
+            </Link>
+            <Link href="/jobs/new" className={buttonVariants()} aria-keyshortcuts="N">
+              <Plus className="size-4" aria-hidden />
+              New repair
+            </Link>
+          </>
         }
       />
 
@@ -147,12 +165,15 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
       )}
 
       <section className="grid grid-cols-3 gap-3 md:gap-4" aria-label="Summary">
-        <StatCard label="Open repairs" value={open.length} caption="Jobs still in progress" icon={Wrench} tone="navy" />
-        <StatCard label="Waiting on parts" value={waitingOnParts.length} caption="Keep an eye on these" icon={Clock} tone="amber" />
-        <StatCard label="Ready for pickup" value={ready.length} caption="Customers can collect" icon={CircleCheck} tone="green" />
+        <StatCard href="/?tab=all#jobs" label="Open repairs" value={open.length} caption="Jobs still in progress" icon={Wrench} tone="navy" />
+        <StatCard href="/?tab=parts#jobs" label="Waiting on parts" value={waitingOnParts.length} caption="Keep an eye on these" icon={Clock} tone="amber" />
+        <StatCard href="/?tab=ready#jobs" label="Ready for pickup" value={ready.length} caption="Customers can collect" icon={CircleCheck} tone="green" />
       </section>
 
-      <Card className="overflow-hidden">
+      <KpiStrip jobs={jobs} today={today} isOwner={viewer.isOwner} />
+
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+      <Card id="jobs" className="scroll-mt-24 overflow-hidden">
         <div className="flex flex-col gap-1 px-4 pt-5 md:px-6">
           <h2 className="flex items-center gap-2 text-lg font-semibold text-tertiary">
             Repair jobs
@@ -203,6 +224,14 @@ export default async function Overview({ searchParams }: PageProps<"/">) {
           </details>
         )}
       </Card>
+
+      <ActivityFeed
+        events={(eventRows ?? []) as unknown as JobEvent[]}
+        missing={!!eventsError}
+        names={names}
+        me={user.id}
+      />
+      </div>
     </main>
   );
 }
@@ -223,13 +252,16 @@ const TONES = {
   green: "bg-muted text-primary",
 };
 
+// Each card opens the matching list (ticket 69).
 function StatCard({
+  href,
   label,
   value,
   caption,
   icon: Icon,
   tone,
 }: {
+  href: string;
   label: string;
   value: number;
   caption: string;
@@ -237,7 +269,8 @@ function StatCard({
   tone: keyof typeof TONES;
 }) {
   return (
-    <Card className="flex flex-col gap-2 p-3 md:gap-3 md:p-5">
+    <Link href={href} className="group rounded-[var(--radius)]">
+    <Card className="flex h-full flex-col gap-2 p-3 transition-[border-color,box-shadow,transform] duration-150 group-hover:-translate-y-0.5 group-hover:border-ring/40 group-hover:shadow-lg motion-reduce:transform-none md:gap-3 md:p-5">
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs text-muted-foreground md:text-sm">{label}</p>
         <span className={cn("hidden size-8 shrink-0 items-center justify-center rounded-full sm:flex", TONES[tone])}>
@@ -247,8 +280,15 @@ function StatCard({
       <p className="text-2xl font-semibold tabular-nums text-tertiary md:text-3xl">
         {String(value).padStart(2, "0")}
       </p>
-      <p className="hidden text-xs text-muted-foreground sm:block">{caption}</p>
+      <p className="hidden items-center justify-between gap-1 text-xs text-muted-foreground sm:flex">
+        {caption}
+        <span className="inline-flex items-center gap-0.5 font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+          View
+          <ChevronRight className="size-3.5" aria-hidden />
+        </span>
+      </p>
     </Card>
+    </Link>
   );
 }
 
