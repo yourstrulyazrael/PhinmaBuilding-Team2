@@ -8,10 +8,11 @@ import { inSection } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
 /**
- * Phones only (ticket 77): the main pages as a bar along the bottom,
+ * Phones and tablets (tickets 77, 82): the main pages as a bar along the bottom,
  * where a thumb reaches, with a big + for a new repair in the middle.
- * "More" holds the rest. The top bar's page buttons are hidden on phones
- * so nothing is doubled. The current section is highlighted (ticket 78).
+ * "More" holds the rest. On a tablet the five tabs stay together in the
+ * middle rather than stretching edge to edge. The top bar's page buttons
+ * are hidden below laptop size, so nothing is doubled. The current section is highlighted (ticket 78).
  */
 export function MobileNav({ isOwner }: { isOwner: boolean }) {
   const pathname = usePathname();
@@ -33,10 +34,10 @@ export function MobileNav({ isOwner }: { isOwner: boolean }) {
 
   return (
     <nav
-      aria-label="Main (phone)"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden print:hidden"
+      aria-label="Main (phone and tablet)"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden print:hidden"
     >
-      <ul className="grid h-16 grid-cols-5 items-center">
+      <ul className="mx-auto grid h-16 max-w-xl grid-cols-5 items-center">
         <Tab href="/" label="Overview" icon={LayoutDashboard} active={inSection("/", pathname)} />
         <Tab href="/inventory" label="Inventory" icon={Boxes} active={inSection("/inventory", pathname)} />
         <li className="flex justify-center">
@@ -59,7 +60,7 @@ export function MobileNav({ isOwner }: { isOwner: boolean }) {
             trigger={
               <>
                 <MenuIcon className="size-5" aria-hidden />
-                <span className="text-[11px] font-medium">More</span>
+                <span className="text-[11px] font-medium sm:text-xs">More</span>
               </>
             }
           />
@@ -83,7 +84,7 @@ function Tab({ href, label, icon: Icon, active }: { href: string; label: string;
     <li className="flex justify-center px-1">
       <Link href={href} aria-current={active ? "page" : undefined} className={tabClass(active)}>
         <Icon className="size-5" aria-hidden />
-        <span className="text-[11px] font-medium">{label}</span>
+        <span className="text-[11px] font-medium sm:text-xs">{label}</span>
       </Link>
     </li>
   );

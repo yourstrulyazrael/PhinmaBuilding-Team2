@@ -62,7 +62,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           </div>
         </header>
   
-        {/* On phones, room at the bottom for the tab bar (ticket 77). */}
+        {/* On phones and tablets, room at the bottom for the tab bar (tickets 77, 82). */}
         <div className="flex min-w-0 flex-1 flex-col pb-[var(--mobile-nav,0px)]">{children}</div>
         <MobileNav isOwner={shop.role === "owner"} />
   

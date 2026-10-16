@@ -50,7 +50,7 @@ export function NavLinks({ isOwner }: { isOwner: boolean }) {
     // bell, account and sign out off the screen. (No tooltips there to clip.)
     <nav
       aria-label="Main"
-      className="flex min-w-0 items-center gap-1 max-sm:hidden sm:gap-1.5 md:gap-2"
+      className="flex min-w-0 items-center gap-1 max-lg:hidden sm:gap-1.5 md:gap-2"
     >
       {links.map(({ href, label, icon: Icon }, i) => {
         // Inner pages count too: a repair lights up Overview (ticket 78).
@@ -333,8 +333,8 @@ export function NavGlide() {
         { duration: GLIDE_MS, easing: EASE },
       );
     };
-    // On a phone the page buttons are hidden (the bottom bar has them,
-    // ticket 77): no button on screen means no pill.
+    // On phones and tablets the page buttons are hidden (the bottom bar has them,
+    // tickets 77, 82): no button on screen means no pill.
     const current = () => {
       const el = row.querySelector<HTMLElement>('[data-nav-item][aria-current="page"]');
       return el && el.offsetParent !== null ? el : null;

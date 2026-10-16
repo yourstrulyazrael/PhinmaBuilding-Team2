@@ -357,9 +357,9 @@ a:hover .lucide-arrow-up-right {
   animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Phones (ticket 77): the height of the bottom tab bar, so pages, toasts
-   and the repair action bar keep clear of it. 0 on bigger screens. */
-@media screen and (max-width: 639.98px) {
+/* Phones and tablets (tickets 77, 82): the height of the bottom tab bar, so pages, toasts
+   and the repair action bar keep clear of it. 0 on laptops and up. */
+@media screen and (max-width: 1023.98px) {
   :root {
     --mobile-nav: calc(4rem + env(safe-area-inset-bottom));
   }
