@@ -8,12 +8,20 @@ import { useCopy } from "@/components/copy-button";
 // Copies the update message to the clipboard, then shows "Copied" for
 // a couple of seconds (and a toast, ticket 67) so the technician knows
 // it worked. If the browser blocks it, the toast offers "Try again".
-export function CopyMessageButton({ message, label = "Copy update message" }: { message: string; label?: string }) {
+export function CopyMessageButton({
+  message,
+  label = "Copy update message",
+  what = "Message",
+}: {
+  message: string;
+  label?: string;
+  what?: string; // for the toast: "Message copied", "Tracking link copied"
+}) {
   const copy = useCopy();
   const [copied, setCopied] = useState(false);
 
   async function onClick() {
-    if (await copy(message, "Message")) {
+    if (await copy(message, what)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     }

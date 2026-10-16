@@ -1,7 +1,8 @@
 "use client";
 
 import { useOptimistic, useState, useTransition } from "react";
-import { Check } from "lucide-react";
+import { Check, CreditCard } from "lucide-react";
+import { Button } from "./ui/button";
 import { recordPickup, setStatus } from "@/app/(app)/jobs/[id]/actions";
 import { STATUSES, type PaymentMethod, type Status } from "@/lib/jobs";
 import { PaymentDialog } from "./payment-dialog";
@@ -35,12 +36,15 @@ export function StatusPicker({
   variant,
   price,
   device,
+  withPayment = false,
 }: {
   jobId: string;
   status: Status;
   variant: "buttons" | "select";
   price: number; // the final price, offered as the amount paid
   device?: string;
+  // The repair page action bar (ticket 70): a Record payment button too.
+  withPayment?: boolean;
 }) {
   const [optimistic, setOptimistic] = useOptimistic(status);
   const [pending, startTransition] = useTransition();
@@ -129,7 +133,15 @@ export function StatusPicker({
   if (variant === "select") {
     return (
       <div className="flex flex-col gap-1">
-        <StatusMenu value={optimistic} pending={pending} onChange={change} options={choices} />
+        <div className="flex items-center gap-2">
+          <StatusMenu value={optimistic} pending={pending} onChange={change} options={choices} />
+          {withPayment && !["picked_up", "cancelled", "warranty"].includes(optimistic) && (
+            <Button type="button" size="sm" disabled={pending || asking} onClick={() => setAskPayment(true)}>
+              <CreditCard className="size-4" aria-hidden />
+              Record payment
+            </Button>
+          )}
+        </div>
         {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
         {dialog}
       </div>

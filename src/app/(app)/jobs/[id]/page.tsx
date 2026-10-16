@@ -22,6 +22,10 @@ import { JobPhotos, type JobPhoto } from "./job-photos";
 import { Stars } from "@/components/stars";
 import { ProposalDecision, ProposeEstimate } from "./estimate-proposal";
 import { getShop, getSupabase, getUser, getNames } from "@/lib/session";
+import { InlineEdit } from "./inline-edit";
+import { ActionBar } from "./action-bar";
+import { RepairStepper } from "@/components/repair-stepper";
+import { CopyButton } from "@/components/copy-button";
 
 // The technician's view of one repair job. Unlike the claim slip and
 // tracking page, this screen shows the customer's name and phone.
@@ -104,6 +108,10 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
   const late = isLate(job, todayInManila());
   // The warranty end date, once picked up (ticket 57).
   const warrantyUntil = warrantyEnd(job, shop?.warrantyDays ?? 0);
+  const number = repairNumber(job.id);
+  // Inline editing (ticket 70): the owner corrects device, problem and
+  // customer details; whoever may change the repair can move the date.
+  const ownerEdits = viewer.isOwner && !cancelled;
 
   // Parts used, inside "Update for the customer" (ticket 28).
   const partsUsed = (
@@ -120,16 +128,22 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
   );
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 py-6 md:px-8 md:py-10">
+    <main className={cn("mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 py-6 md:px-8 md:py-10", editable && "pb-28 md:pb-28")}>
       <PageHeader
-        crumbs={[{ label: "Repairs", href: "/?tab=all" }, { label: `Repair ${repairNumber(job.id)}` }]}
-        eyebrow={`Repair ${repairNumber(job.id)}`}
+        crumbs={[{ label: "Repairs", href: "/?tab=all" }, { label: `Repair ${number}` }]}
+        eyebrow={
+          <span className="inline-flex items-center gap-1">
+            Repair {number}
+            <CopyButton text={number} what="Repair number" className="-my-1.5 size-6 text-primary" />
+          </span>
+        }
         icon={Smartphone}
-        title={job.device}
-        description={job.problem}
+        title={<InlineEdit jobId={job.id} field="device" label="device" value={job.device} canEdit={ownerEdits} maxLength={100} inputClassName="text-xl font-semibold md:text-xl" />}
+        description={<InlineEdit jobId={job.id} field="problem" label="problem" value={job.problem} canEdit={ownerEdits} multiline maxLength={500} />}
         actions={
           <>
             <CopyMessageButton message={updateMessage(job, url)} />
+            <CopyMessageButton message={url} label="Copy tracking link" what="Tracking link" />
             <Link href={`/jobs/${job.id}/slip`} className={buttonVariants({ variant: "secondary", size: "sm" })}>
               <QrCode className="size-4" aria-hidden />
               Claim slip
@@ -212,7 +226,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
         </div>
       )}
 
-      <Card>
+      <Card id="status-card" className="scroll-mt-24">
         <CardHeader>
           <CardTitle className="text-base text-tertiary">Status</CardTitle>
           {editable && <CardDescription>Tap to change. The customer&apos;s page updates straight away.</CardDescription>}
@@ -220,7 +234,9 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
             <CardDescription>This repair was cancelled, so it&apos;s closed: nothing on it can be changed.</CardDescription>
           )}
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-6">
+          {/* How far along it is (ticket 70). */}
+          <RepairStepper status={job.status} />
           {editable ? (
             <StatusPicker jobId={job.id} status={job.status} variant="buttons" price={currentPrice(job)} device={job.device} />
           ) : (
@@ -256,13 +272,27 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
             <dt className="text-muted-foreground">Quoted by</dt>
             <dd>{job.quoted_by === user.id ? "You" : nameOf(job.quoted_by, viewer)}</dd>
             <dt className="text-muted-foreground">Customer</dt>
-            <dd className="font-medium">{job.customer_name}</dd>
+            <dd className="font-medium">
+              <InlineEdit jobId={job.id} field="customer_name" label="customer name" value={job.customer_name} canEdit={ownerEdits} maxLength={100} />
+            </dd>
             <dt className="text-muted-foreground">Contact No.</dt>
-            <dd>
-              <a href={`tel:${job.customer_phone.replace(/[^\d+]/g, "")}`} className="inline-flex items-center gap-1.5 font-medium text-primary underline-offset-4 hover:underline">
-                <Phone className="size-3.5" aria-hidden />
-                {job.customer_phone}
-              </a>
+            <dd className="flex flex-wrap items-center gap-1">
+              <InlineEdit
+                jobId={job.id}
+                field="customer_phone"
+                label="contact number"
+                type="tel"
+                value={job.customer_phone}
+                canEdit={ownerEdits}
+                maxLength={40}
+                display={
+                  <a href={`tel:${job.customer_phone.replace(/[^\d+]/g, "")}`} className="inline-flex items-center gap-1.5 font-medium text-primary underline-offset-4 hover:underline">
+                    <Phone className="size-3.5" aria-hidden />
+                    {job.customer_phone}
+                  </a>
+                }
+              />
+              <CopyButton text={job.customer_phone} what="Contact number" />
             </dd>
             {/* Labour (quote, then any revised estimate) + parts = total
                 (ticket 47). */}
@@ -313,7 +343,17 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
               </>
             )}
             <dt className="text-muted-foreground">Estimated completion date</dt>
-            <dd>{formatDate(job.promised_date)}</dd>
+            <dd>
+              <InlineEdit
+                jobId={job.id}
+                field="promised_date"
+                label="estimated completion date"
+                type="date"
+                value={job.promised_date}
+                display={formatDate(job.promised_date)}
+                canEdit={editable}
+              />
+            </dd>
             {review && (
               <>
                 <dt className="text-muted-foreground">Review</dt>
@@ -480,6 +520,18 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
             <JobPhotos shopId={shop.id} jobId={job.id} photos={photos} editable={editable} />
           </CardContent>
         </Card>
+      )}
+      {/* Always-there actions once the Status card scrolls away (ticket 70). */}
+      {editable && (
+        <ActionBar
+          watch="status-card"
+          jobId={job.id}
+          number={number}
+          status={job.status}
+          price={currentPrice(job)}
+          device={job.device}
+          trackingUrl={url}
+        />
       )}
     </main>
   );

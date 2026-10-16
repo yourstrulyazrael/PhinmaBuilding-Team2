@@ -237,3 +237,41 @@ export async function reassignJob(jobId: string, staffId: string): Promise<Actio
   revalidatePath("/", "layout");
   return { saved: true };
 }
+
+// Inline editing on the repair page (ticket 70): one field at a time.
+// Device, problem and the customer's details are the owner's to correct
+// (the database refuses staff); the estimated completion date is anyone's
+// who handles the repair.
+const EDITABLE = {
+  device: { max: 100, empty: "Enter the device, e.g. iPhone 12." },
+  problem: { max: 500, empty: "Describe the problem." },
+  customer_name: { max: 100, empty: "Enter the customer's name." },
+  customer_phone: { max: 40, empty: "Enter the customer's contact number." },
+  promised_date: { max: 10, empty: "Pick an estimated completion date." },
+} as const;
+
+export type EditableField = keyof typeof EDITABLE;
+
+export async function updateJobField(jobId: string, field: EditableField, raw: string): Promise<ActionResult> {
+  const rule = EDITABLE[field];
+  if (!rule) return { error: "That can't be changed here." };
+  const value = raw.trim();
+  if (!value) return { error: rule.empty };
+  if (value.length > rule.max) return { error: `Keep it under ${rule.max} characters.` };
+  if (field === "promised_date" && !/^\d{4}-\d{2}-\d{2}$/.test(value)) return { error: rule.empty };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("jobs").update({ [field]: value }).eq("id", jobId).select("id");
+  if (error) {
+    return {
+      error: /Staff can only change/.test(error.message)
+        ? "Only the shop owner can correct this. Ask them, or note it in the repair notes."
+        : "Couldn't save. Please try again.",
+    };
+  }
+  if (!data?.length) return { error: "You can only change repairs you are handling." };
+
+  revalidatePath("/");
+  revalidatePath(`/jobs/${jobId}`);
+  return { saved: true };
+}
