@@ -234,6 +234,18 @@ icons, focus rings; "reduce motion" respected everywhere).
 - **New repair** keeps an **autosaved draft** in this browser until the
   repair is saved or the draft is discarded.
 - **Loading:** each page shows a skeleton in its own shape.
+- **Notifications** (ticket 73) are grouped: Needs your decision,
+  Delayed repairs, Waiting on the customer, Low stock, Updates; with
+  summary cards and tabs.
+- **Staff** (ticket 74): one card per person; Edit, Reset password, Take
+  back quotes and Remove in a ⋮ menu, each in a pop-up; Add staff button.
+- **Forms** (ticket 75) show errors under the field and can't be sent
+  while something is wrong.
+- **Optimistic** (ticket 76): parts added/removed and photos deleted show
+  at once; they snap back with the error if the server refuses.
+- **Phones** (ticket 77): a bottom tab bar (Overview, Inventory, +,
+  Workspace, More); Inventory as cards. **Active section** (ticket 78)
+  is highlighted on inner pages too (a repair lights up Overview).
 
 ## Data
 
