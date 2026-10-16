@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import {
   Bell,
   CornerDownLeft,
@@ -108,7 +109,9 @@ export function CommandPalette({ isOwner }: { isOwner: boolean }) {
         <Search className="size-[18px] shrink-0 md:size-5" aria-hidden />
         <RevealLabel shortcut={`${mod} K`}>Search &amp; commands</RevealLabel>
       </button>
-      {open && (
+      {/* On <body>, so the top bar's blur can't shrink the overlay to the bar. */}
+      {open &&
+        createPortal(
         <Palette
           isOwner={isOwner}
           mod={mod}
@@ -119,7 +122,8 @@ export function CommandPalette({ isOwner }: { isOwner: boolean }) {
             setOpen(false);
             router.push(href);
           }}
-        />
+        />,
+        document.body,
       )}
     </>
   );

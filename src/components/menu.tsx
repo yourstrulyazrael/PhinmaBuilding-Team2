@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { createPortal } from "react-dom";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,10 @@ const WIDTH = 192; // px
  * positioning so a table card can't cut it off, opens upwards near the
  * bottom of the screen, and works with the keyboard (↑ ↓ Enter Esc).
  * It drops in when it opens and fades out when it closes (ticket 65).
+ *
+ * The list is drawn straight on <body> (a portal), not inside the button's
+ * parent: a parent with a blur or transform (the phone tab bar, the repair
+ * action bar, the top bar) would otherwise pull it off the screen.
  */
 export function Menu({
   label,
@@ -123,7 +128,8 @@ export function Menu({
       >
         {trigger}
       </button>
-      {(open || closing) && (
+      {(open || closing) &&
+        createPortal(
         <ul
           ref={list}
           role="menu"
@@ -158,7 +164,8 @@ export function Menu({
               </li>
             );
           })}
-        </ul>
+        </ul>,
+        document.body,
       )}
     </>
   );

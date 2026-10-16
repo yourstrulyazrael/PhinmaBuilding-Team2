@@ -52,7 +52,7 @@ export function ProposeEstimate({
 
   if (last?.status === "pending") {
     return (
-      <>
+      <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-1 text-sm">
           <p className="font-medium">Revised quote</p>
           <p className="text-muted-foreground">
@@ -62,12 +62,15 @@ export function ProposeEstimate({
           <p className="whitespace-pre-line text-xs text-muted-foreground">&ldquo;{last.reason}&rdquo;</p>
         </div>
         {children}
-      </>
+      </div>
     );
   }
 
+  // Spaced as one column (ticket 79): the revised quote, Parts used, then
+  // "Send to owner" on its own row under a line, so it can't run into
+  // the parts' Add button and it's clear it sends the revised quote.
   return (
-    <>
+    <div className="flex flex-col gap-6">
       <form id={FORM_ID} action={formAction} className="flex flex-col gap-4 text-sm">
         <div className="flex flex-col gap-2">
           <Label htmlFor="amount">Revised quote ({symbol})</Label>
@@ -102,7 +105,8 @@ export function ProposeEstimate({
 
       {children}
 
-      <div className="flex flex-col items-end gap-2">
+      <div className="flex flex-col items-end gap-2 border-t border-border pt-4">
+        <p className="self-start text-xs text-muted-foreground">Sends the revised quote above to your owner.</p>
         {state.error && (
           <p role="alert" className="text-sm text-destructive">
             {state.error}
@@ -113,7 +117,7 @@ export function ProposeEstimate({
           {pending ? "Sending…" : "Send to owner"}
         </Button>
       </div>
-    </>
+    </div>
   );
 }
 

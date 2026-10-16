@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { Check, ChevronDown, LoaderCircle } from "lucide-react";
 import { STATUSES, STATUS_DOTS, STATUS_STYLES, type Status } from "@/lib/jobs";
 import { cn } from "@/lib/utils";
+import { createPortal } from "react-dom";
 
 const MENU_WIDTH = 208; // px
 const ROW_HEIGHT = 36; // px, used to decide whether the menu fits below
@@ -132,7 +133,10 @@ export function StatusMenu({
         )}
       </button>
 
-      {open && (
+      {/* Drawn on <body> (a portal), so a blurred or moving parent (the
+          repair action bar) can't pull it off the screen. */}
+      {open &&
+        createPortal(
         <ul
           ref={menuRef}
           id={`${id}-menu`}
@@ -166,7 +170,8 @@ export function StatusMenu({
               </li>
             );
           })}
-        </ul>
+        </ul>,
+        document.body,
       )}
     </>
   );
