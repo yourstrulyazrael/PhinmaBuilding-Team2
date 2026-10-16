@@ -8,6 +8,7 @@ import { signOut } from "../login/actions";
 import { AccountLink, NavGlide, NavLinks, NotificationsLink } from "./nav-links";
 import { ShopLive } from "./shop-live";
 import { CurrencyProvider } from "@/components/currency";
+import { ToastProvider } from "@/components/toast";
 import { getMe, getNotifications, getShop, getUser } from "@/lib/session";
 
 /**
@@ -32,6 +33,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   return (
     // Browser-drawn amounts use the shop's currency (ticket 54).
     <CurrencyProvider currency={shop.currency}>
+      {/* Toasts for every page (ticket 67). */}
+      <ToastProvider>
       <div className="flex flex-1 flex-col">
         <header className="sticky top-0 z-20 border-b border-border bg-card/90 backdrop-blur print:hidden">
           {/* Full width: logo and pages hug the left edge; theme, bell,
@@ -60,6 +63,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         {/* Customer answers arrive live (ticket 52). */}
         <ShopLive shopId={shop.id} userId={user.id} isOwner={shop.role === "owner"} />
       </div>
+      </ToastProvider>
     </CurrencyProvider>
   );
 }

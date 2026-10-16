@@ -2,19 +2,23 @@
 
 import { useMoney } from "@/components/currency";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { Plus, X } from "lucide-react";
 import { addJobPart, removeJobPart, type ActionResult } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/toast";
 
-export type UsedPart = { id: string; name: string; sku: string; quantity: number; unitPrice: number };
+export type UsedPart = { id: string; partId: string; name: string; sku: string; quantity: number; unitPrice: number };
 export type PickablePart = { id: string; name: string; sku: string; quantity: number; price: number };
 
 /**
  * Parts used on this repair (ticket 28). Adding takes them out of stock;
  * removing one recorded by mistake puts it back. The customer sees the
  * names on their tracking page (never cost or SKU).
+ *
+ * Toasts (ticket 67): "Part added"; after removing, "Undo" records it
+ * again (taking it back out of stock); a failed removal offers "Try again".
  */
 export function PartsUsed({
   jobId,
@@ -31,6 +35,43 @@ export function PartsUsed({
   const [state, formAction, pending] = useActionState<ActionResult, FormData>(addJobPart.bind(null, jobId), {});
   const [removing, startRemove] = useTransition();
   const [removeError, setRemoveError] = useState<string>();
+  const toast = useToast();
+
+  // A toast each time the Add form saves.
+  const shown = useRef(state);
+  useEffect(() => {
+    if (state === shown.current) return;
+    shown.current = state;
+    if (state.saved) toast({ title: "Part added", description: "Taken out of stock." });
+  }, [state, toast]);
+
+  function remove(u: UsedPart) {
+    startRemove(async () => {
+      setRemoveError(undefined);
+      const result = await removeJobPart(u.id, jobId);
+      if (result.error) {
+        setRemoveError(result.error);
+        toast({ kind: "error", title: `Couldn't remove ${u.name}`, action: { label: "Try again", onClick: () => remove(u) } });
+        return;
+      }
+      toast({
+        title: `${u.name} removed`,
+        description: "Put back in stock.",
+        action: { label: "Undo", onClick: () => putBack(u) },
+      });
+    });
+  }
+
+  function putBack(u: UsedPart) {
+    startRemove(async () => {
+      const form = new FormData();
+      form.set("part_id", u.partId);
+      form.set("quantity", String(u.quantity));
+      const result = await addJobPart(jobId, {}, form);
+      if (result.error) toast({ kind: "error", title: `Couldn't put ${u.name} back`, description: result.error });
+      else toast({ title: `${u.name} recorded again` });
+    });
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -50,13 +91,7 @@ export function PartsUsed({
                 <button
                   type="button"
                   disabled={removing}
-                  onClick={() =>
-                    startRemove(async () => {
-                      setRemoveError(undefined);
-                      const result = await removeJobPart(u.id, jobId);
-                      if (result.error) setRemoveError(result.error);
-                    })
-                  }
+                  onClick={() => remove(u)}
                   aria-label={`Remove ${u.name} (puts it back in stock)`}
                   title="Remove (puts it back in stock)"
                   className="flex size-7 items-center justify-center rounded-[var(--radius)] text-muted-foreground hover:bg-muted hover:text-destructive disabled:opacity-50"

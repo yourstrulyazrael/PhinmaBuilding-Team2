@@ -7,6 +7,7 @@ import { STATUSES, type PaymentMethod, type Status } from "@/lib/jobs";
 import { PaymentDialog } from "./payment-dialog";
 import { CancelRepairDialog } from "./cancel-repair-dialog";
 import { StatusMenu } from "./status-menu";
+import { useToast } from "./toast";
 import { cn } from "@/lib/utils";
 
 /**
@@ -21,7 +22,13 @@ import { cn } from "@/lib/utils";
  *
  * useOptimistic shows the new status straight away, then the server
  * confirms. If saving fails, it snaps back and shows the error.
+ *
+ * Toasts (ticket 67): after a change, "Undo" puts the old status back;
+ * if it failed, "Try again" repeats it. Pickups (a payment) and
+ * cancelling (asked first) have no Undo.
  */
+const labelOf = (s: Status) => STATUSES.find((x) => x.value === s)?.label ?? s;
+
 export function StatusPicker({
   jobId,
   status,
@@ -40,6 +47,7 @@ export function StatusPicker({
   const [error, setError] = useState<string>();
   const [askPayment, setAskPayment] = useState(false);
   const [askCancel, setAskCancel] = useState(false);
+  const toast = useToast();
   // "Back under warranty" is only offered for a repair that was picked up
   // (ticket 57); the database also checks the warranty hasn't ended.
   const choices = STATUSES.filter((s) => s.value !== "warranty" || optimistic === "picked_up" || optimistic === "warranty");
@@ -57,10 +65,34 @@ export function StatusPicker({
       setAskPayment(true);
       return;
     }
+    save(next, optimistic);
+  }
+
+  // Saves a status; on success offers Undo (back to "from"), on failure
+  // offers Try again. Undoing doesn't offer another Undo.
+  function save(next: Status, from: Status, isUndo = false) {
     startTransition(async () => {
       setOptimistic(next);
       const result = await setStatus(jobId, next);
-      if (result.error) setError(result.error);
+      if (result.error) {
+        setError(result.error);
+        toast({
+          kind: "error",
+          title: "Couldn't change the status",
+          description: result.error,
+          action: { label: "Try again", onClick: () => save(next, from, isUndo) },
+        });
+        return;
+      }
+      toast(
+        isUndo
+          ? { title: `Back to ${labelOf(next)}`, description: device }
+          : {
+              title: `Status: ${labelOf(next)}`,
+              description: device,
+              action: { label: "Undo", onClick: () => save(from, next, true) },
+            },
+      );
     });
   }
 
@@ -70,6 +102,7 @@ export function StatusPicker({
       setOptimistic("picked_up");
       const result = await recordPickup(jobId, amount, method, ref);
       if (result.error) setError(result.error);
+      else toast({ title: "Payment recorded · Picked up", description: device });
     });
   }
 

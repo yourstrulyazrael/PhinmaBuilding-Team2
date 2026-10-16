@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import {
   changeEmail,
   changePassword,
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/toast";
 import { CURRENCIES, currencySymbol } from "@/lib/money";
 
 // The forms on the Account page (ticket 34). "use client" because each
@@ -206,7 +207,18 @@ function Field({ id, label, hint, children }: { id: string; label: string; hint?
   );
 }
 
+// Each result is toasted once, even if its form redraws (the password
+// form starts afresh after saving).
+const toasted = new WeakSet<FormState>();
+
+// Errors stay next to the form; "Saved" is a toast (ticket 67).
 function Result({ state, pending, saved = "Saved." }: { state: FormState; pending: boolean; saved?: string }) {
+  const toast = useToast();
+  useEffect(() => {
+    if (!state.saved || toasted.has(state)) return;
+    toasted.add(state);
+    toast({ title: state.message ?? saved });
+  }, [state, saved, toast]);
   if (state.error) {
     return (
       <p role="alert" className="text-sm text-destructive">
@@ -214,10 +226,11 @@ function Result({ state, pending, saved = "Saved." }: { state: FormState; pendin
       </p>
     );
   }
-  if (state.saved && !pending) {
+  // Shown under the form too while it matters (e.g. "check your email").
+  if (state.saved && !pending && state.message) {
     return (
-      <p role="status" className="text-sm text-muted-foreground">
-        {state.message ?? saved}
+      <p className="text-sm text-muted-foreground">
+        {state.message}
       </p>
     );
   }

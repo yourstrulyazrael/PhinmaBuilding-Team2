@@ -90,6 +90,7 @@ export default async function JobDetailPage({ params }: PageProps<"/jobs/[id]">)
   const catalog = new Map((partRows ?? []).map((p) => [p.id as string, p]));
   const used = (usedRows ?? []).map((u) => ({
     id: u.id as string,
+    partId: u.part_id as string,
     name: catalog.get(u.part_id)?.name ?? "Part",
     sku: catalog.get(u.part_id)?.sku ?? "",
     quantity: u.quantity as number,

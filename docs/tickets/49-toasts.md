@@ -6,7 +6,7 @@ instead of a line of text under each form.
 
 **Blocked by:** 48
 
-**Status:** todo
+**Status:** done as part of ticket 67 (toasts with Undo and Try again)
 
 - [ ] One toast component, same colours, with success and error styles
 - [ ] Used by the forms that now show "Saved." text (Account, repair

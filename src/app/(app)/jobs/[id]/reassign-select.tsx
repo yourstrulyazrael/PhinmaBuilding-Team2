@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CircleCheck } from "lucide-react";
 import { reassignJob } from "./actions";
+import { useToast } from "@/components/toast";
 
 /**
  * "Reassign to" for the owner (ticket 44): hand this repair to themself
  * or a current staff member. Saves as soon as a name is picked; the new
  * person can then change it and the old one sees it read-only.
+ * A toast confirms it, with Undo to hand it back (ticket 67).
  */
 export function ReassignSelect({
   jobId,
@@ -20,7 +21,25 @@ export function ReassignSelect({
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>();
-  const [saved, setSaved] = useState(false);
+  const toast = useToast();
+  const nameOf = (id: string) => people.find((p) => p.id === id)?.name ?? "them";
+
+  function reassign(to: string, from: string, isUndo = false) {
+    setError(undefined);
+    startTransition(async () => {
+      const result = await reassignJob(jobId, to);
+      if (result.error) {
+        setError(result.error);
+        toast({ kind: "error", title: "Couldn't reassign", description: result.error, action: { label: "Try again", onClick: () => reassign(to, from, isUndo) } });
+        return;
+      }
+      toast(
+        isUndo
+          ? { title: `Back with ${nameOf(to)}` }
+          : { title: `Reassigned to ${nameOf(to)}`, action: { label: "Undo", onClick: () => reassign(from, to, true) } },
+      );
+    });
+  }
 
   return (
     <div className="flex flex-col gap-1">
@@ -30,16 +49,7 @@ export function ReassignSelect({
           defaultValue={handledBy}
           key={handledBy}
           disabled={pending}
-          onChange={(e) => {
-            const to = e.target.value;
-            setError(undefined);
-            setSaved(false);
-            startTransition(async () => {
-              const result = await reassignJob(jobId, to);
-              if (result.error) setError(result.error);
-              else setSaved(true);
-            });
-          }}
+          onChange={(e) => reassign(e.target.value, handledBy)}
           className="h-9 rounded-[var(--radius)] border border-input bg-card px-2.5 text-sm shadow-xs focus-visible:border-ring focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/15 disabled:opacity-60"
         >
           {people.map((p) => (
@@ -49,12 +59,6 @@ export function ReassignSelect({
           ))}
         </select>
         {pending && <span className="text-xs text-muted-foreground">Reassigning…</span>}
-        {saved && !pending && (
-          <span role="status" className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-            <CircleCheck className="size-3.5" aria-hidden />
-            Reassigned
-          </span>
-        )}
       </label>
       {error && (
         <p role="alert" className="text-xs text-destructive">

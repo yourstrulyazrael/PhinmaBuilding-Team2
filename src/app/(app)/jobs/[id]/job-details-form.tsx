@@ -2,13 +2,14 @@
 
 import { useMoney } from "@/components/currency";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { updateJobDetails, type ActionResult } from "./actions";
 import type { Job } from "@/lib/jobs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/toast";
 
 // Everything here is shown to the customer on their tracking page.
 // The revised estimate box only appears for the owner and staff the
@@ -20,6 +21,14 @@ export function JobDetailsForm({ job, canReviseEstimate }: { job: Job; canRevise
     updateJobDetails.bind(null, job.id),
     {},
   );
+  // "Saved" as a toast (ticket 67).
+  const toast = useToast();
+  const shown = useRef(state);
+  useEffect(() => {
+    if (state === shown.current) return;
+    shown.current = state;
+    if (state.saved) toast({ title: "Changes saved", description: "The customer sees them on their tracking page." });
+  }, [state, toast]);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -77,11 +86,6 @@ export function JobDetailsForm({ job, canReviseEstimate }: { job: Job; canRevise
         </p>
       )}
       <div className="flex items-center justify-end gap-3">
-        {state.saved && !pending && (
-          <p role="status" className="text-sm text-muted-foreground">
-            Saved.
-          </p>
-        )}
         <Button type="submit" disabled={pending}>
           {pending ? "Saving…" : "Save changes"}
         </Button>

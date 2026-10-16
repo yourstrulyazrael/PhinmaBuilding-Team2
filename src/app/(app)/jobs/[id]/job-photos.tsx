@@ -6,6 +6,7 @@ import { Camera, ImagePlus, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/modal";
+import { useToast } from "@/components/toast";
 
 export type JobPhoto = { path: string; url: string; kind: "before" | "after" };
 
@@ -76,19 +77,22 @@ function Side({
   onView: (p: JobPhoto) => void;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const input = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>();
   const [deleting, setDeleting] = useState<string | null>(null);
   const full = photos.length >= MAX_PER_SIDE;
 
-  function upload(files: FileList | null) {
+  // Uploads the photos one by one. If one fails (say, the signal drops),
+  // a toast offers "Try again", which carries on from that photo (ticket 67).
+  function upload(files: FileList | File[] | null) {
     const list = [...(files ?? [])].slice(0, MAX_PER_SIDE - photos.length);
     if (list.length === 0) return;
     setError(undefined);
     startTransition(async () => {
       const supabase = createClient();
-      for (const file of list) {
+      for (const [i, file] of list.entries()) {
         let blob: Blob;
         try {
           blob = await shrink(file);
@@ -100,10 +104,19 @@ function Side({
         const { error: upError } = await supabase.storage.from(BUCKET).upload(path, blob, { contentType: "image/jpeg" });
         if (upError) {
           setError(/bucket not found/i.test(upError.message) ? "Run 030 in Supabase first." : upError.message);
+          if (i > 0) router.refresh();
+          const rest = list.slice(i);
+          toast({
+            kind: "error",
+            title: rest.length > 1 ? `${rest.length} photos didn't upload` : "A photo didn't upload",
+            description: "Check the connection, then try again.",
+            action: { label: "Try again", onClick: () => upload(rest) },
+          });
           return;
         }
       }
       router.refresh();
+      toast({ title: list.length > 1 ? `${list.length} photos added` : "Photo added" });
     });
   }
 
@@ -111,7 +124,10 @@ function Side({
     setError(undefined);
     startTransition(async () => {
       const { error: delError } = await createClient().storage.from(BUCKET).remove([path]);
-      if (delError) setError(delError.message);
+      if (delError) {
+        setError(delError.message);
+        toast({ kind: "error", title: "Couldn't delete the photo", action: { label: "Try again", onClick: () => remove(path) } });
+      } else toast({ title: "Photo deleted" });
       setDeleting(null);
       router.refresh();
     });

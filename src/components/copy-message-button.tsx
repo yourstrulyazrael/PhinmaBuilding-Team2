@@ -3,35 +3,26 @@
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useCopy } from "@/components/copy-button";
 
 // Copies the update message to the clipboard, then shows "Copied" for
-// a couple of seconds so the technician knows it worked.
+// a couple of seconds (and a toast, ticket 67) so the technician knows
+// it worked. If the browser blocks it, the toast offers "Try again".
 export function CopyMessageButton({ message, label = "Copy update message" }: { message: string; label?: string }) {
-  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+  const copy = useCopy();
+  const [copied, setCopied] = useState(false);
 
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(message);
-      setState("copied");
-    } catch {
-      setState("failed");
+  async function onClick() {
+    if (await copy(message, "Message")) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
     }
-    setTimeout(() => setState("idle"), 2500);
   }
 
   return (
-    <div className="flex flex-col items-start gap-1">
-      <Button type="button" variant="secondary" size="sm" onClick={copy}>
-        {state === "copied" ? (
-          <Check className="size-4" aria-hidden />
-        ) : (
-          <Copy className="size-4" aria-hidden />
-        )}
-        {state === "copied" ? "Copied" : label}
-      </Button>
-      <p role="status" className="text-xs text-muted-foreground">
-        {state === "failed" && "Couldn't copy. Your browser blocked the clipboard."}
-      </p>
-    </div>
+    <Button type="button" variant="secondary" size="sm" onClick={onClick} className="w-fit">
+      {copied ? <Check className="size-4" aria-hidden /> : <Copy className="size-4" aria-hidden />}
+      {copied ? "Copied" : label}
+    </Button>
   );
 }
